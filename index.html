@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>whya</title>
+  <link rel="manifest" href="/manifest.webmanifest">
+  <meta name="theme-color" content="#0b0c10">
+  <link rel="icon" type="image/png" href="/icon-32.png">
+  <script>
+    (function(){
+      var u = null;
+      try {
+        var raw = localStorage.getItem("wg_user") || localStorage.getItem("currentUser");
+        if (raw) u = JSON.parse(raw);
+      } catch(e) {}
+      if (u && (u.id || u.email)) location.replace("dashboard.html");
+      else location.replace("login.html");
+    })();
+  </script>
+</head>
+<body style="background:#050505;color:#aaa;font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0">
+  Memuat…
+</body>
+</html>

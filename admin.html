@@ -1,0 +1,933 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
+  <title>Admin · WhatsApp Glass</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <style>
+    :root {
+      --bg:#07090c; --bg2:#0e1218; --card:rgba(255,255,255,.04); --card-hover:rgba(255,255,255,.06);
+      --border:rgba(255,255,255,.08); --border-strong:rgba(255,255,255,.14);
+      --text:#f1f5f9; --muted:#8b95a5; --accent:#3b82f6; --accent-soft:rgba(59,130,246,.15);
+      --ok:#22c55e; --ok-soft:rgba(34,197,94,.15); --danger:#ef4444; --danger-soft:rgba(239,68,68,.15);
+      --warn:#f59e0b; --warn-soft:rgba(245,158,11,.15); --radius:16px;
+      --shadow:0 8px 32px rgba(0,0,0,.35);
+      --font:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;
+    }
+    [data-theme="light"] {
+      --bg:#f0f2f5; --bg2:#fff; --card:#fff; --card-hover:#f8fafc;
+      --border:#e2e8f0; --border-strong:#cbd5e1; --text:#0f172a; --muted:#64748b;
+      --shadow:0 8px 28px rgba(15,23,42,.08);
+    }
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100dvh;-webkit-font-smoothing:antialiased}
+
+    .login-gate{position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;
+      background:radial-gradient(ellipse 80% 50% at 50% -10%,rgba(59,130,246,.25),transparent),var(--bg);padding:20px}
+    .login-gate.hidden{display:none}
+    .login-box{width:min(400px,100%);background:rgba(18,22,30,.85);border:1px solid var(--border-strong);
+      border-radius:24px;padding:36px 28px 28px;text-align:center;backdrop-filter:blur(24px);box-shadow:var(--shadow)}
+    [data-theme="light"] .login-box{background:#fff}
+    .login-logo{width:64px;height:64px;border-radius:18px;margin:0 auto 18px;background:linear-gradient(145deg,#3b82f6,#8b5cf6);
+      display:flex;align-items:center;justify-content:center;font-size:26px;color:#fff;box-shadow:0 8px 24px rgba(59,130,246,.35)}
+    .login-box h2{font-size:22px;font-weight:700;margin-bottom:6px}
+    .login-box .lead{font-size:13.5px;color:var(--muted);margin-bottom:22px;line-height:1.5}
+    .login-box input{width:100%;padding:13px 14px;border-radius:12px;border:1px solid var(--border-strong);
+      background:rgba(0,0,0,.25);color:var(--text);font-size:14px;margin-bottom:10px;outline:none}
+    .login-box input:focus{border-color:var(--accent)}
+    .btn-primary{width:100%;padding:13px;border:none;border-radius:12px;background:linear-gradient(135deg,#3b82f6,#2563eb);
+      color:#fff;font-weight:600;font-size:14px;cursor:pointer;box-shadow:0 4px 14px rgba(59,130,246,.35)}
+    .err{color:#f87171;font-size:12.5px;min-height:18px;margin-bottom:8px}
+
+    .shell{max-width:860px;margin:0 auto;padding:20px 16px 56px}
+    .topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px;flex-wrap:wrap}
+    .brand{display:flex;align-items:center;gap:12px}
+    .brand-icon{width:42px;height:42px;border-radius:12px;background:linear-gradient(145deg,#3b82f6,#8b5cf6);
+      display:flex;align-items:center;justify-content:center;color:#fff;font-size:18px}
+    .brand h1{font-size:20px;font-weight:700;letter-spacing:-.3px}
+    .brand .sub{font-size:12px;color:var(--muted);margin-top:2px}
+    .top-actions{display:flex;gap:8px}
+    .icon-btn{width:40px;height:40px;border-radius:12px;border:1px solid var(--border);background:var(--card);
+      color:var(--text);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:15px}
+
+    .tabs{display:flex;gap:6px;padding:4px;background:var(--card);border:1px solid var(--border);
+      border-radius:14px;margin-bottom:16px}
+    .tab{flex:1;padding:11px 12px;border:none;border-radius:11px;background:transparent;color:var(--muted);
+      font-weight:600;font-size:13.5px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:.2s}
+    .tab.active{background:var(--accent);color:#fff;box-shadow:0 4px 12px rgba(59,130,246,.3)}
+    .tab .cnt{font-size:11px;opacity:.85;background:rgba(255,255,255,.15);padding:2px 7px;border-radius:99px}
+    .tab.active .cnt{background:rgba(255,255,255,.25)}
+
+    .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}
+    @media(max-width:560px){.stats{grid-template-columns:repeat(2,1fr)}}
+    .stat{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px 12px}
+    .stat .n{font-size:22px;font-weight:700;letter-spacing:-.5px}
+    .stat .l{font-size:11.5px;color:var(--muted);margin-top:4px;font-weight:500}
+
+    .search-bar{position:relative;margin-bottom:14px}
+    .search-bar i{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:14px}
+    .search-bar input{width:100%;padding:13px 14px 13px 40px;border-radius:14px;border:1px solid var(--border);
+      background:var(--card);color:var(--text);font-size:14px;outline:none}
+    .search-bar input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+
+    .list{display:flex;flex-direction:column;gap:10px}
+    .acc{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;transition:.2s}
+    .acc.open{border-color:var(--border-strong);box-shadow:var(--shadow)}
+    .acc-head{display:flex;align-items:center;gap:12px;padding:14px;cursor:pointer;user-select:none}
+    .acc-head:hover{background:var(--card-hover)}
+    .avatar{width:48px;height:48px;border-radius:50%;flex-shrink:0;background:linear-gradient(145deg,#3b82f6,#6366f1);
+      display:flex;align-items:center;justify-content:center;font-weight:700;font-size:17px;color:#fff;overflow:hidden}
+    .avatar.ch{background:linear-gradient(145deg,#25d366,#128c7e);border-radius:14px}
+    .avatar img{width:100%;height:100%;object-fit:cover}
+    .acc-info{flex:1;min-width:0}
+    .acc-name{font-size:15px;font-weight:600;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+    .acc-id{font-size:12.5px;color:var(--muted);margin-top:3px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+    .acc-id b{color:var(--text);font-weight:600}
+    .chips{display:flex;flex-wrap:wrap;gap:5px;margin-top:7px}
+    .chip{font-size:10.5px;font-weight:600;padding:3px 8px;border-radius:99px}
+    .chip-role-user{background:rgba(148,163,184,.15);color:#94a3b8}
+    .chip-role-moderator{background:rgba(59,130,246,.18);color:#93c5fd}
+    .chip-role-staff{background:rgba(34,197,94,.18);color:#86efac}
+    .chip-role-admin{background:rgba(239,68,68,.18);color:#fca5a5}
+    .chip-role-owner{background:rgba(234,179,8,.2);color:#fde047}
+    .chip-banned{background:var(--danger-soft);color:#fecaca}
+    .chip-verified{background:var(--accent-soft);color:#93c5fd}
+    .chev{color:var(--muted);font-size:12px;transition:transform .25s;width:28px;height:28px;
+      display:flex;align-items:center;justify-content:center;border-radius:8px;background:rgba(255,255,255,.04)}
+    .acc.open .chev{transform:rotate(180deg)}
+
+    .acc-body{display:none;border-top:1px solid var(--border);background:rgba(0,0,0,.15)}
+    [data-theme="light"] .acc-body{background:#f8fafc}
+    .acc.open .acc-body{display:block}
+    .panel{padding:16px 14px 18px}
+    .panel-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+    @media(max-width:520px){.panel-grid{grid-template-columns:1fr}}
+    .field{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:11px 12px}
+    .field .lab{font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:5px}
+    .field .val{font-size:13.5px;word-break:break-all;cursor:pointer;display:flex;align-items:center;gap:6px}
+    .field .val.mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12.5px}
+    .field .val.pw{color:var(--warn)}
+    .field .val i{font-size:11px;color:var(--muted);opacity:.7}
+
+    .ctrl-block{margin-bottom:12px}
+    .ctrl-block label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:6px}
+    .ctrl-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    @media(max-width:520px){.ctrl-row{grid-template-columns:1fr}}
+    select.ctrl,input.ctrl{width:100%;padding:11px 12px;border-radius:11px;border:1px solid var(--border);
+      background:var(--bg2);color:var(--text);font-size:13.5px;outline:none}
+    select.ctrl:focus,input.ctrl:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+    input.ctrl{padding-right:12px}
+
+    .action-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px}
+    @media(max-width:420px){.action-grid{grid-template-columns:1fr}}
+    .act{border:none;border-radius:11px;padding:11px 12px;font-size:13px;font-weight:600;cursor:pointer;
+      display:flex;align-items:center;justify-content:center;gap:7px}
+    .act-verify{background:var(--accent-soft);color:#93c5fd}
+    .act-pass{background:var(--warn-soft);color:#fcd34d}
+    .act-ban{background:var(--danger-soft);color:#fca5a5}
+    .act-unban{background:var(--ok-soft);color:#86efac}
+    .act-delete{grid-column:1/-1;background:rgba(239,68,68,.12);color:#f87171;border:1px solid rgba(239,68,68,.25)}
+    .act-save{background:var(--ok-soft);color:#86efac}
+
+    .empty{text-align:center;padding:48px 20px;color:var(--muted);background:var(--card);
+      border:1px dashed var(--border);border-radius:var(--radius)}
+    .empty i{font-size:28px;margin-bottom:10px;opacity:.5;display:block}
+    .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(12px);
+      background:#1e293b;color:#fff;padding:11px 18px;border-radius:24px;font-size:13px;font-weight:500;
+      z-index:80;opacity:0;transition:.28s;pointer-events:none;border:1px solid rgba(255,255,255,.1);box-shadow:var(--shadow)}
+    .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+    .v-badge{display:inline-block;vertical-align:-.15em;flex-shrink:0}
+    .panel-section{display:none}
+    .panel-section.active{display:block}
+  
+    .palette-section { margin-top: 12px; }
+    .palette-section .plab {
+      font-size: 12px; color: var(--muted); font-weight: 600; margin-bottom: 10px;
+    }
+    .badge-grid {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 10px;
+    }
+    @media (max-width: 420px) {
+      .badge-grid { grid-template-columns: repeat(5, 1fr); }
+    }
+    .badge-cell {
+      aspect-ratio: 1;
+      border-radius: 14px;
+      border: 2px solid transparent;
+      background: rgba(255,255,255,0.04);
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; padding: 0;
+      transition: transform .15s, border-color .15s, box-shadow .15s, background .15s;
+    }
+    .badge-cell:hover { transform: scale(1.06); background: rgba(255,255,255,0.08); }
+    .badge-cell.active {
+      border-color: #38bdf8;
+      box-shadow: 0 0 0 2px rgba(56,189,248,0.35);
+      background: rgba(56,189,248,0.12);
+    }
+    .badge-cell svg { width: 28px; height: 28px; display: block; }
+    .badge-cell .none-ico { font-size: 16px; color: var(--muted); opacity: 0.7; }
+    .badge-cell .plus-ico { font-size: 18px; color: var(--muted); }
+    .role-grid {
+      display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px;
+    }
+    .role-chip-btn {
+      padding: 8px 14px; border-radius: 12px; border: 1px solid var(--border);
+      background: rgba(255,255,255,0.04); color: var(--text);
+      font-size: 12.5px; font-weight: 600; cursor: pointer;
+      transition: .15s;
+    }
+    .role-chip-btn.active {
+      border-color: #3b82f6; background: rgba(59,130,246,0.2); color: #93c5fd;
+    }
+    .preview-card {
+      margin-top: 12px; padding: 14px 16px; border-radius: 14px;
+      background: rgba(255,255,255,0.04); border: 1px solid var(--border);
+      display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+    }
+    .preview-card .pname {
+      font-size: 16px; font-weight: 700; display: inline-flex; align-items: center; gap: 7px;
+    }
+    .preview-card .pname svg { width: 18px; height: 18px; }
+
+  </style>
+</head>
+<body data-theme="dark">
+  <div class="login-gate" id="gate">
+    <div class="login-box">
+      <div class="login-logo"><i class="fas fa-shield-halved"></i></div>
+      <h2>Admin Console</h2>
+      <p class="lead">Kelola akun & saluran WhatsApp Glass dalam satu panel.</p>
+      <div class="err" id="gate-err"></div>
+      <input type="password" id="gate-pw" placeholder="Password admin" autocomplete="current-password" />
+      <button class="btn-primary" onclick="tryLogin()">Masuk ke panel</button>
+    </div>
+  </div>
+
+  <div class="shell">
+    <div class="topbar">
+      <div class="brand">
+        <div class="brand-icon"><i class="fas fa-shield-halved"></i></div>
+        <div>
+          <h1>Admin Console</h1>
+          <div class="sub" id="last-sync">Memuat data…</div>
+        </div>
+      </div>
+      <div class="top-actions">
+        <button class="icon-btn" onclick="toggleTheme()" title="Tema"><i class="fas fa-moon" id="theme-ico"></i></button>
+        <button class="icon-btn" onclick="refreshAll()" title="Refresh"><i class="fas fa-rotate"></i></button>
+      </div>
+    </div>
+
+    <div class="tabs">
+      <button class="tab active" id="tab-users" onclick="switchAdminTab('users')">
+        <i class="fas fa-users"></i> Akun <span class="cnt" id="cnt-users">0</span>
+      </button>
+      <button class="tab" id="tab-channels" onclick="switchAdminTab('channels')">
+        <i class="fas fa-broadcast-tower"></i> Saluran <span class="cnt" id="cnt-channels">0</span>
+      </button>
+      <button class="tab" id="tab-settings" onclick="switchAdminTab('settings')">
+        <i class="fas fa-gear"></i> Pengaturan
+      </button>
+    </div>
+
+    <!-- USERS SECTION -->
+    <div class="panel-section active" id="sec-users">
+      <div class="stats">
+        <div class="stat"><div class="n" id="s-total">0</div><div class="l">Total akun</div></div>
+        <div class="stat"><div class="n" id="s-verified">0</div><div class="l">Verified</div></div>
+        <div class="stat"><div class="n" id="s-staff">0</div><div class="l">Staff & admin</div></div>
+        <div class="stat"><div class="n" id="s-banned">0</div><div class="l">Banned</div></div>
+      </div>
+      <div class="search-bar">
+        <i class="fas fa-magnifying-glass"></i>
+        <input type="search" id="q-users" placeholder="Cari nama, email, atau ID (whya1234)…" oninput="renderUsers()" />
+      </div>
+      <div class="list" id="list-users"></div>
+    </div>
+
+    <!-- CHANNELS SECTION -->
+    <div class="panel-section" id="sec-channels">
+      <div class="stats">
+        <div class="stat"><div class="n" id="c-total">0</div><div class="l">Total saluran</div></div>
+        <div class="stat"><div class="n" id="c-verified">0</div><div class="l">Verified</div></div>
+        <div class="stat"><div class="n" id="c-followers">0</div><div class="l">Total pengikut</div></div>
+        <div class="stat"><div class="n" id="c-avg">0</div><div class="l">Rata-rata ikut</div></div>
+      </div>
+      <div class="search-bar">
+        <i class="fas fa-magnifying-glass"></i>
+        <input type="search" id="q-channels" placeholder="Cari nama atau ID saluran (ch1234)…" oninput="renderChannels()" />
+      </div>
+      <div class="list" id="list-channels"></div>
+    </div>
+  </div>
+
+
+    <!-- SETTINGS SECTION -->
+    <div class="panel-section" id="sec-settings">
+      <div class="acc open" style="margin-bottom:14px">
+        <div class="acc-body" style="display:block;border-top:none">
+          <div class="panel">
+            <div class="ctrl-block">
+              <label>Banner login / daftar (16:9)</label>
+              <p style="font-size:12.5px;color:var(--muted);margin-bottom:10px;line-height:1.45">
+                URL foto atau video yang tampil di atas form login &amp; daftar. Kosongkan untuk default.
+              </p>
+              <input class="ctrl" type="url" id="set-login-banner" placeholder="https://… (jpg/png/mp4/webm)" />
+              <div style="margin-top:10px;aspect-ratio:16/9;border-radius:12px;overflow:hidden;background:rgba(0,0,0,.25);border:1px solid var(--border);display:flex;align-items:center;justify-content:center" id="banner-preview">
+                <span style="color:var(--muted);font-size:13px">Preview</span>
+              </div>
+            </div>
+            <div class="action-grid" style="margin-top:12px">
+              <button class="act act-save" onclick="saveLoginBanner()"><i class="fas fa-floppy-disk"></i> Simpan banner</button>
+              <button class="act act-ban" onclick="clearLoginBanner()"><i class="fas fa-trash"></i> Hapus banner</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  <div class="toast" id="toast">OK</div>
+
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+  <script>
+    const ADMIN_PASSWORD = "admin123";
+    const firebaseConfig = {
+      apiKey: "AIzaSyC1I2WinNF1_KrS8ijNmQr07dqGN4-EWhE",
+      authDomain: "chat2-b2a96.firebaseapp.com",
+      databaseURL: "https://chat2-b2a96-default-rtdb.firebaseio.com",
+      projectId: "chat2-b2a96",
+      storageBucket: "chat2-b2a96.firebasestorage.app",
+      messagingSenderId: "298844453442",
+      appId: "1:298844453442:web:62a1a1187c87f0e8954bdb",
+      measurementId: "G-JL1SMHSJMX"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    const ROLES = [
+      { id: "user", label: "User" },
+      { id: "moderator", label: "Moderator" },
+      { id: "staff", label: "Staf" },
+      { id: "admin", label: "Admin" },
+      { id: "owner", label: "Owner" }
+    ];
+    
+    const BADGE_STYLES = [
+      { id: "none", label: "Tanpa centang", type: "none" },
+      { id: "blue", label: "Biru", type: "solid", color: "#1D9BF0" },
+      { id: "gradient-sunset", label: "Sunset", type: "gradient", colors: ["#FF6B6B", "#FF8E53", "#FFD93D"] },
+      { id: "gradient-ocean", label: "Ocean", type: "gradient", colors: ["#00C9FF", "#92FE9D"] },
+      { id: "orange-glow", label: "Orange glow", type: "glow", color: "#F97316" },
+      { id: "sky", label: "Sky", type: "solid", color: "#38BDF8" },
+      { id: "gold", label: "Emas", type: "solid", color: "#EAB308" },
+      { id: "pastel-rainbow", label: "Pastel", type: "gradient", colors: ["#F9A8D4", "#C4B5FD", "#93C5FD"] },
+      { id: "yellow", label: "Kuning", type: "solid", color: "#FACC15" },
+      { id: "green-neon", label: "Hijau neon", type: "glow", color: "#22C55E" },
+      { id: "pink-glow", label: "Pink glow", type: "glow", color: "#EC4899" },
+      { id: "mint", label: "Mint", type: "solid", color: "#2DD4BF" },
+      { id: "red-glow", label: "Merah glow", type: "glow", color: "#EF4444" },
+      { id: "cyan-glow", label: "Cyan glow", type: "glow", color: "#06B6D4" },
+      { id: "rose", label: "Rose", type: "solid", color: "#FB7185" },
+      { id: "silver", label: "Silver", type: "gradient", colors: ["#E5E7EB", "#9CA3AF", "#D1D5DB"] },
+      { id: "emerald", label: "Emerald", type: "solid", color: "#10B981" },
+      { id: "blue-bright", label: "Biru terang", type: "solid", color: "#3B82F6" },
+      { id: "red", label: "Merah", type: "solid", color: "#DC2626" },
+      { id: "amber", label: "Amber", type: "solid", color: "#F59E0B" },
+      { id: "gray", label: "Abu", type: "solid", color: "#6B7280" },
+      { id: "green", label: "Hijau", type: "solid", color: "#16A34A" },
+      { id: "purple", label: "Ungu", type: "solid", color: "#A855F7" },
+      { id: "pink", label: "Pink", type: "solid", color: "#EC4899" },
+      { id: "orange", label: "Oranye", type: "solid", color: "#EA580C" },
+      { id: "teal", label: "Teal", type: "solid", color: "#14B8A6" },
+      { id: "indigo", label: "Indigo", type: "solid", color: "#6366F1" },
+      { id: "black", label: "Hitam", type: "solid", color: "#111827" },
+      { id: "white", label: "Putih", type: "solid", color: "#E5E7EB" },
+      { id: "violet-glow", label: "Violet glow", type: "glow", color: "#8B5CF6" },
+      { id: "lime", label: "Lime", type: "solid", color: "#84CC16" }
+    ];
+
+    const BADGE_COLORS = [
+      { id: "blue", label: "Blue", color: "#1D9BF0" },
+      { id: "sky", label: "Sky", color: "#0EA5E9" },
+      { id: "cyan", label: "Cyan", color: "#06B6D4" },
+      { id: "teal", label: "Teal", color: "#14B8A6" },
+      { id: "green", label: "Green", color: "#22C55E" },
+      { id: "lime", label: "Lime", color: "#84CC16" },
+      { id: "emerald", label: "Emerald", color: "#10B981" },
+      { id: "red", label: "Red", color: "#EF4444" },
+      { id: "rose", label: "Rose", color: "#F43F5E" },
+      { id: "pink", label: "Pink", color: "#EC4899" },
+      { id: "fuchsia", label: "Fuchsia", color: "#D946EF" },
+      { id: "purple", label: "Purple", color: "#A855F7" },
+      { id: "violet", label: "Violet", color: "#8B5CF6" },
+      { id: "indigo", label: "Indigo", color: "#6366F1" },
+      { id: "orange", label: "Orange", color: "#F97316" },
+      { id: "amber", label: "Amber", color: "#F59E0B" },
+      { id: "gold", label: "Gold", color: "#EAB308" },
+      { id: "yellow", label: "Yellow", color: "#FACC15" },
+      { id: "black", label: "Black", color: "#111827" },
+      { id: "gray", label: "Gray", color: "#6B7280" },
+      { id: "slate", label: "Slate", color: "#475569" },
+      { id: "brown", label: "Brown", color: "#92400E" },
+      { id: "maroon", label: "Maroon", color: "#9F1239" },
+      { id: "navy", label: "Navy", color: "#1E3A8A" },
+      { id: "mint", label: "Mint", color: "#2DD4BF" },
+      { id: "coral", label: "Coral", color: "#FB7185" },
+      { id: "white", label: "White", color: "#E5E7EB" }
+    ];
+
+    let users = [];
+    let channels = [];
+    let openUserId = null;
+    let openChannelId = null;
+    let adminTab = "users";
+
+    function tryLogin() {
+      var pw = document.getElementById("gate-pw").value;
+      var err = document.getElementById("gate-err");
+      if (pw === ADMIN_PASSWORD) {
+        sessionStorage.setItem("admin_ok", "1");
+        document.getElementById("gate").classList.add("hidden");
+        refreshAll();
+      } else err.textContent = "Password salah";
+    }
+    document.getElementById("gate-pw").addEventListener("keydown", function (e) {
+      if (e.key === "Enter") tryLogin();
+    });
+    if (sessionStorage.getItem("admin_ok") === "1") {
+      document.getElementById("gate").classList.add("hidden");
+      refreshAll();
+    }
+
+    function toggleTheme() {
+      var next = document.body.getAttribute("data-theme") === "dark" ? "light" : "dark";
+      document.body.setAttribute("data-theme", next);
+      localStorage.setItem("admin_theme", next);
+      document.getElementById("theme-ico").className = next === "dark" ? "fas fa-moon" : "fas fa-sun";
+    }
+    (function () {
+      var t = localStorage.getItem("admin_theme");
+      if (t) {
+        document.body.setAttribute("data-theme", t);
+        document.getElementById("theme-ico").className = t === "dark" ? "fas fa-moon" : "fas fa-sun";
+      }
+    })();
+
+    function switchAdminTab(name) {
+      adminTab = name;
+      document.getElementById("tab-users").classList.toggle("active", name === "users");
+      document.getElementById("tab-channels").classList.toggle("active", name === "channels");
+      var ts = document.getElementById("tab-settings");
+      if (ts) ts.classList.toggle("active", name === "settings");
+      document.getElementById("sec-users").classList.toggle("active", name === "users");
+      document.getElementById("sec-channels").classList.toggle("active", name === "channels");
+      var ss = document.getElementById("sec-settings");
+      if (ss) ss.classList.toggle("active", name === "settings");
+      if (name === "settings") loadLoginBannerSetting();
+    }
+
+    
+    function badgeStyleById(id) {
+      if (!id || id === "none") return null;
+      for (var i = 0; i < BADGE_STYLES.length; i++) {
+        if (BADGE_STYLES[i].id === id) return BADGE_STYLES[i];
+      }
+      // fallback solid from old BADGE_COLORS
+      var f = BADGE_COLORS.find(function (b) { return b.id === id; });
+      if (f) return { id: f.id, label: f.label, type: "solid", color: f.color };
+      return { id: "blue", label: "Biru", type: "solid", color: "#1D9BF0" };
+    }
+    function badgeSvg(colorOrId) {
+      var st = null;
+      if (typeof colorOrId === "string" && colorOrId.charAt(0) === "#") {
+        st = { type: "solid", color: colorOrId };
+      } else {
+        st = badgeStyleById(colorOrId) || { type: "solid", color: colorOrId || "#1D9BF0" };
+      }
+      if (!st || st.type === "none") {
+        return '<span class="none-ico">∅</span>';
+      }
+      var fill = st.color || "#1D9BF0";
+      var glow = "";
+      if (st.type === "gradient" && st.colors && st.colors.length) {
+        var gid = "g" + Math.random().toString(36).slice(2, 8);
+        var stops = st.colors.map(function (c, i) {
+          return '<stop offset="' + Math.round(i / (st.colors.length - 1 || 1) * 100) + '%" stop-color="' + c + '"/>';
+        }).join("");
+        return '<svg viewBox="0 0 24 24" width="28" height="28"><defs><linearGradient id="' + gid + '" x1="0%" y1="0%" x2="100%" y2="100%">' + stops + '</linearGradient></defs><circle cx="12" cy="12" r="11" fill="url(#' + gid + ')"/><path fill="#fff" d="M10.2 15.8L6.7 12.3l1.4-1.4 2.1 2.1 5.2-5.2 1.4 1.4-6.6 6.6z"/></svg>';
+      }
+      if (st.type === "glow") {
+        return '<svg viewBox="0 0 24 24" width="28" height="28" style="filter:drop-shadow(0 0 4px ' + fill + ')"><circle cx="12" cy="12" r="11" fill="' + fill + '"/><path fill="#fff" d="M10.2 15.8L6.7 12.3l1.4-1.4 2.1 2.1 5.2-5.2 1.4 1.4-6.6 6.6z"/></svg>';
+      }
+      // solid
+      if (fill === "#E5E7EB" || fill === "#e5e7eb") {
+        return '<svg viewBox="0 0 24 24" width="28" height="28"><circle cx="12" cy="12" r="11" fill="#E5E7EB" stroke="#9CA3AF" stroke-width="1"/><path fill="#111827" d="M10.2 15.8L6.7 12.3l1.4-1.4 2.1 2.1 5.2-5.2 1.4 1.4-6.6 6.6z"/></svg>';
+      }
+      return '<svg viewBox="0 0 24 24" width="28" height="28"><circle cx="12" cy="12" r="11" fill="' + fill + '"/><path fill="#fff" d="M10.2 15.8L6.7 12.3l1.4-1.4 2.1 2.1 5.2-5.2 1.4 1.4-6.6 6.6z"/></svg>';
+    }
+    function colorOf(id) {
+      var st = badgeStyleById(id);
+      if (!st) return "#1D9BF0";
+      if (st.color) return st.color;
+      if (st.colors && st.colors[0]) return st.colors[0];
+      var f = BADGE_COLORS.find(function (b) { return b.id === id; });
+      return f ? f.color : "#1D9BF0";
+    }
+
+    function roleLabel(r) {
+      var f = ROLES.find(function (x) { return x.id === r; });
+      return f ? f.label : "User";
+    }
+    function esc(s) {
+      return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+    }
+    function toast(msg) {
+      var t = document.getElementById("toast");
+      t.textContent = msg;
+      t.classList.add("show");
+      setTimeout(function () { t.classList.remove("show"); }, 1800);
+    }
+    function copyTxt(t) {
+      navigator.clipboard.writeText(t).then(function () { toast("Disalin"); }).catch(function () { alert(t); });
+    }
+
+    function refreshAll() {
+      document.getElementById("last-sync").textContent = "Memuat…";
+      Promise.all([
+        db.ref("users").once("value"),
+        db.ref("channels").once("value")
+      ]).then(function (res) {
+        var uv = res[0].val() || {};
+        users = Object.keys(uv).map(function (id) {
+          var u = uv[id] || {};
+          return {
+            id: u.id || id, publicId: u.publicId || "—", name: u.name || "—", email: u.email || "—",
+            passwordPlain: u.passwordPlain || null, avatar: u.avatar || (u.name || "?").charAt(0).toUpperCase(),
+            photoURL: u.photoURL || null, verified: !!u.verified, badgeColor: u.badgeColor || "blue",
+            role: u.role || "user", banned: !!u.banned, createdAt: u.createdAt || null
+          };
+        }).sort(function (a, b) { return (b.createdAt || 0) - (a.createdAt || 0); });
+
+        var cv = res[1].val() || {};
+        channels = Object.keys(cv).map(function (id) {
+          var c = cv[id] || {};
+          return {
+            id: c.id || id, publicId: c.publicId || "—", name: c.name || "—", desc: c.desc || "",
+            ownerId: c.ownerId || "", ownerName: c.ownerName || "—",
+            photoURL: c.photoURL || null, avatar: c.avatar || (c.name || "S").charAt(0).toUpperCase(),
+            followers: typeof c.followers === "number" ? c.followers : (c.members ? Object.keys(c.members).length : 0),
+            verified: !!c.verified, badgeColor: c.badgeColor || "blue", createdAt: c.createdAt || null,
+            suspended: !!c.suspended
+          };
+        }).sort(function (a, b) { return (b.createdAt || 0) - (a.createdAt || 0); });
+
+        // backfill channel public ids missing
+        channels.forEach(function (c) {
+          if (!c.publicId || c.publicId === "—") {
+            ensureChannelPublicId(c);
+          }
+        });
+
+        document.getElementById("cnt-users").textContent = users.length;
+        document.getElementById("cnt-channels").textContent = channels.length;
+        document.getElementById("last-sync").textContent =
+          users.length + " akun · " + channels.length + " saluran · " + new Date().toLocaleTimeString("id-ID");
+        renderUsers();
+        renderChannels();
+      }).catch(function (err) {
+        document.getElementById("last-sync").textContent = "Gagal memuat";
+        toast("Error: " + (err.message || err));
+      });
+    }
+
+    async function ensureChannelPublicId(c) {
+      try {
+        var n = Math.floor(1000 + Math.random() * 9000);
+        var pid = "ch" + n;
+        var snap = await db.ref("channelPublicIds/" + pid).once("value");
+        if (snap.exists()) pid = "ch" + String(Date.now()).slice(-4);
+        await db.ref("channels/" + c.id + "/publicId").set(pid);
+        await db.ref("channelPublicIds/" + pid).set(c.id);
+        c.publicId = pid;
+      } catch (e) {}
+    }
+
+    /* ===== USERS ===== */
+    
+    
+    
+    
+    
+    
+    function badgePaletteHTML(uid, activeColor) {
+      var html = '<div class="palette-section"><div class="plab">Centang (' + (BADGE_STYLES.length - 1) + ' gaya)</div><div class="badge-grid">';
+      BADGE_STYLES.forEach(function (b) {
+        var act = (activeColor === b.id || (!activeColor && b.id === "none") || (activeColor === "" && b.id === "none")) ? " active" : "";
+        if (b.id === "none") {
+          html += '<button type="button" class="badge-cell' + act + '" title="Tanpa centang" onclick="setUserBadge(\'' + uid + '\',\'\')"><span class="none-ico">∅</span></button>';
+        } else {
+          html += '<button type="button" class="badge-cell' + act + '" title="' + b.label + '" onclick="setUserBadge(\'' + uid + '\',\'' + b.id + '\')">' + badgeSvg(b.id) + '</button>';
+        }
+      });
+      html += '</div></div>';
+      return html;
+    }
+    function rolePaletteHTML(uid, activeRole) {
+      var html = '<div class="palette-section"><div class="plab">Role situs</div><div class="role-grid">';
+      ROLES.forEach(function (r) {
+        var act = (activeRole || "user") === r.id ? " active" : "";
+        html += '<button type="button" class="role-chip-btn' + act + '" onclick="setRole(\'' + uid + '\',\'' + r.id + '\')">' + r.label + '</button>';
+      });
+      html += '</div></div>';
+      return html;
+    }
+    function channelBadgePaletteHTML(cid, activeColor) {
+      var html = '<div class="palette-section"><div class="plab">Centang saluran</div><div class="badge-grid">';
+      BADGE_STYLES.forEach(function (b) {
+        var act = (activeColor === b.id || (!activeColor && b.id === "none")) ? " active" : "";
+        if (b.id === "none") {
+          html += '<button type="button" class="badge-cell' + act + '" onclick="setChannelBadge(\'' + cid + '\',\'\')"><span class="none-ico">∅</span></button>';
+        } else {
+          html += '<button type="button" class="badge-cell' + act + '" title="' + b.label + '" onclick="setChannelBadge(\'' + cid + '\',\'' + b.id + '\')">' + badgeSvg(b.id) + '</button>';
+        }
+      });
+      html += '</div></div>';
+      return html;
+    }
+
+    function updateUserPreview(uid) {
+      var u = users.find(function (x) { return x.id === uid; });
+      if (!u) return;
+      var box = document.getElementById("user-preview-" + uid);
+      if (box) {
+        box.innerHTML = '<div class="pname">' + esc(u.name) + (u.verified ? badgeSvg(u.badgeColor || "blue") : "") + '</div>' +
+          '<span class="chip chip-role-' + esc(u.role || "user") + '">' + esc(roleLabel(u.role)) + "</span>" +
+          (u.verified ? '<span class="chip chip-verified">' + esc(u.badgeColor || "blue") + "</span>" : "");
+      }
+      var bp = document.getElementById("badge-pal-" + uid);
+      if (bp) bp.innerHTML = badgePaletteHTML(uid, u.verified ? u.badgeColor : "");
+      var rp = document.getElementById("role-pal-" + uid);
+      if (rp) rp.innerHTML = rolePaletteHTML(uid, u.role);
+      var bs = document.getElementById("badge-sel-" + uid);
+      if (bs) bs.value = u.verified ? (u.badgeColor || "blue") : "";
+      var rs = document.getElementById("role-sel-" + uid);
+      if (rs) rs.value = u.role || "user";
+    }
+
+
+    function renderUsers() {
+      var q = (document.getElementById("q-users").value || "").toLowerCase().trim();
+      var filtered = !q ? users : users.filter(function (u) {
+        return (u.name + " " + u.email + " " + u.id + " " + (u.publicId || "")).toLowerCase().indexOf(q) >= 0;
+      });
+      document.getElementById("s-total").textContent = users.length;
+      document.getElementById("s-verified").textContent = users.filter(function (u) { return u.verified; }).length;
+      document.getElementById("s-banned").textContent = users.filter(function (u) { return u.banned; }).length;
+      document.getElementById("s-staff").textContent = users.filter(function (u) { return u.role && u.role !== "user"; }).length;
+
+      var box = document.getElementById("list-users");
+      if (!filtered.length) {
+        box.innerHTML = '<div class="empty"><i class="fas fa-user-slash"></i>Tidak ada akun</div>';
+        return;
+      }
+      box.innerHTML = filtered.map(function (u) {
+        var isOpen = openUserId === u.id;
+        var av = u.photoURL ? '<img src="' + esc(u.photoURL) + '">' : esc(String(u.avatar).charAt(0));
+        var badge = u.verified ? badgeSvg(colorOf(u.badgeColor)) : "";
+        var chips = '<span class="chip chip-role-' + esc(u.role || "user") + '">' + esc(roleLabel(u.role)) + "</span>";
+        if (u.verified) chips += '<span class="chip chip-verified">Verified · ' + esc(u.badgeColor) + "</span>";
+        if (u.banned) chips += '<span class="chip chip-banned">Banned</span>';
+        var roleOpts = ROLES.map(function (r) {
+          return '<option value="' + r.id + '"' + (u.role === r.id ? " selected" : "") + ">" + r.label + "</option>";
+        }).join("");
+        var colorOpts = BADGE_COLORS.map(function (b) {
+          return '<option value="' + b.id + '"' + (u.badgeColor === b.id ? " selected" : "") + ">" + b.label + "</option>";
+        }).join("");
+        return '<div class="acc' + (isOpen ? " open" : "") + '">' +
+          '<div class="acc-head" onclick="toggleUser(\'' + esc(u.id) + '\')">' +
+            '<div class="avatar">' + av + '</div>' +
+            '<div class="acc-info"><div class="acc-name">' + esc(u.name) + " " + badge + '</div>' +
+            '<div class="acc-id">ID <b>' + esc(u.publicId) + '</b> · ' + esc(u.email) + '</div>' +
+            '<div class="chips">' + chips + '</div></div>' +
+            '<div class="chev"><i class="fas fa-chevron-down"></i></div></div>' +
+          '<div class="acc-body"><div class="panel">' +
+            '<div class="panel-grid">' +
+              '<div class="field"><div class="lab">Public ID</div><div class="val mono" onclick="copyTxt(\'' + esc(u.publicId) + '\')">' + esc(u.publicId) + ' <i class="fas fa-copy"></i></div></div>' +
+              '<div class="field"><div class="lab">Email</div><div class="val" onclick="copyTxt(\'' + esc(u.email) + '\')">' + esc(u.email) + ' <i class="fas fa-copy"></i></div></div>' +
+              '<div class="field"><div class="lab">User key</div><div class="val mono" onclick="copyTxt(\'' + esc(u.id) + '\')">' + esc(u.id) + ' <i class="fas fa-copy"></i></div></div>' +
+              '<div class="field"><div class="lab">Password</div><div class="val pw mono">' + esc(u.passwordPlain || "— tidak tersimpan —") + '</div></div>' +
+            '</div>' +
+            '<div class="ctrl-row">' +
+              '<div class="ctrl-block"><label>Role akun</label><select class="ctrl" id="role-sel-' + esc(u.id) + '" onchange="setRole(\'' + esc(u.id) + '\',this.value);updateUserPreview(\'' + esc(u.id) + '\')">' + roleOpts + '</select>' +
+                '<div class="role-palette" id="role-pal-' + esc(u.id) + '">' + rolePaletteHTML(u.id, u.role) + '</div></div>' +
+              '<div class="ctrl-block"><label>Warna centang</label><select class="ctrl" id="badge-sel-' + esc(u.id) + '" onchange="setUserBadge(\'' + esc(u.id) + '\',this.value);updateUserPreview(\'' + esc(u.id) + '\')">' +
+                '<option value="">Tidak verified</option>' + colorOpts + '</select>' +
+                '<div class="badge-palette" id="badge-pal-' + esc(u.id) + '">' + badgePaletteHTML(u.id, u.verified ? u.badgeColor : '') + '</div></div>' +
+            '</div>' +
+            '<div class="preview-card" id="user-preview-' + esc(u.id) + '">' +
+              '<div class="pname">' + esc(u.name) + (u.verified ? badgeSvg(u.badgeColor || 'blue') : '') + '</div>' +
+              '<span class="chip chip-role-' + esc(u.role || 'user') + '">' + esc(roleLabel(u.role)) + '</span>' +
+              (u.verified ? '<span class="chip chip-verified">' + esc(u.badgeColor || 'blue') + '</span>' : '') +
+            '</div>' +
+'<div class="action-grid">' +
+              '<button class="act act-verify" onclick="toggleUserVerified(\'' + esc(u.id) + '\',' + (u.verified ? "false" : "true") + ')"><i class="fas fa-badge-check"></i> ' + (u.verified ? "Cabut centang" : "Beri centang") + '</button>' +
+              '<button class="act act-pass" onclick="setPassword(\'' + esc(u.id) + '\')"><i class="fas fa-key"></i> Set password</button>' +
+              '<button class="act ' + (u.banned ? "act-unban" : "act-ban") + '" onclick="toggleBan(\'' + esc(u.id) + '\',' + (u.banned ? "false" : "true") + ')"><i class="fas fa-ban"></i> ' + (u.banned ? "Unban" : "Ban") + '</button>' +
+              '<button class="act act-delete" onclick="deleteUser(\'' + esc(u.id) + '\',\'' + esc(u.publicId) + '\')"><i class="fas fa-trash"></i> Hapus akun</button>' +
+            '</div></div></div></div>';
+      }).join("");
+    }
+
+    function toggleUser(id) { openUserId = openUserId === id ? null : id; renderUsers(); }
+
+    async function setRole(uid, role) {
+      await db.ref("users/" + uid + "/role").set(role || "user");
+      var u = users.find(function (x) { return x.id === uid; });
+      if (u) u.role = role || "user";
+      toast("Role → " + roleLabel(role));
+        updateUserPreview(uid);
+        // soft refresh chips on head without full collapse
+        renderUsers();
+    }
+    async function setUserBadge(uid, color) {
+      if (!color) {
+        await db.ref("users/" + uid).update({ verified: false });
+        var u = users.find(function (x) { return x.id === uid; });
+        if (u) u.verified = false;
+      } else {
+        await db.ref("users/" + uid).update({ verified: true, badgeColor: color });
+        var u2 = users.find(function (x) { return x.id === uid; });
+        if (u2) { u2.verified = true; u2.badgeColor = color; }
+      }
+      toast("Centang akun diperbarui");
+        updateUserPreview(uid);
+        renderUsers();
+    }
+    async function toggleUserVerified(uid, on) {
+      var updates = { verified: !!on };
+      if (on) {
+        var u = users.find(function (x) { return x.id === uid; });
+        updates.badgeColor = (u && u.badgeColor) || "blue";
+      }
+      await db.ref("users/" + uid).update(updates);
+      var uu = users.find(function (x) { return x.id === uid; });
+      if (uu) { uu.verified = !!on; if (on && !uu.badgeColor) uu.badgeColor = "blue"; }
+      toast(on ? "Verified" : "Centang dicabut"); renderUsers();
+    }
+    async function toggleBan(uid, on) {
+      await db.ref("users/" + uid + "/banned").set(!!on);
+      var u = users.find(function (x) { return x.id === uid; });
+      if (u) u.banned = !!on;
+      toast(on ? "Banned" : "Unban"); renderUsers();
+    }
+    async function setPassword(uid) {
+      var pw = prompt("Password baru:");
+      if (!pw || pw.length < 4) return alert("Minimal 4 karakter");
+      function simpleHash(str) {
+        var h = 0; str = String(str);
+        for (var i = 0; i < str.length; i++) { h = ((h << 5) - h) + str.charCodeAt(i); h |= 0; }
+        return "p_" + Math.abs(h).toString(16) + "_" + str.length;
+      }
+      await db.ref("users/" + uid).update({ password: simpleHash(pw), passwordPlain: pw });
+      var u = users.find(function (x) { return x.id === uid; });
+      if (u) u.passwordPlain = pw;
+      toast("Password disimpan"); renderUsers();
+    }
+    async function deleteUser(uid, publicId) {
+      if (!confirm("Hapus akun permanen? Gmail bisa didaftarkan ulang setelah ini.")) return;
+      try {
+        var snap = await db.ref("users/" + uid).once("value");
+        var u = snap.val() || {};
+        var pid = publicId || u.publicId || "";
+        var tasks = [
+          db.ref("users/" + uid).remove(),
+          db.ref("userChats/" + uid).remove(),
+          db.ref("presence/" + uid).remove(),
+          db.ref("channelFollows/" + uid).remove()
+        ];
+        if (pid && pid !== "—") tasks.push(db.ref("publicIds/" + pid).remove());
+        // bersihkan referensi chat di akun lain
+        try {
+          var uc = (await db.ref("userChats").once("value")).val() || {};
+          Object.keys(uc).forEach(function (ownerId) {
+            var rooms = uc[ownerId] || {};
+            Object.keys(rooms).forEach(function (roomId) {
+              var c = rooms[roomId] || {};
+              if (c.peerId === uid || roomId.indexOf(uid) !== -1) {
+                tasks.push(db.ref("userChats/" + ownerId + "/" + roomId).remove());
+              }
+            });
+          });
+        } catch (e) {}
+        await Promise.all(tasks);
+        toast("Akun dihapus — Gmail bisa dipakai lagi");
+        refreshAll();
+      } catch (e) {
+        alert("Gagal hapus: " + (e.message || e));
+      }
+    }
+
+    /* ===== CHANNELS ===== */
+    function renderChannels() {
+      var q = (document.getElementById("q-channels").value || "").toLowerCase().trim();
+      var filtered = !q ? channels : channels.filter(function (c) {
+        return (c.name + " " + c.publicId + " " + c.id + " " + c.ownerName).toLowerCase().indexOf(q) >= 0;
+      });
+      var totalF = channels.reduce(function (a, c) { return a + (c.followers || 0); }, 0);
+      document.getElementById("c-total").textContent = channels.length;
+      document.getElementById("c-verified").textContent = channels.filter(function (c) { return c.verified; }).length;
+      document.getElementById("c-followers").textContent = totalF;
+      document.getElementById("c-avg").textContent = channels.length ? Math.round(totalF / channels.length) : 0;
+
+      var box = document.getElementById("list-channels");
+      if (!filtered.length) {
+        box.innerHTML = '<div class="empty"><i class="fas fa-broadcast-tower"></i>Belum ada saluran</div>';
+        return;
+      }
+      box.innerHTML = filtered.map(function (c) {
+        var isOpen = openChannelId === c.id;
+        var av = c.photoURL ? '<img src="' + esc(c.photoURL) + '">' : esc(String(c.avatar).charAt(0));
+        var badge = c.verified ? badgeSvg(colorOf(c.badgeColor)) : "";
+        var chips = '<span class="chip chip-verified">' + (c.followers || 0) + ' pengikut</span>';
+        if (c.verified) chips += '<span class="chip chip-verified">Verified · ' + esc(c.badgeColor) + '</span>';
+        if (c.suspended) chips += '<span class="chip chip-banned">Ditangguhkan</span>';
+        var colorOpts = BADGE_COLORS.map(function (b) {
+          return '<option value="' + b.id + '"' + (c.badgeColor === b.id ? " selected" : "") + ">" + b.label + "</option>";
+        }).join("");
+        return '<div class="acc' + (isOpen ? " open" : "") + '">' +
+          '<div class="acc-head" onclick="toggleChannel(\'' + esc(c.id) + '\')">' +
+            '<div class="avatar ch">' + av + '</div>' +
+            '<div class="acc-info"><div class="acc-name">' + esc(c.name) + " " + badge + '</div>' +
+            '<div class="acc-id">ID <b>' + esc(c.publicId) + '</b> · owner: ' + esc(c.ownerName) + '</div>' +
+            '<div class="chips">' + chips + '</div></div>' +
+            '<div class="chev"><i class="fas fa-chevron-down"></i></div></div>' +
+          '<div class="acc-body"><div class="panel">' +
+            '<div class="panel-grid">' +
+              '<div class="field"><div class="lab">Channel ID</div><div class="val mono" onclick="copyTxt(\'' + esc(c.publicId) + '\')">' + esc(c.publicId) + ' <i class="fas fa-copy"></i></div></div>' +
+              '<div class="field"><div class="lab">Owner</div><div class="val">' + esc(c.ownerName) + '</div></div>' +
+              '<div class="field"><div class="lab">Key Firebase</div><div class="val mono" onclick="copyTxt(\'' + esc(c.id) + '\')">' + esc(c.id) + ' <i class="fas fa-copy"></i></div></div>' +
+              '<div class="field"><div class="lab">Deskripsi</div><div class="val">' + esc(c.desc || "—") + '</div></div>' +
+            '</div>' +
+            '<div class="ctrl-row">' +
+              '<div class="ctrl-block"><label>Warna centang saluran</label>' +
+                '<select class="ctrl" onchange="setChannelBadge(\'' + esc(c.id) + '\',this.value)">' +
+                  '<option value="">Tidak verified</option>' + colorOpts + '</select>' +
+                '<div class="badge-palette">' + channelBadgePaletteHTML(c.id, c.verified ? c.badgeColor : '') + '</div>' +
+                '<div class="preview-row" style="margin-top:8px">' +
+                  '<div class="plab">Preview saluran</div>' +
+                  '<div class="preview-name">' + esc(c.name) + (c.verified ? badgeSvg(colorOf(c.badgeColor)) : '') + '</div>' +
+                  (c.verified ? '<span class="chip chip-verified">Verified · ' + esc(c.badgeColor||'blue') + '</span>' : '<span class="chip chip-role-user">Belum verified</span>') +
+                '</div></div>' +'<div class="ctrl-block"><label>Jumlah pengikut</label>' +
+                '<input class="ctrl" type="number" min="0" id="fol-' + esc(c.id) + '" value="' + (c.followers || 0) + '" />' +
+              '</div>' +
+            '</div>' +
+            '<div class="action-grid">' +
+              '<button class="act act-verify" onclick="toggleChannelVerified(\'' + esc(c.id) + '\',' + (c.verified ? "false" : "true") + ')"><i class="fas fa-badge-check"></i> ' + (c.verified ? "Cabut centang" : "Beri centang") + '</button>' +
+              '<button class="act act-save" onclick="saveFollowers(\'' + esc(c.id) + '\')"><i class="fas fa-user-plus"></i> Simpan pengikut</button>' +
+              '<button class="act act-delete" onclick="deleteChannel(\'' + esc(c.id) + '\',\'' + esc(c.publicId) + '\')"><i class="fas fa-trash"></i> Hapus saluran</button>' +
+              '<button class="act ' + (c.suspended ? 'act-unban' : 'act-ban') + '" onclick="toggleChannelSuspend(\'' + esc(c.id) + '\',' + (c.suspended ? 'false' : 'true') + ')"><i class="fas fa-pause"></i> ' + (c.suspended ? 'Cabut penangguhan' : 'Tangguhkan saluran') + '</button>' +
+            '</div></div></div></div>';
+      }).join("");
+    }
+
+    function toggleChannel(id) { openChannelId = openChannelId === id ? null : id; renderChannels(); }
+
+    async function setChannelBadge(cid, color) {
+      if (!color) {
+        await db.ref("channels/" + cid).update({ verified: false });
+        var c = channels.find(function (x) { return x.id === cid; });
+        if (c) c.verified = false;
+      } else {
+        await db.ref("channels/" + cid).update({ verified: true, badgeColor: color });
+        var c2 = channels.find(function (x) { return x.id === cid; });
+        if (c2) { c2.verified = true; c2.badgeColor = color; }
+      }
+      toast("Centang saluran diperbarui"); renderChannels();
+    }
+    async function toggleChannelVerified(cid, on) {
+      var updates = { verified: !!on };
+      if (on) {
+        var c = channels.find(function (x) { return x.id === cid; });
+        updates.badgeColor = (c && c.badgeColor) || "blue";
+      }
+      await db.ref("channels/" + cid).update(updates);
+      var cc = channels.find(function (x) { return x.id === cid; });
+      if (cc) { cc.verified = !!on; if (on && !cc.badgeColor) cc.badgeColor = "blue"; }
+      toast(on ? "Saluran verified" : "Centang dicabut"); renderChannels();
+    }
+    async function saveFollowers(cid) {
+      var inp = document.getElementById("fol-" + cid);
+      var n = parseInt(inp && inp.value, 10);
+      if (isNaN(n) || n < 0) return alert("Angka tidak valid");
+      await db.ref("channels/" + cid + "/followers").set(n);
+      var c = channels.find(function (x) { return x.id === cid; });
+      if (c) c.followers = n;
+      toast("Pengikut: " + n); renderChannels();
+    }
+
+    async function toggleChannelSuspend(cid, on) {
+      await db.ref("channels/" + cid + "/suspended").set(!!on);
+      var c = channels.find(function (x) { return x.id === cid; });
+      if (c) c.suspended = !!on;
+      toast(on ? "Saluran ditangguhkan" : "Penangguhan dicabut");
+      renderChannels();
+    }
+    async function deleteChannel(cid, publicId) {
+      if (!confirm("Hapus saluran ini?")) return;
+      var tasks = [db.ref("channels/" + cid).remove()];
+      if (publicId && publicId !== "—") tasks.push(db.ref("channelPublicIds/" + publicId).remove());
+      // clean follows
+      var follows = (await db.ref("channelFollows").once("value")).val() || {};
+      Object.keys(follows).forEach(function (uid) {
+        if (follows[uid] && follows[uid][cid]) {
+          tasks.push(db.ref("channelFollows/" + uid + "/" + cid).remove());
+        }
+      });
+      await Promise.all(tasks);
+      toast("Saluran dihapus"); refreshAll();
+    }
+
+    function previewBannerUrl(url) {
+      var box = document.getElementById("banner-preview");
+      if (!box) return;
+      if (!url) {
+        box.innerHTML = '<span style="color:var(--muted);font-size:13px">Preview</span>';
+        return;
+      }
+      var isVid = /\.(mp4|webm|mov)(\?|$)/i.test(url);
+      if (isVid) box.innerHTML = '<video src="'+url+'" autoplay muted loop playsinline style="width:100%;height:100%;object-fit:cover"></video>';
+      else box.innerHTML = '<img src="'+url+'" alt="" style="width:100%;height:100%;object-fit:cover" onerror="this.parentNode.innerHTML=\'<span style=color:var(--muted)>Gagal muat</span>\'">';
+    }
+    async function loadLoginBannerSetting() {
+      try {
+        var snap = await db.ref("appSettings/loginBanner").once("value");
+        var url = snap.val() || "";
+        var inp = document.getElementById("set-login-banner");
+        if (inp) inp.value = url;
+        previewBannerUrl(url);
+      } catch (e) { toast("Gagal muat pengaturan"); }
+    }
+    async function saveLoginBanner() {
+      var url = (document.getElementById("set-login-banner").value || "").trim();
+      await db.ref("appSettings/loginBanner").set(url || null);
+      previewBannerUrl(url);
+      toast(url ? "Banner disimpan" : "Banner dikosongkan");
+    }
+    async function clearLoginBanner() {
+      document.getElementById("set-login-banner").value = "";
+      await db.ref("appSettings/loginBanner").set(null);
+      previewBannerUrl("");
+      toast("Banner dihapus");
+    }
+    document.addEventListener("DOMContentLoaded", function () {
+      var inp = document.getElementById("set-login-banner");
+      if (inp) inp.addEventListener("input", function () { previewBannerUrl(inp.value.trim()); });
+    });
+  </script>
+</body>
+</html>
