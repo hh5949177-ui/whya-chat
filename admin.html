@@ -13,7 +13,7 @@
       --ok:#22c55e; --ok-soft:rgba(34,197,94,.15); --danger:#ef4444; --danger-soft:rgba(239,68,68,.15);
       --warn:#f59e0b; --warn-soft:rgba(245,158,11,.15); --radius:16px;
       --shadow:0 8px 32px rgba(0,0,0,.35);
-      --font:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;
+      --font:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
     }
     [data-theme="light"] {
       --bg:#f0f2f5; --bg2:#fff; --card:#fff; --card-hover:#f8fafc;
@@ -299,12 +299,8 @@
     const firebaseConfig = {
       apiKey: "AIzaSyC1I2WinNF1_KrS8ijNmQr07dqGN4-EWhE",
       authDomain: "chat2-b2a96.firebaseapp.com",
-      databaseURL: "https://chat2-b2a96-default-rtdb.firebaseio.com",
-      projectId: "chat2-b2a96",
-      storageBucket: "chat2-b2a96.firebasestorage.app",
-      messagingSenderId: "298844453442",
-      appId: "1:298844453442:web:62a1a1187c87f0e8954bdb",
-      measurementId: "G-JL1SMHSJMX"
+      databaseURL: "https://chat2-b2a96-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "chat2-b2a96"
     };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
@@ -383,6 +379,7 @@
 
     let users = [];
     let channels = [];
+    let webs = [];
     let openUserId = null;
     let openChannelId = null;
     let adminTab = "users";
@@ -533,12 +530,34 @@
           }
         });
 
+        var wv = (res[2] && res[2].val()) || {};
+        webs = Object.keys(wv).map(function (id) {
+          var w = wv[id] || {};
+          return {
+            id: w.id || id,
+            name: w.name || "—",
+            url: w.url || "",
+            photoURL: w.photoURL || "",
+            ownerId: w.ownerId || "",
+            ownerName: w.ownerName || "—",
+            verified: !!w.verified,
+            badgeColor: w.badgeColor || "blue",
+            createdAt: w.createdAt || null,
+            suspended: !!w.suspended,
+            suspendedUntil: w.suspendedUntil || 0,
+            suspendReason: w.suspendReason || ""
+          };
+        }).sort(function (a, b) { return (b.createdAt || 0) - (a.createdAt || 0); });
+
         document.getElementById("cnt-users").textContent = users.length;
         document.getElementById("cnt-channels").textContent = channels.length;
+        var cw = document.getElementById("cnt-webs");
+        if (cw) cw.textContent = webs.length;
         document.getElementById("last-sync").textContent =
           users.length + " akun · " + channels.length + " saluran · " + new Date().toLocaleTimeString("id-ID");
         renderUsers();
         renderChannels();
+        try{ renderWebs(); }catch(e){}
       }).catch(function (err) {
         document.getElementById("last-sync").textContent = "Gagal memuat";
         toast("Error: " + (err.message || err));
@@ -870,14 +889,142 @@
       toast("Pengikut: " + n); renderChannels();
     }
 
-    async function toggleChannelSuspend(cid, on) {
-      await db.ref("channels/" + cid + "/suspended").set(!!on);
+    async async function toggleChannelSuspend(cid, on, days) {
+      days = Number(days || 0);
+      var until = on ? (days > 0 ? Date.now() + days * 86400000 : 0) : 0;
+      await db.ref("channels/" + cid).update({
+        suspended: !!on,
+        suspendedUntil: until,
+        suspendReason: on ? ("Ditangguhkan admin" + (days ? " (" + days + " hari)" : "")) : ""
+      });
       var c = channels.find(function (x) { return x.id === cid; });
-      if (c) c.suspended = !!on;
-      toast(on ? "Saluran ditangguhkan" : "Penangguhan dicabut");
+      if (c) {
+        c.suspended = !!on;
+        c.suspendedUntil = until;
+      }
+      toast(on ? ("Saluran ditangguhkan" + (days ? " " + days + " hari" : "")) : "Penangguhan dicabut");
       renderChannels();
     }
-    async function deleteChannel(cid, publicId) {
+    
+    function renderWebs() {
+      var q = ((document.getElementById("q-webs") || {}).value || "").toLowerCase().trim();
+      var list = typeof webs !== "undefined" ? webs : [];
+      var filtered = !q ? list : list.filter(function (w) {
+        return (w.name + " " + w.url + " " + w.ownerName + " " + w.id).toLowerCase().indexOf(q) >= 0;
+      });
+      var elT = document.getElementById("w-total");
+      var elV = document.getElementById("w-verified");
+      var elS = document.getElementById("w-suspended");
+      var elO = document.getElementById("w-owners");
+      if (elT) elT.textContent = list.length;
+      if (elV) elV.textContent = list.filter(function (w) { return w.verified; }).length;
+      if (elS) elS.textContent = list.filter(function (w) { return w.suspended; }).length;
+      if (elO) {
+        var owners = {};
+        list.forEach(function (w) { if (w.ownerId) owners[w.ownerId] = 1; });
+        elO.textContent = Object.keys(owners).length;
+      }
+      var box = document.getElementById("list-webs");
+      if (!box) return;
+      if (!filtered.length) {
+        box.innerHTML = '<div class="empty">Belum ada web</div>';
+        return;
+      }
+      box.innerHTML = filtered.map(function (w) {
+        var av = w.photoURL
+          ? '<img src="' + esc(w.photoURL) + '" alt="" style="width:44px;height:44px;border-radius:12px;object-fit:cover">'
+          : '<div style="width:44px;height:44px;border-radius:12px;background:rgba(255,255,255,.08);display:flex;align-items:center;justify-content:center"><i class="fas fa-globe"></i></div>';
+        var badge = w.verified ? badgeSvg(w.badgeColor || "blue") : '<span class="none-ico">∅</span>';
+        var susLabel = w.suspended
+          ? ('<span style="color:#fca5a5;font-size:12px">Ditangguhkan' + (w.suspendedUntil ? ' · ' + new Date(w.suspendedUntil).toLocaleDateString("id-ID") : '') + '</span>')
+          : '<span style="color:#86efac;font-size:12px">Aktif</span>';
+        return '<div class="acc" id="web-acc-' + esc(w.id) + '">' +
+          '<div class="acc-head" onclick="this.parentNode.classList.toggle(\'open\')">' +
+            av +
+            '<div style="flex:1;min-width:0">' +
+              '<div class="acc-name" style="display:flex;align-items:center;gap:6px">' + esc(w.name) + ' <span style="display:inline-flex">' + badge + '</span></div>' +
+              '<div class="web-card-url">' + esc(w.url) + '</div>' +
+              '<div style="margin-top:4px">' + susLabel + ' · ' + esc(w.ownerName || "—") + '</div>' +
+            '</div>' +
+            '<i class="fas fa-chevron-down" style="color:var(--muted)"></i>' +
+          '</div>' +
+          '<div class="acc-body">' +
+            '<div class="panel-grid">' +
+              '<div class="field"><div class="lab">ID</div><div class="val mono" onclick="copyTxt(\'' + esc(w.id) + '\')">' + esc(w.id) + '</div></div>' +
+              '<div class="field"><div class="lab">Pemilik</div><div class="val">' + esc(w.ownerName) + '</div></div>' +
+            '</div>' +
+            '<div class="ctrl-block"><label>Centang / badge</label>' +
+              '<div class="badge-grid">' + channelBadgePaletteHTML(w.id, w.verified ? (w.badgeColor || "blue") : "none").replace(/setChannelBadge/g, "setWebBadge").replace(/toggleChannelVerified/g, "toggleWebVerified") + '</div>' +
+            '</div>' +
+            '<div class="ctrl-block"><label>Penangguhan</label>' +
+              '<div class="suspend-box">' +
+                '<select id="web-sus-days-' + esc(w.id) + '">' +
+                  '<option value="1">1 hari</option>' +
+                  '<option value="3">3 hari</option>' +
+                  '<option value="7" selected>7 hari</option>' +
+                  '<option value="14">14 hari</option>' +
+                  '<option value="30">30 hari</option>' +
+                  '<option value="0">Permanent</option>' +
+                '</select>' +
+                '<button class="act act-ban" onclick="toggleWebSuspend(\'' + esc(w.id) + '\', true)">Tangguhkan</button>' +
+                '<button class="act act-unban" onclick="toggleWebSuspend(\'' + esc(w.id) + '\', false)">Cabut</button>' +
+              '</div>' +
+            '</div>' +
+            '<div class="action-grid">' +
+              '<button class="act act-verify" onclick="toggleWebVerified(\'' + esc(w.id) + '\')">' + (w.verified ? "Hapus centang" : "Beri centang") + '</button>' +
+              '<button class="act act-delete" onclick="deleteWeb(\'' + esc(w.id) + '\')">Hapus web</button>' +
+            '</div>' +
+          '</div>' +
+        '</div>';
+      }).join("");
+    }
+    async function setWebBadge(wid, badgeId) {
+      var verified = badgeId && badgeId !== "none";
+      var color = verified ? badgeId : "blue";
+      await db.ref("webs/" + wid).update({ verified: verified, badgeColor: color });
+      var w = webs.find(function (x) { return x.id === wid; });
+      if (w) { w.verified = verified; w.badgeColor = color; }
+      toast(verified ? "Centang web diset" : "Centang dihapus");
+      renderWebs();
+    }
+    async function toggleWebVerified(wid) {
+      var w = webs.find(function (x) { return x.id === wid; });
+      var next = !(w && w.verified);
+      await db.ref("webs/" + wid).update({ verified: next, badgeColor: (w && w.badgeColor) || "blue" });
+      if (w) w.verified = next;
+      toast(next ? "Web diverifikasi" : "Verifikasi dicabut");
+      renderWebs();
+    }
+    async function toggleWebSuspend(wid, on) {
+      var daysEl = document.getElementById("web-sus-days-" + wid);
+      var days = daysEl ? Number(daysEl.value || 0) : 7;
+      var until = on ? (days > 0 ? Date.now() + days * 86400000 : 0) : 0;
+      var reason = on ? ("Ditangguhkan admin" + (days ? " (" + days + " hari)" : " (permanen)")) : "";
+      await db.ref("webs/" + wid).update({
+        suspended: !!on,
+        suspendedUntil: until,
+        suspendReason: reason
+      });
+      var w = webs.find(function (x) { return x.id === wid; });
+      if (w) {
+        w.suspended = !!on;
+        w.suspendedUntil = until;
+        w.suspendReason = reason;
+      }
+      toast(on ? "Web ditangguhkan" : "Penangguhan dicabut");
+      renderWebs();
+    }
+    async function deleteWeb(wid) {
+      if (!confirm("Hapus web ini permanen?")) return;
+      await db.ref("webs/" + wid).remove();
+      webs = webs.filter(function (w) { return w.id !== wid; });
+      toast("Web dihapus");
+      renderWebs();
+      var cw = document.getElementById("cnt-webs");
+      if (cw) cw.textContent = webs.length;
+    }
+
+async function deleteChannel(cid, publicId) {
       if (!confirm("Hapus saluran ini?")) return;
       var tasks = [db.ref("channels/" + cid).remove()];
       if (publicId && publicId !== "—") tasks.push(db.ref("channelPublicIds/" + publicId).remove());

@@ -19,13 +19,9 @@ Chat, telepon & video call (Firebase Realtime Database).
 ```
 apiKey: AIzaSyC1I2WinNF1_KrS8ijNmQr07dqGN4-EWhE
 authDomain: chat2-b2a96.firebaseapp.com
-databaseURL: https://chat2-b2a96-default-rtdb.firebaseio.com
+databaseURL: https://chat2-b2a96-default-rtdb.asia-southeast1.firebasedatabase.app
 projectId: chat2-b2a96
-storageBucket: chat2-b2a96.firebasestorage.app
 ```
-
-Jika RTDB region Asia Southeast, ganti `databaseURL` menjadi:
-`https://chat2-b2a96-default-rtdb.asia-southeast1.firebasedatabase.app`
 
 Rules uji coba:
 ```json

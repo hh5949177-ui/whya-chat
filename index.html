@@ -14,8 +14,9 @@
         var raw = localStorage.getItem("wg_user") || localStorage.getItem("currentUser");
         if (raw) u = JSON.parse(raw);
       } catch(e) {}
-      if (u && (u.id || u.email)) location.replace("dashboard.html");
-      else location.replace("login.html");
+      var q = location.search || "";
+      if (u && (u.id || u.email)) location.replace("dashboard.html" + q);
+      else location.replace("login.html" + q);
     })();
   </script>
 </head>

@@ -23,7 +23,7 @@
       --input-bg: rgba(255,255,255,0.07);
     }
     * { margin:0; padding:0; box-sizing:border-box;
-      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Arial, sans-serif;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
       -webkit-font-smoothing: antialiased;
     }
     html, body { height:100%; background:var(--bg); color:var(--text); }
@@ -95,9 +95,103 @@
     .btn-green { background:#fff; color:#111; }
     .btn-gray { background:rgba(255,255,255,.08); color:var(--text); border:1px solid var(--border); }
     .err { color:#f87171; font-size:13px; text-align:center; min-height:18px; margin-bottom:8px; }
+  
+    /* animated background */
+    body::before {
+      content:"";
+      position:fixed; inset:0; z-index:0; pointer-events:none;
+      background-image:
+        linear-gradient(rgba(255,255,255,.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.025) 1px, transparent 1px);
+      background-size:52px 52px;
+      animation: loginGridMove 20s linear infinite;
+      opacity:.8;
+    }
+    body::after {
+      content:"";
+      position:fixed; z-index:0; pointer-events:none;
+      width:320px; height:320px; border-radius:50%;
+      left:-80px; top:10%;
+      background:radial-gradient(circle, rgba(255,255,255,.12), transparent 70%);
+      filter:blur(30px);
+      animation: loginOrb 11s ease-in-out infinite;
+    }
+    .auth-screen, #welcome-screen, .login-wrap, .auth-card, .welcome-wrap {
+      position:relative; z-index:1;
+    }
+    #login-loader {
+      position:fixed; inset:0; z-index:99999;
+      display:flex; align-items:center; justify-content:center;
+      background:#050506;
+      overflow:hidden;
+      transition:opacity .45s ease, visibility .45s;
+    }
+    #login-loader.hide { opacity:0; visibility:hidden; pointer-events:none; }
+    #login-loader.gone { display:none !important; }
+    #login-loader .loader-bg {
+      position:absolute; inset:0;
+      background:radial-gradient(ellipse 80% 60% at 50% 40%, #121214 0%, #050506 70%);
+    }
+    #login-loader .loader-grid {
+      position:absolute; inset:-50%;
+      background-image:
+        linear-gradient(rgba(255,255,255,.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.03) 1px, transparent 1px);
+      background-size:48px 48px;
+      animation: loginGridMove 18s linear infinite;
+    }
+    #login-loader .loader-orb {
+      position:absolute; border-radius:50%; filter:blur(40px); opacity:.5;
+      animation: loginOrb 10s ease-in-out infinite;
+    }
+    #login-loader .o1 { width:260px;height:260px;left:-50px;top:12%;background:radial-gradient(circle,rgba(255,255,255,.14),transparent 70%); }
+    #login-loader .o2 { width:200px;height:200px;right:-30px;bottom:8%;background:radial-gradient(circle,rgba(255,255,255,.1),transparent 70%); animation-direction:reverse; animation-duration:13s; }
+    #login-loader .loader-panel { position:relative;z-index:2;width:min(280px,78vw);text-align:center; }
+    #login-loader .loader-brand {
+      font-size:28px; font-weight:800; letter-spacing:.12em; color:#f5f5f5;
+      text-shadow:0 0 24px rgba(255,255,255,.25); margin-bottom:22px;
+    }
+    #login-loader .loader-track {
+      height:3px; width:100%; background:rgba(255,255,255,.08); border-radius:999px; overflow:hidden;
+    }
+    #login-loader .loader-bar {
+      height:100%; width:30%; border-radius:999px;
+      background:linear-gradient(90deg, transparent, #fff 40%, #fff 60%, transparent);
+      box-shadow:0 0 12px rgba(255,255,255,.55);
+      animation: loginBar 1.35s ease-in-out infinite;
+    }
+    #login-loader .loader-text {
+      margin-top:14px; font-size:12px; letter-spacing:.18em;
+      text-transform:uppercase; color:rgba(255,255,255,.45);
+    }
+    @keyframes loginBar {
+      0% { transform:translateX(-120%); }
+      100% { transform:translateX(380%); }
+    }
+    @keyframes loginOrb {
+      0%,100% { transform:translate(0,0) scale(1); }
+      50% { transform:translate(16px,-20px) scale(1.06); }
+    }
+    @keyframes loginGridMove {
+      0% { transform:translate(0,0); }
+      100% { transform:translate(52px,52px); }
+    }
+
   </style>
 </head>
 <body>
+  <div id="login-loader">
+    <div class="loader-bg">
+      <div class="loader-orb o1"></div>
+      <div class="loader-orb o2"></div>
+      <div class="loader-grid"></div>
+    </div>
+    <div class="loader-panel">
+      <div class="loader-brand">whya</div>
+      <div class="loader-track"><div class="loader-bar"></div></div>
+      <div class="loader-text">Memuat…</div>
+    </div>
+  </div>
   <div id="welcome-screen" class="show">
     <div class="welcome-hero"><i class="fas fa-comment-dots"></i></div>
     <div class="welcome-title">whya</div>
@@ -148,16 +242,12 @@
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
   <script>
-    const DASHBOARD_URL = "dashboard.html";
+    const DASHBOARD_URL = "dashboard.html"; // Vercel cleanUrls juga support /dashboard
     const firebaseConfig = {
       apiKey: "AIzaSyC1I2WinNF1_KrS8ijNmQr07dqGN4-EWhE",
       authDomain: "chat2-b2a96.firebaseapp.com",
-      databaseURL: "https://chat2-b2a96-default-rtdb.firebaseio.com",
-      projectId: "chat2-b2a96",
-      storageBucket: "chat2-b2a96.firebasestorage.app",
-      messagingSenderId: "298844453442",
-      appId: "1:298844453442:web:62a1a1187c87f0e8954bdb",
-      measurementId: "G-JL1SMHSJMX"
+      databaseURL: "https://chat2-b2a96-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "chat2-b2a96"
     };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
@@ -196,14 +286,19 @@
       return null;
     }
     function goDashboard(extraQuery){
-      var q = extraQuery || "";
-      // keep join code if present
+      var params = new URLSearchParams();
       try {
-        var params = new URLSearchParams(location.search || "");
-        var jc = params.get("join");
-        if (jc && q.indexOf("join=") < 0) q += (q ? "&" : "?") + "join=" + encodeURIComponent(jc);
+        if(extraQuery){
+          var extra = new URLSearchParams(String(extraQuery).replace(/^\?/, ""));
+          extra.forEach(function(v,k){ params.set(k,v); });
+        }
+        var cur = new URLSearchParams(location.search || "");
+        ["join","channel","c","web","w"].forEach(function(k){
+          if(cur.get(k) && !params.has(k)) params.set(k, cur.get(k));
+        });
       } catch(e) {}
-      location.href = DASHBOARD_URL + q;
+      var q = params.toString();
+      location.href = DASHBOARD_URL + (q ? ("?" + q) : "");
     }
     function showWelcome(){
       document.getElementById("welcome-screen").classList.add("show");
@@ -264,6 +359,16 @@
       var btn = document.getElementById("btn-reg");
       btn.disabled = true; btn.textContent = "Membuat akun...";
       try {
+        // ping database dulu
+        try {
+          await db.ref("meta/ping").set({ t: Date.now(), ok: true });
+        } catch (pingErr) {
+          var pm = (pingErr && pingErr.message) || String(pingErr);
+          if (/permission/i.test(pm)) {
+            throw new Error("Firebase Rules memblokir tulis. Set rules .read/.write = true lalu Publish.");
+          }
+          throw new Error("Tidak bisa hubungi database: " + pm);
+        }
         var userId = emailToId(email);
         var exist = await db.ref("users/" + userId).once("value");
         if (exist.exists()) {
@@ -301,9 +406,18 @@
       var btn = document.getElementById("btn-login");
       btn.disabled = true; btn.textContent = "Masuk...";
       try {
+        try {
+          await db.ref("meta/ping").once("value");
+        } catch (pingErr) {
+          var pm = (pingErr && pingErr.message) || String(pingErr);
+          if (/permission/i.test(pm)) {
+            throw new Error("Firebase Rules memblokir baca. Set rules .read/.write = true lalu Publish.");
+          }
+          throw new Error("Tidak bisa hubungi database: " + pm);
+        }
         var userId = emailToId(email);
         var snap = await db.ref("users/" + userId).once("value");
-        if (!snap.exists()) throw new Error("Akun tidak ditemukan");
+        if (!snap.exists()) throw new Error("Akun tidak ditemukan. Daftar dulu atau cek email.");
         var user = snap.val() || {};
         user.id = user.id || userId;
         if (user.banned) throw new Error("Akun ini dibanned");
@@ -342,15 +456,27 @@
       navigator.serviceWorker.register("/sw.js", { scope: "/" }).catch(function(){});
     }
     // Boot: sudah login → dashboard
+    
+    function hideLoginLoader(){
+      var l=document.getElementById("login-loader");
+      if(!l) return;
+      l.classList.add("hide");
+      setTimeout(function(){ try{ l.classList.add("gone"); l.style.display="none"; }catch(e){} }, 500);
+    }
+
     (function boot(){
-      loadAuthBanner();
-      var u = loadSavedSession();
+      setTimeout(function(){ try{ hideLoginLoader(); }catch(e){} }, 280);
+      setTimeout(function(){ try{ hideLoginLoader(); }catch(e){} }, 3500);
+      try{ loadAuthBanner(); }catch(e){}
+      var u = null;
+      try{ u = loadSavedSession(); }catch(e){}
       if (u && (u.id || u.email)) {
-        // verify still exists (non-blocking soft check)
+        try{ hideLoginLoader(); }catch(e){}
         goDashboard();
         return;
       }
-      showWelcome();
+      try{ showWelcome(); }catch(e){}
+      try{ hideLoginLoader(); }catch(e){}
     })();
   </script>
 </body>
