@@ -193,6 +193,70 @@
     }
     .preview-card .pname svg { width: 18px; height: 18px; }
 
+  
+    /* ===== Admin design polish ===== */
+    .shell{max-width:980px;margin:0 auto;padding:22px 18px 64px}
+    .tabs{
+      display:flex; gap:6px; padding:6px; margin-bottom:18px;
+      background:rgba(255,255,255,.03); border:1px solid var(--border);
+      border-radius:16px; overflow-x:auto; -webkit-overflow-scrolling:touch;
+    }
+    .tabs .tab{
+      flex:1; min-width:max-content; border:none; cursor:pointer;
+      background:transparent; color:var(--muted); font-weight:600; font-size:13px;
+      padding:10px 14px; border-radius:12px; display:flex; align-items:center;
+      justify-content:center; gap:8px; transition:.2s;
+    }
+    .tabs .tab:hover{ color:var(--text); background:rgba(255,255,255,.04); }
+    .tabs .tab.active{
+      background:linear-gradient(135deg,rgba(59,130,246,.22),rgba(139,92,246,.18));
+      color:#fff; box-shadow:0 2px 12px rgba(59,130,246,.15);
+      border:1px solid rgba(59,130,246,.25);
+    }
+    .tabs .tab .cnt{
+      font-size:11px; font-weight:700; padding:2px 7px; border-radius:999px;
+      background:rgba(255,255,255,.08); color:var(--muted);
+    }
+    .tabs .tab.active .cnt{ background:rgba(255,255,255,.16); color:#fff; }
+    .stat.accent-a .n{ color:#60a5fa; }
+    .stat.accent-b .n{ color:#34d399; }
+    .stat.accent-c .n{ color:#f87171; }
+    .stat.accent-d .n{ color:#c084fc; }
+    .stat{
+      background:linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.02));
+      border:1px solid var(--border); border-radius:16px; padding:16px 14px;
+      box-shadow:0 4px 16px rgba(0,0,0,.12);
+    }
+    .stat .n{ font-size:24px; font-weight:750; letter-spacing:-.5px; }
+    .acc{
+      background:linear-gradient(180deg,rgba(255,255,255,.045),rgba(255,255,255,.02));
+      border:1px solid var(--border); border-radius:18px; margin-bottom:12px;
+      overflow:hidden; transition:border-color .2s, box-shadow .2s;
+    }
+    .acc:hover{ border-color:var(--border-strong); }
+    .acc.open{ box-shadow:0 8px 28px rgba(0,0,0,.2); border-color:rgba(59,130,246,.25); }
+    .role-chip-btn{
+      padding:8px 12px; border-radius:999px; border:1px solid var(--border);
+      background:rgba(255,255,255,.04); color:var(--text);
+      font-size:12px; font-weight:600; cursor:pointer; transition:.15s;
+    }
+    .role-chip-btn:hover{ border-color:var(--border-strong); background:rgba(255,255,255,.07); }
+    .role-chip-btn.active{
+      border-color:rgba(59,130,246,.55); background:rgba(59,130,246,.2); color:#93c5fd;
+      box-shadow:0 0 0 3px rgba(59,130,246,.12);
+    }
+    .badge-grid{ grid-template-columns: repeat(8, 1fr) !important; gap:8px !important; }
+    @media (max-width:560px){ .badge-grid{ grid-template-columns: repeat(6, 1fr) !important; } }
+    .badge-cell.active{
+      border-color:rgba(59,130,246,.7) !important;
+      box-shadow:0 0 0 3px rgba(59,130,246,.15) !important;
+      background:rgba(59,130,246,.12) !important;
+    }
+    .brand-icon{
+      background:linear-gradient(145deg,#3b82f6,#8b5cf6,#ec4899) !important;
+      box-shadow:0 6px 18px rgba(59,130,246,.35);
+    }
+
   </style>
 </head>
 <body data-theme="dark">
@@ -228,6 +292,9 @@
       </button>
       <button class="tab" id="tab-channels" onclick="switchAdminTab('channels')">
         <i class="fas fa-broadcast-tower"></i> Saluran <span class="cnt" id="cnt-channels">0</span>
+      </button>
+      <button class="tab" id="tab-webs" onclick="switchAdminTab('webs')">
+        <i class="fas fa-globe"></i> Web <span class="cnt" id="cnt-webs">0</span>
       </button>
       <button class="tab" id="tab-settings" onclick="switchAdminTab('settings')">
         <i class="fas fa-gear"></i> Pengaturan
@@ -266,7 +333,23 @@
   </div>
 
 
-    <!-- SETTINGS SECTION -->
+    
+    <!-- WEBS SECTION -->
+    <div class="panel-section" id="sec-webs">
+      <div class="stats">
+        <div class="stat accent-a"><div class="n" id="w-total">0</div><div class="l">Total web</div></div>
+        <div class="stat accent-b"><div class="n" id="w-verified">0</div><div class="l">Verified</div></div>
+        <div class="stat accent-c"><div class="n" id="w-suspended">0</div><div class="l">Ditangguhkan</div></div>
+        <div class="stat accent-d"><div class="n" id="w-owners">0</div><div class="l">Pemilik unik</div></div>
+      </div>
+      <div class="search-bar">
+        <i class="fas fa-magnifying-glass"></i>
+        <input type="search" id="q-webs" placeholder="Cari nama, URL, atau pemilik web…" oninput="renderWebs()" />
+      </div>
+      <div class="list" id="list-webs"></div>
+    </div>
+
+<!-- SETTINGS SECTION -->
     <div class="panel-section" id="sec-settings">
       <div class="acc open" style="margin-bottom:14px">
         <div class="acc-body" style="display:block;border-top:none">
@@ -306,45 +389,83 @@
     const db = firebase.database();
 
     const ROLES = [
-      { id: "user", label: "User" },
-      { id: "moderator", label: "Moderator" },
-      { id: "staff", label: "Staf" },
-      { id: "admin", label: "Admin" },
-      { id: "owner", label: "Owner" }
+      { id: "user", label: "User", color: "#94a3b8" },
+      { id: "member", label: "Member", color: "#64748b" },
+      { id: "vip", label: "VIP", color: "#eab308" },
+      { id: "premium", label: "Premium", color: "#f59e0b" },
+      { id: "creator", label: "Creator", color: "#ec4899" },
+      { id: "verified-creator", label: "Verified Creator", color: "#f472b6" },
+      { id: "influencer", label: "Influencer", color: "#a855f7" },
+      { id: "partner", label: "Partner", color: "#8b5cf6" },
+      { id: "support", label: "Support", color: "#06b6d4" },
+      { id: "moderator", label: "Moderator", color: "#22c55e" },
+      { id: "staff", label: "Staf", color: "#14b8a6" },
+      { id: "developer", label: "Developer", color: "#3b82f6" },
+      { id: "designer", label: "Designer", color: "#6366f1" },
+      { id: "editor", label: "Editor", color: "#0ea5e9" },
+      { id: "analyst", label: "Analyst", color: "#38bdf8" },
+      { id: "manager", label: "Manager", color: "#f97316" },
+      { id: "admin", label: "Admin", color: "#ef4444" },
+      { id: "superadmin", label: "Super Admin", color: "#dc2626" },
+      { id: "owner", label: "Owner", color: "#fbbf24" },
+      { id: "founder", label: "Founder", color: "#fde68a" },
+      { id: "bot", label: "Bot", color: "#78716c" },
+      { id: "guest", label: "Guest", color: "#a1a1aa" },
+      { id: "tester", label: "Tester", color: "#84cc16" },
+      { id: "beta", label: "Beta Tester", color: "#a3e635" },
+      { id: "ambassador", label: "Ambassador", color: "#e879f9" }
     ];
     
     const BADGE_STYLES = [
       { id: "none", label: "Tanpa centang", type: "none" },
       { id: "blue", label: "Biru", type: "solid", color: "#1D9BF0" },
-      { id: "gradient-sunset", label: "Sunset", type: "gradient", colors: ["#FF6B6B", "#FF8E53", "#FFD93D"] },
-      { id: "gradient-ocean", label: "Ocean", type: "gradient", colors: ["#00C9FF", "#92FE9D"] },
-      { id: "orange-glow", label: "Orange glow", type: "glow", color: "#F97316" },
-      { id: "sky", label: "Sky", type: "solid", color: "#38BDF8" },
-      { id: "gold", label: "Emas", type: "solid", color: "#EAB308" },
-      { id: "pastel-rainbow", label: "Pastel", type: "gradient", colors: ["#F9A8D4", "#C4B5FD", "#93C5FD"] },
-      { id: "yellow", label: "Kuning", type: "solid", color: "#FACC15" },
-      { id: "green-neon", label: "Hijau neon", type: "glow", color: "#22C55E" },
-      { id: "pink-glow", label: "Pink glow", type: "glow", color: "#EC4899" },
-      { id: "mint", label: "Mint", type: "solid", color: "#2DD4BF" },
-      { id: "red-glow", label: "Merah glow", type: "glow", color: "#EF4444" },
-      { id: "cyan-glow", label: "Cyan glow", type: "glow", color: "#06B6D4" },
-      { id: "rose", label: "Rose", type: "solid", color: "#FB7185" },
-      { id: "silver", label: "Silver", type: "gradient", colors: ["#E5E7EB", "#9CA3AF", "#D1D5DB"] },
-      { id: "emerald", label: "Emerald", type: "solid", color: "#10B981" },
       { id: "blue-bright", label: "Biru terang", type: "solid", color: "#3B82F6" },
-      { id: "red", label: "Merah", type: "solid", color: "#DC2626" },
-      { id: "amber", label: "Amber", type: "solid", color: "#F59E0B" },
-      { id: "gray", label: "Abu", type: "solid", color: "#6B7280" },
-      { id: "green", label: "Hijau", type: "solid", color: "#16A34A" },
-      { id: "purple", label: "Ungu", type: "solid", color: "#A855F7" },
-      { id: "pink", label: "Pink", type: "solid", color: "#EC4899" },
-      { id: "orange", label: "Oranye", type: "solid", color: "#EA580C" },
+      { id: "sky", label: "Sky", type: "solid", color: "#38BDF8" },
+      { id: "cyan", label: "Cyan", type: "solid", color: "#22D3EE" },
+      { id: "cyan-glow", label: "Cyan glow", type: "glow", color: "#06B6D4" },
       { id: "teal", label: "Teal", type: "solid", color: "#14B8A6" },
+      { id: "mint", label: "Mint", type: "solid", color: "#2DD4BF" },
+      { id: "emerald", label: "Emerald", type: "solid", color: "#10B981" },
+      { id: "green", label: "Hijau", type: "solid", color: "#16A34A" },
+      { id: "green-neon", label: "Hijau neon", type: "glow", color: "#22C55E" },
+      { id: "lime", label: "Lime", type: "solid", color: "#84CC16" },
+      { id: "yellow", label: "Kuning", type: "solid", color: "#FACC15" },
+      { id: "gold", label: "Emas", type: "solid", color: "#EAB308" },
+      { id: "amber", label: "Amber", type: "solid", color: "#F59E0B" },
+      { id: "orange", label: "Oranye", type: "solid", color: "#EA580C" },
+      { id: "orange-glow", label: "Orange glow", type: "glow", color: "#F97316" },
+      { id: "red", label: "Merah", type: "solid", color: "#DC2626" },
+      { id: "red-glow", label: "Merah glow", type: "glow", color: "#EF4444" },
+      { id: "rose", label: "Rose", type: "solid", color: "#FB7185" },
+      { id: "pink", label: "Pink", type: "solid", color: "#EC4899" },
+      { id: "pink-glow", label: "Pink glow", type: "glow", color: "#EC4899" },
+      { id: "fuchsia", label: "Fuchsia", type: "solid", color: "#D946EF" },
+      { id: "purple", label: "Ungu", type: "solid", color: "#A855F7" },
+      { id: "violet-glow", label: "Violet glow", type: "glow", color: "#8B5CF6" },
       { id: "indigo", label: "Indigo", type: "solid", color: "#6366F1" },
+      { id: "gray", label: "Abu", type: "solid", color: "#6B7280" },
+      { id: "silver", label: "Silver", type: "gradient", colors: ["#E5E7EB", "#9CA3AF", "#D1D5DB"] },
       { id: "black", label: "Hitam", type: "solid", color: "#111827" },
       { id: "white", label: "Putih", type: "solid", color: "#E5E7EB" },
-      { id: "violet-glow", label: "Violet glow", type: "glow", color: "#8B5CF6" },
-      { id: "lime", label: "Lime", type: "solid", color: "#84CC16" }
+      { id: "gradient-sunset", label: "Sunset", type: "gradient", colors: ["#FF6B6B", "#FF8E53", "#FFD93D"] },
+      { id: "gradient-ocean", label: "Ocean", type: "gradient", colors: ["#00C9FF", "#92FE9D"] },
+      { id: "pastel-rainbow", label: "Pastel", type: "gradient", colors: ["#F9A8D4", "#C4B5FD", "#93C5FD"] },
+      { id: "gradient-aurora", label: "Aurora", type: "gradient", colors: ["#22d3ee", "#a78bfa", "#f472b6"] },
+      { id: "gradient-fire", label: "Api", type: "gradient", colors: ["#ef4444", "#f97316", "#eab308"] },
+      { id: "gradient-forest", label: "Hutan", type: "gradient", colors: ["#14532d", "#22c55e", "#86efac"] },
+      { id: "gradient-galaxy", label: "Galaxy", type: "gradient", colors: ["#312e81", "#7c3aed", "#e879f9"] },
+      { id: "gradient-candy", label: "Candy", type: "gradient", colors: ["#fb7185", "#f472b6", "#c084fc"] },
+      { id: "gradient-ice", label: "Es", type: "gradient", colors: ["#e0f2fe", "#7dd3fc", "#38bdf8"] },
+      { id: "gradient-gold", label: "Gold lux", type: "gradient", colors: ["#fef3c7", "#fbbf24", "#b45309"] },
+      { id: "gradient-neon", label: "Neon", type: "gradient", colors: ["#22c55e", "#06b6d4", "#a855f7"] },
+      { id: "gradient-royal", label: "Royal", type: "gradient", colors: ["#1e3a8a", "#3b82f6", "#93c5fd"] },
+      { id: "gradient-berry", label: "Berry", type: "gradient", colors: ["#9f1239", "#e11d48", "#fb7185"] },
+      { id: "gradient-mango", label: "Mango", type: "gradient", colors: ["#c2410c", "#fb923c", "#fde68a"] },
+      { id: "gradient-minty", label: "Minty", type: "gradient", colors: ["#0f766e", "#2dd4bf", "#99f6e4"] },
+      { id: "blue-glow", label: "Biru glow", type: "glow", color: "#3B82F6" },
+      { id: "gold-glow", label: "Emas glow", type: "glow", color: "#EAB308" },
+      { id: "white-glow", label: "Putih glow", type: "glow", color: "#F8FAFC" },
+      { id: "rainbow-glow", label: "Rainbow", type: "gradient", colors: ["#ef4444", "#eab308", "#22c55e", "#3b82f6", "#a855f7"] }
     ];
 
     const BADGE_COLORS = [
@@ -385,21 +506,40 @@
     let adminTab = "users";
 
     function tryLogin() {
-      var pw = document.getElementById("gate-pw").value;
+      var inp = document.getElementById("gate-pw");
       var err = document.getElementById("gate-err");
+      var pw = (inp && inp.value ? inp.value : "").trim();
+      if (err) err.textContent = "";
+      if (!pw) {
+        if (err) err.textContent = "Masukkan password admin";
+        if (inp) inp.focus();
+        return;
+      }
       if (pw === ADMIN_PASSWORD) {
-        sessionStorage.setItem("admin_ok", "1");
-        document.getElementById("gate").classList.add("hidden");
-        refreshAll();
-      } else err.textContent = "Password salah";
+        try { sessionStorage.setItem("admin_ok", "1"); } catch (e) {}
+        var gate = document.getElementById("gate");
+        if (gate) gate.classList.add("hidden");
+        try { refreshAll(); } catch (e) { console.error(e); }
+      } else {
+        if (err) err.textContent = "Password salah";
+        if (inp) { inp.select(); inp.focus(); }
+      }
     }
-    document.getElementById("gate-pw").addEventListener("keydown", function (e) {
-      if (e.key === "Enter") tryLogin();
-    });
-    if (sessionStorage.getItem("admin_ok") === "1") {
-      document.getElementById("gate").classList.add("hidden");
-      refreshAll();
-    }
+    (function bindAdminLogin(){
+      var inp = document.getElementById("gate-pw");
+      if (inp) {
+        inp.addEventListener("keydown", function (e) {
+          if (e.key === "Enter") tryLogin();
+        });
+      }
+      try {
+        if (sessionStorage.getItem("admin_ok") === "1") {
+          var gate = document.getElementById("gate");
+          if (gate) gate.classList.add("hidden");
+          try { refreshAll(); } catch (e) { console.error(e); }
+        }
+      } catch (e) {}
+    })();
 
     function toggleTheme() {
       var next = document.body.getAttribute("data-theme") === "dark" ? "light" : "dark";
@@ -417,14 +557,13 @@
 
     function switchAdminTab(name) {
       adminTab = name;
-      document.getElementById("tab-users").classList.toggle("active", name === "users");
-      document.getElementById("tab-channels").classList.toggle("active", name === "channels");
-      var ts = document.getElementById("tab-settings");
-      if (ts) ts.classList.toggle("active", name === "settings");
-      document.getElementById("sec-users").classList.toggle("active", name === "users");
-      document.getElementById("sec-channels").classList.toggle("active", name === "channels");
-      var ss = document.getElementById("sec-settings");
-      if (ss) ss.classList.toggle("active", name === "settings");
+      ["users","channels","webs","settings"].forEach(function(t){
+        var tab = document.getElementById("tab-" + t);
+        var sec = document.getElementById("sec-" + t);
+        if (tab) tab.classList.toggle("active", name === t);
+        if (sec) sec.classList.toggle("active", name === t);
+      });
+      if (name === "webs") { try { renderWebs(); } catch(e){} }
       if (name === "settings") loadLoginBannerSetting();
     }
 
@@ -497,7 +636,8 @@
       document.getElementById("last-sync").textContent = "Memuat…";
       Promise.all([
         db.ref("users").once("value"),
-        db.ref("channels").once("value")
+        db.ref("channels").once("value"),
+        db.ref("webs").once("value")
       ]).then(function (res) {
         var uv = res[0].val() || {};
         users = Object.keys(uv).map(function (id) {
@@ -554,7 +694,7 @@
         var cw = document.getElementById("cnt-webs");
         if (cw) cw.textContent = webs.length;
         document.getElementById("last-sync").textContent =
-          users.length + " akun · " + channels.length + " saluran · " + new Date().toLocaleTimeString("id-ID");
+          users.length + " akun · " + channels.length + " saluran · " + (webs||[]).length + " web · " + new Date().toLocaleTimeString("id-ID");
         renderUsers();
         renderChannels();
         try{ renderWebs(); }catch(e){}
@@ -597,10 +737,16 @@
       return html;
     }
     function rolePaletteHTML(uid, activeRole) {
-      var html = '<div class="palette-section"><div class="plab">Role situs</div><div class="role-grid">';
+      var html = '<div class="palette-section"><div class="plab">Role situs (' + ROLES.length + ')</div><div class="role-grid">';
       ROLES.forEach(function (r) {
         var act = (activeRole || "user") === r.id ? " active" : "";
-        html += '<button type="button" class="role-chip-btn' + act + '" onclick="setRole(\'' + uid + '\',\'' + r.id + '\')">' + r.label + '</button>';
+        var style = "";
+        if (r.color) {
+          style = act
+            ? (' style="border-color:' + r.color + ';background:' + r.color + '33;color:#fff"')
+            : (' style="border-color:' + r.color + '55"');
+        }
+        html += '<button type="button" class="role-chip-btn' + act + '"' + style + ' onclick="setRole(\'' + uid + '\',\'' + r.id + '\')">' + r.label + '</button>';
       });
       html += '</div></div>';
       return html;
@@ -889,7 +1035,7 @@
       toast("Pengikut: " + n); renderChannels();
     }
 
-    async async function toggleChannelSuspend(cid, on, days) {
+    async function toggleChannelSuspend(cid, on, days) {
       days = Number(days || 0);
       var until = on ? (days > 0 ? Date.now() + days * 86400000 : 0) : 0;
       await db.ref("channels/" + cid).update({
