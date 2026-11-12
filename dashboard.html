@@ -2755,9 +2755,160 @@
       color:#f87171 !important; font-weight:600;
     }
 
+  
+    /* ===== Group invite screen (fullscreen) ===== */
+    .gis-screen {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 100050;
+      align-items: center;
+      justify-content: center;
+      padding: 28px 20px;
+      text-align: center;
+      box-sizing: border-box;
+    }
+    .gis-screen.active {
+      display: flex !important;
+    }
+    .gis-bg {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 80% 50% at 50% 20%, rgba(99,102,241,.28), transparent 55%),
+        radial-gradient(ellipse 60% 40% at 50% 100%, rgba(139,92,246,.18), transparent 50%),
+        #07070c;
+    }
+    .gis-back {
+      position: absolute;
+      top: calc(12px + env(safe-area-inset-top, 0px));
+      left: 14px;
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.08);
+      color: #fff;
+      font-size: 16px;
+      cursor: pointer;
+      z-index: 2;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+    .gis-card {
+      position: relative;
+      z-index: 1;
+      width: min(100%, 340px);
+      padding: 28px 22px 24px;
+      border-radius: 28px;
+      background: rgba(255,255,255,.05);
+      border: 1px solid rgba(255,255,255,.1);
+      box-shadow: 0 24px 64px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.08);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+    }
+    .gis-ring {
+      width: 168px;
+      height: 168px;
+      margin: 0 auto 18px;
+      border-radius: 50%;
+      padding: 5px;
+      background: linear-gradient(145deg, rgba(255,255,255,.35), rgba(255,255,255,.05) 40%, rgba(99,102,241,.5));
+      box-shadow: 0 16px 40px rgba(99,102,241,.25);
+    }
+    .gis-photo {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      overflow: hidden;
+      background: linear-gradient(145deg, #3b3f55, #1a1b24);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 3px solid rgba(0,0,0,.25);
+    }
+    .gis-photo img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    #gis-letter {
+      font-size: 64px;
+      font-weight: 750;
+      color: #fff;
+      line-height: 1;
+    }
+    .gis-name {
+      margin: 0 0 8px;
+      font-size: 24px;
+      font-weight: 750;
+      color: #fff;
+      letter-spacing: -0.02em;
+      word-break: break-word;
+    }
+    .gis-meta {
+      margin: 0 0 22px;
+      font-size: 14px;
+      color: rgba(255,255,255,.55);
+      line-height: 1.4;
+    }
+    .gis-join {
+      width: 100%;
+      padding: 15px 20px;
+      border-radius: 999px;
+      border: none;
+      cursor: pointer;
+      font-size: 16px;
+      font-weight: 750;
+      color: #fff;
+      background: linear-gradient(135deg, #4f6ef7, #8b5cf6);
+      box-shadow: 0 10px 28px rgba(79,110,247,.4);
+      transition: transform .15s, filter .15s;
+    }
+    .gis-join:hover { filter: brightness(1.06); }
+    .gis-join:active { transform: scale(.98); }
+    .gis-join:disabled {
+      opacity: .7;
+      cursor: wait;
+      filter: none;
+    }
+    .gis-status {
+      margin: 14px 0 0;
+      font-size: 13px;
+      color: rgba(255,255,255,.45);
+      min-height: 18px;
+    }
+
   </style>
 </head>
 <body>
+
+  <!-- Group invite (deep link) — harus di root, bukan di dalam active-chat -->
+  <div id="group-invite-screen" class="gis-screen" aria-hidden="true">
+    <div class="gis-bg"></div>
+    <button type="button" class="gis-back" onclick="closeGroupInviteScreen()" aria-label="Tutup">
+      <i class="fas fa-arrow-left"></i>
+    </button>
+    <div class="gis-card">
+      <div class="gis-ring">
+        <div id="gis-photo-wrap" class="gis-photo">
+          <span id="gis-letter">G</span>
+        </div>
+      </div>
+      <h2 id="gis-name" class="gis-name">Grup</h2>
+      <p id="gis-meta" class="gis-meta">Undangan grup</p>
+      <button type="button" id="gis-join-btn" class="gis-join" onclick="confirmJoinFromInvite()">
+        Bergabung ke grup
+      </button>
+      <p id="gis-status" class="gis-status"></p>
+    </div>
+  </div>
+
+
 
   <div id="app-loader">
     <div class="loader-bg" aria-hidden="true">
@@ -3112,23 +3263,7 @@
       </div>
       <div id="mention-popup"></div>
       
-    <!-- Group invite preview (deep link) -->
-    <div id="group-invite-screen" style="display:none;position:fixed;inset:0;z-index:1200;background:#0a0a0c;flex-direction:column;align-items:center;justify-content:center;padding:32px 24px;text-align:center">
-      <button type="button" onclick="closeGroupInviteScreen()" style="position:absolute;top:16px;left:16px;width:40px;height:40px;border-radius:50%;border:none;background:rgba(255,255,255,.08);color:#fff;font-size:16px;cursor:pointer">
-        <i class="fas fa-arrow-left"></i>
-      </button>
-      <div id="gis-photo-wrap" style="width:180px;height:180px;border-radius:50%;overflow:hidden;background:linear-gradient(145deg,#333,#111);border:3px solid rgba(255,255,255,.12);box-shadow:0 16px 48px rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;margin-bottom:22px">
-        <span id="gis-letter" style="font-size:64px;font-weight:700;color:#fff">G</span>
-      </div>
-      <h2 id="gis-name" style="margin:0 0 8px;font-size:24px;font-weight:700;color:#fff;max-width:90%;word-break:break-word">Grup</h2>
-      <p id="gis-meta" style="margin:0 0 28px;font-size:14px;color:rgba(255,255,255,.55)">Undangan grup</p>
-      <button type="button" id="gis-join-btn" onclick="confirmJoinFromInvite()" class="btn-primary" style="min-width:240px;padding:16px 32px;border-radius:28px;font-size:16px;font-weight:700;border:none;cursor:pointer;background:linear-gradient(135deg,#3b82f6,#8b5cf6);color:#fff">
-        Bergabung ke grup
-      </button>
-      <p id="gis-status" style="margin-top:16px;font-size:13px;color:rgba(255,255,255,.45);min-height:18px"></p>
-    </div>
-
-<!-- Sticker panel -->
+    <!-- Sticker panel -->
       <div id="sticker-panel">
         <div class="sticker-head">
           <h4>Stiker</h4>
@@ -8872,14 +9007,24 @@ function saveAccountLocal(user){
       var isAdmin=isOwner||(ch.admins && ch.admins[currentUser.id]);
       var inputWrap=document.querySelector("#active-chat .input-wrap");
       var inp=document.getElementById("message-input");
-      // selalu tampilkan composer; tombol "Ajukan pertanyaan" ada di menu +
-      if(inputWrap) inputWrap.style.display="";
-      // hilangkan bar readonly lama jika ada
+      // Composer hanya untuk pemilik / admin saluran
       var bar=document.getElementById("ch-readonly-bar");
-      if(bar){ try{ bar.remove(); }catch(e){ bar.style.display="none"; } }
-      if(inp){
-        if(isAdmin){ inp.placeholder="Tulis info"; inp.disabled=false; }
-        else { inp.placeholder="Hanya admin yang bisa posting · ajukan pertanyaan lewat +"; inp.disabled=false; }
+      if(isAdmin){
+        if(inputWrap) inputWrap.style.display="";
+        if(inp){ inp.placeholder="Tulis info"; inp.disabled=false; }
+        if(bar){ try{ bar.remove(); }catch(e){ bar.style.display="none"; } }
+      } else {
+        if(inputWrap) inputWrap.style.display="none";
+        // bukan tempat mengetik — hanya tombol ajukan pertanyaan
+        if(!bar){
+          bar=document.createElement("div");
+          bar.id="ch-readonly-bar";
+          bar.style.cssText="padding:10px 14px calc(10px + env(safe-area-inset-bottom,0px));display:flex;gap:8px;border-top:1px solid var(--border);background:rgba(0,0,0,0.28)";
+          bar.innerHTML='<button type="button" class="btn-primary" style="flex:1;padding:12px;border-radius:24px;font-weight:700" onclick="openChannelQuestion()"><i class="fas fa-circle-question"></i> Ajukan pertanyaan</button>';
+          var ac=document.getElementById("active-chat");
+          if(ac) ac.appendChild(bar);
+        }
+        bar.style.display="flex";
       }
       try{ updateAttachMenuForChannel(isAdmin); }catch(e){}
       if(msgs && !msgs.querySelector(".channel-hero")){
@@ -11066,22 +11211,11 @@ function openStatusViewer(uid,list,index){
     var pendingGroupInviteCode = null;
     var pendingGroupInviteData = null;
 
-    function closeGroupInviteScreen(){
-      var el=document.getElementById("group-invite-screen");
-      if(el) el.style.display="none";
-      pendingGroupInviteCode=null;
-      pendingGroupInviteData=null;
-      // bersihkan query tanpa reload penuh
-      try{
-        var url=new URL(location.href);
-        url.searchParams.delete("join");
-        history.replaceState({}, "", url.pathname + (url.search||"") + (url.hash||""));
-      }catch(e){}
-    }
     async function showGroupInvitePreview(code){
       code=String(code||"").trim().toUpperCase();
       if(!code) return;
       pendingGroupInviteCode=code;
+      try{ sessionStorage.setItem("wg_pending_join", code); }catch(e){}
       var el=document.getElementById("group-invite-screen");
       var photo=document.getElementById("gis-photo-wrap");
       var letter=document.getElementById("gis-letter");
@@ -11089,11 +11223,26 @@ function openStatusViewer(uid,list,index){
       var meta=document.getElementById("gis-meta");
       var btn=document.getElementById("gis-join-btn");
       var status=document.getElementById("gis-status");
-      if(el) el.style.display="flex";
+      if(el){
+        el.classList.add("active");
+        el.setAttribute("aria-hidden","false");
+        el.style.display="flex";
+      }
+      if(photo){ photo.innerHTML='<span id="gis-letter">G</span>'; letter=document.getElementById("gis-letter"); }
       if(nameEl) nameEl.textContent="Memuat…";
       if(meta) meta.textContent="Undangan grup";
       if(status) status.textContent="";
-      if(btn){ btn.disabled=true; btn.textContent="Memuat…"; }
+      if(btn){
+        btn.disabled=true;
+        btn.textContent="Memuat…";
+        btn.onclick=confirmJoinFromInvite;
+      }
+      // tunggu firebase siap
+      var tries=0;
+      while(tries<20 && (!window.db && typeof db==="undefined")){
+        await new Promise(function(r){ setTimeout(r,150); });
+        tries++;
+      }
       try{
         var map=await db.ref("groupInviteCodes/"+code).once("value");
         if(!map.exists()){
@@ -11106,41 +11255,57 @@ function openStatusViewer(uid,list,index){
         var snap=await db.ref("groups/"+gid).once("value");
         if(!snap.exists()){
           if(nameEl) nameEl.textContent="Grup tidak ada";
+          if(meta) meta.textContent="Grup mungkin sudah dihapus";
           if(btn){ btn.textContent="Tutup"; btn.disabled=false; btn.onclick=closeGroupInviteScreen; }
           return;
         }
         var g=snap.val()||{};
         g.id=gid;
         pendingGroupInviteData=g;
+        var memCount=g.members?Object.keys(g.members).length:0;
         if(nameEl) nameEl.textContent=g.name||"Grup";
-        var memberCount = g.members ? Object.keys(g.members).length : 0;
-        if(meta) meta.textContent = memberCount ? (memberCount+" anggota") : "Undangan grup";
+        if(meta) meta.textContent=memCount+" anggota · Undangan grup";
         if(photo){
           if(g.photoURL){
-            photo.innerHTML='<img src="'+g.photoURL+'" alt="" style="width:100%;height:100%;object-fit:cover">';
+            photo.innerHTML='<img src="'+String(g.photoURL).replace(/"/g,"&quot;")+'" alt="">';
           } else {
-            var av=(g.avatar||(g.name||"G").charAt(0)||"G").toString().charAt(0).toUpperCase();
-            photo.innerHTML='<span id="gis-letter" style="font-size:64px;font-weight:700;color:#fff">'+av+'</span>';
+            var L=String(g.name||"G").charAt(0).toUpperCase();
+            photo.innerHTML='<span id="gis-letter">'+L+'</span>';
           }
         }
-        var already = currentUser && g.members && g.members[currentUser.id];
         if(btn){
           btn.disabled=false;
-          btn.onclick=confirmJoinFromInvite;
-          if(already){
+          if(currentUser && g.members && g.members[currentUser.id]){
             btn.textContent="Buka grup";
-            if(status) status.textContent="Kamu sudah menjadi anggota";
           } else {
-            btn.textContent="Bergabung";
-            if(status) status.textContent="";
+            btn.textContent="Bergabung ke grup";
           }
+          btn.onclick=confirmJoinFromInvite;
         }
       }catch(e){
         console.error(e);
         if(nameEl) nameEl.textContent="Gagal memuat";
-        if(btn){ btn.textContent="Tutup"; btn.disabled=false; btn.onclick=closeGroupInviteScreen; }
+        if(meta) meta.textContent=String(e.message||e);
+        if(btn){ btn.textContent="Coba lagi"; btn.disabled=false; btn.onclick=function(){ showGroupInvitePreview(code); }; }
       }
     }
+    function closeGroupInviteScreen(){
+      var el=document.getElementById("group-invite-screen");
+      if(el){
+        el.classList.remove("active");
+        el.setAttribute("aria-hidden","true");
+        el.style.display="none";
+      }
+      pendingGroupInviteCode=null;
+      pendingGroupInviteData=null;
+      try{ sessionStorage.removeItem("wg_pending_join"); }catch(e){}
+      try{
+        var url=new URL(location.href);
+        url.searchParams.delete("join");
+        history.replaceState({}, "", url.pathname + (url.search||"") + (url.hash||""));
+      }catch(e){}
+    }
+
     async function confirmJoinFromInvite(){
       if(!currentUser){
         toast("Login dulu","err");
@@ -11218,14 +11383,19 @@ function openStatusViewer(uid,list,index){
       try{
         var params=new URLSearchParams(location.search||"");
         var jc=params.get("join");
+        if(!jc){
+          try{ jc = sessionStorage.getItem("wg_pending_join"); }catch(e){}
+        }
         var ch=params.get("channel")||params.get("c");
         var web=params.get("web")||params.get("w");
         if(jc){
-          setTimeout(function(){ showGroupInvitePreview(jc); }, 500);
+          // tampilkan segera (screen di root body, tidak tergantung active-chat)
+          setTimeout(function(){ try{ showGroupInvitePreview(jc); }catch(e){ console.warn(e); } }, 200);
+          setTimeout(function(){ try{ showGroupInvitePreview(jc); }catch(e){} }, 1200);
         } else if(ch){
-          setTimeout(function(){ openChannelByRef(ch); }, 700);
+          setTimeout(function(){ openChannelByRef(ch); }, 500);
         } else if(web){
-          setTimeout(function(){ openWebByRef(web); }, 700);
+          setTimeout(function(){ openWebByRef(web); }, 500);
         }
       }catch(e){ console.warn("deep link", e); }
     }
