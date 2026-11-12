@@ -2659,6 +2659,33 @@
       box-sizing: border-box !important;
       overflow: visible !important;
     }
+    /* saluran: bubble melebar kiri-kanan di tengah */
+    #messages.channel-mode .message,
+    #messages.channel-mode .message.channel-post,
+    #messages.channel-mode .message.in,
+    #messages.channel-mode .message.out {
+      width: 100% !important;
+      max-width: min(100%, 560px) !important;
+      min-width: 0 !important;
+      align-self: center !important;
+      margin-left: auto !important;
+      margin-right: auto !important;
+    }
+    #messages.channel-mode .message-row,
+    #messages.channel-mode .message-row.in,
+    #messages.channel-mode .message-row.out {
+      max-width: 100% !important;
+      width: 100% !important;
+      align-self: stretch !important;
+      justify-content: center !important;
+      margin-left: 0 !important;
+      margin-right: 0 !important;
+    }
+    #messages.channel-mode .swipe-mover {
+      max-width: 100% !important;
+      width: 100% !important;
+      justify-content: center !important;
+    }
     #messages .message.in,
     #messages .message.out {
       display: block !important;
@@ -3066,6 +3093,10 @@
             <div class="ai-ico" style="background:linear-gradient(145deg,#10b981,#047857)"><i class="fas fa-video"></i></div>
             Video
           </button>
+          <button class="attach-item" id="attach-ask-question" style="display:none" onclick="closeAttachMenu(); openChannelQuestion();">
+            <div class="ai-ico" style="background:linear-gradient(145deg,#f97316,#ea580c)"><i class="fas fa-circle-question"></i></div>
+            Ajukan pertanyaan
+          </button>
         </div>
         <input type="file" id="input-file" style="display:none" onchange="sendAnyFile(this)">
         <input type="file" id="input-image" accept="image/*" style="display:none" onchange="sendMedia(this,'image')">
@@ -3086,13 +3117,13 @@
       <button type="button" onclick="closeGroupInviteScreen()" style="position:absolute;top:16px;left:16px;width:40px;height:40px;border-radius:50%;border:none;background:rgba(255,255,255,.08);color:#fff;font-size:16px;cursor:pointer">
         <i class="fas fa-arrow-left"></i>
       </button>
-      <div id="gis-photo-wrap" style="width:148px;height:148px;border-radius:50%;overflow:hidden;background:linear-gradient(145deg,#333,#111);border:3px solid rgba(255,255,255,.12);box-shadow:0 16px 48px rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;margin-bottom:22px">
-        <span id="gis-letter" style="font-size:56px;font-weight:700;color:#fff">G</span>
+      <div id="gis-photo-wrap" style="width:180px;height:180px;border-radius:50%;overflow:hidden;background:linear-gradient(145deg,#333,#111);border:3px solid rgba(255,255,255,.12);box-shadow:0 16px 48px rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;margin-bottom:22px">
+        <span id="gis-letter" style="font-size:64px;font-weight:700;color:#fff">G</span>
       </div>
       <h2 id="gis-name" style="margin:0 0 8px;font-size:24px;font-weight:700;color:#fff;max-width:90%;word-break:break-word">Grup</h2>
       <p id="gis-meta" style="margin:0 0 28px;font-size:14px;color:rgba(255,255,255,.55)">Undangan grup</p>
-      <button type="button" id="gis-join-btn" onclick="confirmJoinFromInvite()" class="btn-primary" style="min-width:220px;padding:14px 28px;border-radius:28px;font-size:16px;font-weight:700;border:none;cursor:pointer">
-        Bergabung
+      <button type="button" id="gis-join-btn" onclick="confirmJoinFromInvite()" class="btn-primary" style="min-width:240px;padding:16px 32px;border-radius:28px;font-size:16px;font-weight:700;border:none;cursor:pointer;background:linear-gradient(135deg,#3b82f6,#8b5cf6);color:#fff">
+        Bergabung ke grup
       </button>
       <p id="gis-status" style="margin-top:16px;font-size:13px;color:rgba(255,255,255,.45);min-height:18px"></p>
     </div>
@@ -5893,6 +5924,7 @@ function saveAccountLocal(user){
           if(ro && currentChatType!=="channel") ro.remove();
           var inputWrap=document.querySelector("#active-chat .input-wrap");
           if(inputWrap && currentChatType!=="channel") inputWrap.style.display="";
+          try{ updateAttachMenuForChannel(false); var ab=document.getElementById("attach-ask-question"); if(ab && currentChatType!=="channel") ab.style.display="none"; }catch(e){}
           var msgs=document.getElementById("messages");
           if(msgs && currentChatType!=="channel"){
             msgs.classList.remove("channel-mode");
@@ -8279,7 +8311,10 @@ function saveAccountLocal(user){
         }
       } else {
         var raw = String(msg.text || msg.message || msg.body || msg.content || msg.caption || "");
+        // dukung newline asli maupun literal \n dari data lama
+        raw = raw.replace(/\\n/g, "\n");
         var esc = raw.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+        esc = esc.replace(/\n/g, "<br>");
         esc = esc.replace(/https?:\/\/[^\s<>"']+/gi, function(u){
           return '<a href="'+u+'" target="_blank" rel="noopener" style="color:#7dd3fc;text-decoration:underline">'+u+'</a>';
         });
@@ -8837,23 +8872,16 @@ function saveAccountLocal(user){
       var isAdmin=isOwner||(ch.admins && ch.admins[currentUser.id]);
       var inputWrap=document.querySelector("#active-chat .input-wrap");
       var inp=document.getElementById("message-input");
-      if(isAdmin){
-        if(inputWrap) inputWrap.style.display="";
-        if(inp){ inp.placeholder="Tulis info"; inp.disabled=false; }
-      } else {
-        // read-only: hide composer, show question bar
-        if(inputWrap) inputWrap.style.display="none";
-        var bar=document.getElementById("ch-readonly-bar");
-        if(!bar){
-          bar=document.createElement("div");
-          bar.id="ch-readonly-bar";
-          bar.style.cssText="padding:10px 12px;display:flex;gap:8px;border-top:1px solid var(--border);background:rgba(0,0,0,0.25)";
-          bar.innerHTML='<button class="btn-primary" style="flex:1;padding:12px;border-radius:24px" onclick="openChannelQuestion()"><i class="fas fa-question-circle"></i> Ajukan pertanyaan</button>';
-          var ac=document.getElementById("active-chat");
-          if(ac) ac.appendChild(bar);
-        }
-        bar.style.display="flex";
+      // selalu tampilkan composer; tombol "Ajukan pertanyaan" ada di menu +
+      if(inputWrap) inputWrap.style.display="";
+      // hilangkan bar readonly lama jika ada
+      var bar=document.getElementById("ch-readonly-bar");
+      if(bar){ try{ bar.remove(); }catch(e){ bar.style.display="none"; } }
+      if(inp){
+        if(isAdmin){ inp.placeholder="Tulis info"; inp.disabled=false; }
+        else { inp.placeholder="Hanya admin yang bisa posting · ajukan pertanyaan lewat +"; inp.disabled=false; }
       }
+      try{ updateAttachMenuForChannel(isAdmin); }catch(e){}
       if(msgs && !msgs.querySelector(".channel-hero")){
         var hero=document.createElement("div");
         hero.className="channel-hero";
@@ -8879,7 +8907,7 @@ function saveAccountLocal(user){
           sender:currentUser.name,
           senderId:currentUser.id,
           type:"text",
-          text:"💬 Jawaban untuk "+(fromName||"pengikut")+":\\n"+ans+(questionText?("\\n\\n(Q: "+questionText+")"):""),
+          text:"💬 Jawaban untuk "+(fromName||"pengikut")+":\n"+ans+(questionText?("\n\n(Q: "+questionText+")"):""),
           timestamp:Date.now(),
           time:new Date().toLocaleTimeString("id-ID",{hour:"2-digit",minute:"2-digit"}),
           isAnswer:true,
@@ -8890,6 +8918,18 @@ function saveAccountLocal(user){
         }
         toast("Jawaban terkirim","ok");
       }catch(e){ toast("Gagal jawab: "+e.message,"err"); }
+    }
+
+    
+    function updateAttachMenuForChannel(isAdmin){
+      var btn = document.getElementById("attach-ask-question");
+      if(!btn) return;
+      if(currentChatType === "channel"){
+        // tampilkan untuk non-admin; admin juga boleh (opsional) — user minta di +
+        btn.style.display = "flex";
+      } else {
+        btn.style.display = "none";
+      }
     }
 
     function openChannelQuestion(){
@@ -11080,7 +11120,7 @@ function openStatusViewer(uid,list,index){
             photo.innerHTML='<img src="'+g.photoURL+'" alt="" style="width:100%;height:100%;object-fit:cover">';
           } else {
             var av=(g.avatar||(g.name||"G").charAt(0)||"G").toString().charAt(0).toUpperCase();
-            photo.innerHTML='<span id="gis-letter" style="font-size:56px;font-weight:700;color:#fff">'+av+'</span>';
+            photo.innerHTML='<span id="gis-letter" style="font-size:64px;font-weight:700;color:#fff">'+av+'</span>';
           }
         }
         var already = currentUser && g.members && g.members[currentUser.id];
