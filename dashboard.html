@@ -3883,6 +3883,7 @@
   <div class="modal-overlay" id="ch-question-modal">
     <div class="modal">
       <h3>Kirim pertanyaan</h3>
+      <p id="ch-question-limit-hint" style="margin:0 0 10px;font-size:12.5px;color:var(--muted)">Sisa pertanyaan: 5/5 (reset 24 jam)</p>
       <div class="form-group"><label>Pertanyaan ke admin saluran</label>
         <textarea id="ch-question-text" rows="3" placeholder="Tulis pertanyaan..." style="width:100%;padding:10px;border-radius:10px;border:1px solid var(--border);background:var(--input-bg,rgba(255,255,255,.08));color:var(--text);font-family:inherit"></textarea>
       </div>
@@ -9077,13 +9078,66 @@ function saveAccountLocal(user){
       }
     }
 
+    
+    function getQuestionLimitState(channelId){
+      var key = "wg_qlimit_" + (currentUser && currentUser.id || "x") + "_" + (channelId||"");
+      var now = Date.now();
+      var state = { count:0, resetAt: now + 24*60*60*1000 };
+      try{
+        var raw = localStorage.getItem(key);
+        if(raw){
+          var p = JSON.parse(raw);
+          if(p && p.resetAt && p.resetAt > now){
+            state.count = p.count || 0;
+            state.resetAt = p.resetAt;
+          } else {
+            // reset window
+            state = { count:0, resetAt: now + 24*60*60*1000 };
+            localStorage.setItem(key, JSON.stringify(state));
+          }
+        } else {
+          localStorage.setItem(key, JSON.stringify(state));
+        }
+      }catch(e){}
+      return state;
+    }
+    function bumpQuestionLimit(channelId){
+      var key = "wg_qlimit_" + (currentUser && currentUser.id || "x") + "_" + (channelId||"");
+      var state = getQuestionLimitState(channelId);
+      state.count = (state.count || 0) + 1;
+      try{ localStorage.setItem(key, JSON.stringify(state)); }catch(e){}
+      return state;
+    }
+    function remainingQuestions(channelId){
+      var state = getQuestionLimitState(channelId);
+      return Math.max(0, 5 - (state.count||0));
+    }
+
     function openChannelQuestion(){
-      document.getElementById("ch-question-text").value="";
+      if(!currentChannelId) return toast("Buka saluran dulu","err");
+      if(!currentUser) return toast("Login dulu","err");
+      var left = remainingQuestions(currentChannelId);
+      if(left <= 0){
+        var st = getQuestionLimitState(currentChannelId);
+        var ms = Math.max(0, (st.resetAt||0) - Date.now());
+        var hrs = Math.ceil(ms / (60*60*1000));
+        return toast("Batas 5 pertanyaan/24 jam tercapai. Coba lagi dalam ~"+hrs+" jam","err");
+      }
+      var ta = document.getElementById("ch-question-text");
+      if(ta) ta.value="";
+      var sub = document.getElementById("ch-question-limit-hint");
+      if(sub) sub.textContent = "Sisa pertanyaan hari ini: "+left+"/5 (reset 24 jam)";
       document.getElementById("ch-question-modal").classList.add("active");
     }
     async function submitChannelQuestion(){
       var text=(document.getElementById("ch-question-text").value||"").trim();
       if(!text||!currentChannelId) return;
+      var left = remainingQuestions(currentChannelId);
+      if(left <= 0){
+        var st = getQuestionLimitState(currentChannelId);
+        var hrs = Math.ceil(Math.max(0,(st.resetAt||0)-Date.now())/(60*60*1000));
+        return toast("Batas 5 pertanyaan/24 jam tercapai. Reset dalam ~"+hrs+" jam","err");
+      }
       try{
         await db.ref("channelQuestions/"+currentChannelId).push({
           fromId:currentUser.id,
@@ -9104,7 +9158,9 @@ function saveAccountLocal(user){
           isQuestion:true
         });
         document.getElementById("ch-question-modal").classList.remove("active");
+        bumpQuestionLimit(currentChannelId);
         toast("Pertanyaan terkirim","ok");
+        try{ var sub=document.getElementById("ch-question-limit-hint"); if(sub) sub.textContent="Sisa pertanyaan hari ini: "+remainingQuestions(currentChannelId)+"/5"; }catch(e){}
       }catch(e){ toast("Gagal: "+e.message,"err"); }
     }
 
@@ -9354,14 +9410,20 @@ function saveAccountLocal(user){
       if(m) m.classList.remove("active");
     }
     async function saveGroupEdit(){
-      if(!isGroupAdmin() || !currentRoom) return;
+      if(!isGroupAdmin() || !currentRoom) return toast("Hanya admin","err");
       var name = ((document.getElementById("grp-edit-name")||{}).value||"").trim();
       var desc = ((document.getElementById("grp-edit-desc")||{}).value||"").trim();
       if(!name) return toast("Nama tidak boleh kosong","err");
       try{
         await db.ref("groups/"+currentRoom).update({ name:name, desc:desc });
+        // sinkron ke userChats anggota
+        try{
+          var mems = (currentGroupData && currentGroupData.members) || {};
+          Object.keys(mems).forEach(function(uid){
+            db.ref("userChats/"+uid+"/"+currentRoom+"/name").set(name);
+          });
+        }catch(e){}
         if(currentGroupData){ currentGroupData.name=name; currentGroupData.desc=desc; }
-        // update header
         try{
           var hn = document.getElementById("chat-name");
           if(hn) hn.textContent = name;
@@ -9420,66 +9482,114 @@ function saveAccountLocal(user){
       selectedGrpMemberId = null;
     }
     async function grpMemberAction(action){
-      if(!selectedGrpMemberId || !currentRoom || !isGroupAdmin()) return;
+      if(!selectedGrpMemberId || !currentRoom || !isGroupAdmin()) return toast("Tidak diizinkan","err");
       var uid = selectedGrpMemberId;
+      var g = currentGroupData || {};
+      var mem = (g.members && g.members[uid]) || {};
+      if(uid === currentUser.id) return toast("Tidak bisa mengubah diri sendiri di sini","err");
+      if(g.ownerId === uid) return toast("Tidak bisa mengubah pemilik","err");
+      // hanya owner yang bisa kelola admin
+      var amOwner = g.ownerId === currentUser.id;
       try{
         if(action === "admin"){
+          if(!amOwner) return toast("Hanya pemilik yang bisa mengangkat admin","err");
           await db.ref("groups/"+currentRoom+"/members/"+uid+"/role").set("admin");
-          if(currentGroupData && currentGroupData.members && currentGroupData.members[uid])
-            currentGroupData.members[uid].role = "admin";
+          if(g.members && g.members[uid]) g.members[uid].role = "admin";
           toast("Dijadikan admin","ok");
         } else if(action === "member"){
+          if(!amOwner) return toast("Hanya pemilik yang bisa mengubah admin","err");
           await db.ref("groups/"+currentRoom+"/members/"+uid+"/role").set("member");
-          if(currentGroupData && currentGroupData.members && currentGroupData.members[uid])
-            currentGroupData.members[uid].role = "member";
+          if(g.members && g.members[uid]) g.members[uid].role = "member";
           toast("Dijadikan anggota","ok");
         } else if(action === "kick"){
-          if(!confirm("Keluarkan anggota ini dari grup?")) return;
+          if(!confirm("Keluarkan \""+(mem.name||"anggota")+"\" dari grup?")) return;
           await db.ref("groups/"+currentRoom+"/members/"+uid).remove();
-          if(currentGroupData && currentGroupData.members) delete currentGroupData.members[uid];
+          try{ await db.ref("userChats/"+uid+"/"+currentRoom).remove(); }catch(e){}
+          try{ await db.ref("users/"+uid+"/groups/"+currentRoom).remove(); }catch(e){}
+          if(g.members) delete g.members[uid];
+          try{
+            await db.ref("chats/"+currentRoom).push({
+              type:"system",
+              text:(mem.name||"Anggota")+" dikeluarkan dari grup",
+              timestamp:Date.now(),
+              time:new Date().toLocaleTimeString("id-ID",{hour:"2-digit",minute:"2-digit"})
+            });
+          }catch(e){}
           toast("Anggota dikeluarkan","ok");
         }
+        currentGroupData = g;
         closeGrpMemberModal();
         renderGroupInfo();
       }catch(e){ toast("Gagal: "+(e.message||e),"err"); }
     }
     async function leaveGroup(){
       if(!currentRoom || !currentUser) return;
+      if(currentChatType !== "group") return toast("Bukan grup","err");
       if(!confirm("Keluar dari grup ini?")) return;
       try{
         var g = currentGroupData || {};
+        var room = currentRoom;
+        // owner tidak bisa keluar jika masih ada anggota lain — harus hapus/transfer
         if(g.ownerId === currentUser.id){
-          return toast("Pemilik harus transfer/hapus grup dulu","err");
+          var mems = g.members || {};
+          var others = Object.keys(mems).filter(function(id){ return id !== currentUser.id; });
+          if(others.length > 0){
+            return toast("Pemilik harus transfer kepemilikan atau hapus grup dulu","err");
+          }
+          // anggota terakhir: hapus grup
+          if(g.inviteCode){ try{ await db.ref("groupInviteCodes/"+g.inviteCode).remove(); }catch(e){} }
+          await db.ref("groups/"+room).remove();
+        } else {
+          await db.ref("groups/"+room+"/members/"+currentUser.id).remove();
         }
-        await db.ref("groups/"+currentRoom+"/members/"+currentUser.id).remove();
-        try{ await db.ref("users/"+currentUser.id+"/groups/"+currentRoom).remove(); }catch(e){}
+        try{ await db.ref("userChats/"+currentUser.id+"/"+room).remove(); }catch(e){}
+        try{ await db.ref("users/"+currentUser.id+"/groups/"+room).remove(); }catch(e){}
+        try{
+          await db.ref("chats/"+room).push({
+            type:"system",
+            text:(currentUser.name||"Seseorang")+" meninggalkan grup",
+            timestamp:Date.now(),
+            time:new Date().toLocaleTimeString("id-ID",{hour:"2-digit",minute:"2-digit"})
+          });
+        }catch(e){}
         closeGroupInfo();
-        // back to list
         try{
           var ac = document.getElementById("active-chat");
           if(ac) ac.classList.remove("show");
         }catch(e){}
+        currentRoom = null;
+        currentGroupData = null;
         toast("Anda keluar dari grup","ok");
+        try{ if(typeof loadChats==="function") loadChats(); }catch(e){}
       }catch(e){ toast("Gagal keluar: "+(e.message||e),"err"); }
     }
     async function deleteGroup(){
       if(!currentRoom || !currentUser) return;
       var g = currentGroupData || {};
       if(g.ownerId !== currentUser.id) return toast("Hanya pemilik","err");
-      if(!confirm("Hapus grup \""+(g.name||"")+"\"? Pesan grup akan hilang dari daftar Anda.")) return;
+      if(!confirm("Hapus grup \""+(g.name||"")+"\"? Tindakan ini tidak bisa dibatalkan.")) return;
+      var room = currentRoom;
       try{
-        // remove invite code map
         if(g.inviteCode){
           try{ await db.ref("groupInviteCodes/"+g.inviteCode).remove(); }catch(e){}
         }
-        await db.ref("groups/"+currentRoom).remove();
-        try{ await db.ref("users/"+currentUser.id+"/groups/"+currentRoom).remove(); }catch(e){}
+        // hapus userChats semua anggota
+        var mems = g.members || {};
+        var ids = Object.keys(mems);
+        for(var i=0;i<ids.length;i++){
+          try{ await db.ref("userChats/"+ids[i]+"/"+room).remove(); }catch(e){}
+          try{ await db.ref("users/"+ids[i]+"/groups/"+room).remove(); }catch(e){}
+        }
+        await db.ref("groups/"+room).remove();
         closeGroupInfo();
         try{
           var ac = document.getElementById("active-chat");
           if(ac) ac.classList.remove("show");
         }catch(e){}
+        currentRoom = null;
+        currentGroupData = null;
         toast("Grup dihapus","ok");
+        try{ if(typeof loadChats==="function") loadChats(); }catch(e){}
       }catch(e){ toast("Gagal hapus: "+(e.message||e),"err"); }
     }
 
