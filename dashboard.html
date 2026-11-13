@@ -3310,6 +3310,176 @@
       padding: 12px 18px 16px !important;
     }
 
+  
+    /* ===== Black + white light 3D (chat) ===== */
+    body {
+      background:
+        radial-gradient(ellipse 90% 55% at 50% -18%, rgba(255,255,255,.09), transparent 52%),
+        radial-gradient(ellipse 50% 35% at 100% 100%, rgba(255,255,255,.03), transparent),
+        #050508 !important;
+      color: #f4f4f5;
+    }
+    .header, .chat-header, .page-header {
+      background: linear-gradient(180deg, rgba(28,28,34,.92), rgba(12,12,16,.88)) !important;
+      border-bottom: 1px solid rgba(255,255,255,.1) !important;
+      box-shadow:
+        0 8px 24px rgba(0,0,0,.35),
+        inset 0 1px 0 rgba(255,255,255,.1) !important;
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+    }
+    .header h1, .header .title, .chat-header .info h3, #chat-name {
+      text-shadow: 0 1px 0 rgba(255,255,255,.12);
+    }
+    .chat-item {
+      margin: 3px 10px;
+      border-radius: 18px;
+      background: linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02));
+      border: 1px solid rgba(255,255,255,.06);
+      box-shadow: 0 4px 12px rgba(0,0,0,.2), inset 0 1px 0 rgba(255,255,255,.05);
+      transition: transform .12s ease, background .15s ease;
+    }
+    .chat-item:active {
+      transform: scale(.98);
+      background: rgba(255,255,255,.08);
+    }
+    .chat-item .avatar, .chat-item .ava, .status-ring .inner {
+      box-shadow:
+        0 4px 12px rgba(0,0,0,.35),
+        0 0 0 1px rgba(255,255,255,.1),
+        inset 0 1px 0 rgba(255,255,255,.15);
+    }
+    .message.out .bubble {
+      background: linear-gradient(165deg, rgba(255,255,255,.18), rgba(255,255,255,.08)) !important;
+      border: 1px solid rgba(255,255,255,.14) !important;
+      color: #fff !important;
+      box-shadow:
+        0 4px 14px rgba(0,0,0,.25),
+        inset 0 1px 0 rgba(255,255,255,.2) !important;
+      border-radius: 18px 18px 6px 18px !important;
+    }
+    .message.in .bubble {
+      background: linear-gradient(165deg, rgba(40,40,48,.95), rgba(18,18,24,.95)) !important;
+      border: 1px solid rgba(255,255,255,.08) !important;
+      box-shadow:
+        0 4px 14px rgba(0,0,0,.3),
+        inset 0 1px 0 rgba(255,255,255,.08) !important;
+      border-radius: 18px 18px 18px 6px !important;
+    }
+    .input-wrap, .composer, #input-wrap {
+      background: linear-gradient(180deg, rgba(22,22,28,.95), rgba(10,10,14,.98)) !important;
+      border-top: 1px solid rgba(255,255,255,.1) !important;
+      box-shadow: 0 -8px 24px rgba(0,0,0,.3), inset 0 1px 0 rgba(255,255,255,.08);
+      backdrop-filter: blur(16px);
+    }
+    .input-wrap input, .input-wrap textarea, #msg-input, .composer input {
+      background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.04)) !important;
+      border: 1px solid rgba(255,255,255,.12) !important;
+      border-radius: 22px !important;
+      color: #fff !important;
+      box-shadow: inset 0 2px 4px rgba(0,0,0,.25), inset 0 1px 0 rgba(255,255,255,.08) !important;
+    }
+    .input-wrap input:focus, #msg-input:focus {
+      border-color: rgba(255,255,255,.28) !important;
+      box-shadow:
+        0 0 0 3px rgba(255,255,255,.06),
+        inset 0 2px 4px rgba(0,0,0,.25) !important;
+    }
+    .send-btn, .btn-send, button.send {
+      background: linear-gradient(180deg, #f8fafc, #d4d4d8) !important;
+      color: #0a0a0a !important;
+      border: none !important;
+      border-bottom: 3px solid #52525b !important;
+      box-shadow: 0 4px 0 #27272a, 0 6px 16px rgba(0,0,0,.35), inset 0 1px 0 #fff !important;
+      border-radius: 50% !important;
+    }
+    .send-btn:active, .btn-send:active {
+      transform: translateY(2px);
+      box-shadow: 0 1px 0 #27272a, inset 0 1px 0 #fff !important;
+    }
+    .dock, .bottom-nav, .nav-dock, #dock {
+      background: linear-gradient(180deg, rgba(24,24,30,.94), rgba(10,10,14,.98)) !important;
+      border-top: 1px solid rgba(255,255,255,.12) !important;
+      box-shadow: 0 -10px 28px rgba(0,0,0,.4), inset 0 1px 0 rgba(255,255,255,.1) !important;
+      backdrop-filter: blur(20px);
+    }
+    .nav-item {
+      color: rgba(255,255,255,.45) !important;
+    }
+    .nav-item.active {
+      color: #fff !important;
+      text-shadow: 0 0 16px rgba(255,255,255,.35);
+    }
+    .nav-item.active i {
+      filter: drop-shadow(0 0 6px rgba(255,255,255,.4));
+    }
+    .search-bar, .search-box {
+      background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.03)) !important;
+      border: 1px solid rgba(255,255,255,.1) !important;
+      border-radius: 16px !important;
+      box-shadow: inset 0 2px 4px rgba(0,0,0,.2), inset 0 1px 0 rgba(255,255,255,.06) !important;
+    }
+    .btn-primary, .btn-green {
+      background: linear-gradient(180deg, #f4f4f5, #a1a1aa) !important;
+      color: #0a0a0a !important;
+      border: none !important;
+      border-bottom: 3px solid #52525b !important;
+      box-shadow: 0 5px 0 #27272a, 0 8px 18px rgba(0,0,0,.35), inset 0 1px 0 #fff !important;
+      border-radius: 14px !important;
+      font-weight: 800 !important;
+    }
+    .btn-primary:active, .btn-green:active {
+      transform: translateY(3px);
+      box-shadow: 0 1px 0 #27272a, inset 0 1px 0 #fff !important;
+    }
+    .btn-gray {
+      background: linear-gradient(180deg, #3f3f46, #18181b) !important;
+      color: #f4f4f5 !important;
+      border: none !important;
+      border-bottom: 3px solid #000 !important;
+      box-shadow: 0 4px 0 #000, inset 0 1px 0 rgba(255,255,255,.12) !important;
+      border-radius: 14px !important;
+    }
+    .btn-gray:active {
+      transform: translateY(2px);
+      box-shadow: 0 1px 0 #000 !important;
+    }
+    .modal, .modal-box, .create-box, .ps-box, .sheet-box {
+      background: linear-gradient(180deg, rgba(30,30,38,.98), rgba(12,12,16,.99)) !important;
+      border: 1px solid rgba(255,255,255,.12) !important;
+      box-shadow:
+        0 24px 60px rgba(0,0,0,.55),
+        inset 0 1px 0 rgba(255,255,255,.12) !important;
+    }
+    .toast {
+      background: linear-gradient(180deg, rgba(32,32,40,.95), rgba(14,14,18,.95)) !important;
+      border: 1px solid rgba(255,255,255,.14) !important;
+      box-shadow: 0 12px 32px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.1) !important;
+    }
+    .toast i {
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.12);
+    }
+    .icon-btn, .header button, .chat-header button {
+      background: linear-gradient(180deg, rgba(255,255,255,.1), rgba(255,255,255,.04)) !important;
+      border: 1px solid rgba(255,255,255,.1) !important;
+      box-shadow: 0 3px 0 rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.12) !important;
+      border-radius: 12px !important;
+      color: #fff !important;
+    }
+    .icon-btn:active, .header button:active {
+      transform: translateY(2px);
+      box-shadow: 0 1px 0 rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.1) !important;
+    }
+    /* Liquid pill if present */
+    .liquid-pill {
+      background: linear-gradient(180deg, rgba(255,255,255,.2), rgba(255,255,255,.06)) !important;
+      border: 1px solid rgba(255,255,255,.22) !important;
+      box-shadow:
+        0 8px 24px rgba(0,0,0,.35),
+        inset 0 1px 0 rgba(255,255,255,.35),
+        inset 0 -1px 0 rgba(0,0,0,.2) !important;
+    }
+
   </style>
 </head>
 <body>
