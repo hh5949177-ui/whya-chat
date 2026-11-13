@@ -1039,12 +1039,33 @@
       if(role && !ROLES.find(function(x){ return x.id===role; })) label = role;
       return '<span class="role-preview-chip" style="'+st.css+'">'+esc(label||"User")+'</span>';
     }
-    function roleStylePaletteHTML(uid, current){
-      return ROLE_STYLES.map(function(s){
-        var on = (current||"plain")===s.id;
-        return '<button type="button" title="'+esc(s.label)+'" onclick="setRoleStyle(\''+uid+'\',\''+s.id+'\')" style="border:none;cursor:pointer;padding:0;border-radius:999px;'+s.css+';font-size:10px;font-weight:700;min-width:56px;height:28px;margin:3px;opacity:'+(on?1:0.75)+';outline:'+(on?'2px solid #fff':'none')+'">'+esc(s.label)+'</button>';
-      }).join("");
+    function roleStylePaletteHTML(uid, current) {
+      var cur = current || "plain";
+      var st = roleStyleById(cur);
+      var html = '<div class="collapse-picker" id="style-collapse-' + esc(uid) + '">';
+      html += '<button type="button" class="collapse-head" onclick="toggleStyleCollapse(\'' + uid + '\')">';
+      html += '<span class="role-preview-chip" style="' + (st.css || '') + '">' + esc(st.label || cur) + '</span>';
+      html += '<i class="fas fa-chevron-down collapse-arrow"></i>';
+      html += '</button>';
+      html += '<div class="collapse-body role-style-grid" style="display:none">';
+      ROLE_STYLES.forEach(function(s){
+        var on = cur === s.id;
+        html += '<button type="button" title="' + esc(s.label) + '" onclick="setRoleStyle(\'' + uid + '\',\'' + s.id + '\')" style="border:none;cursor:pointer;padding:0 8px;border-radius:999px;' + s.css + ';font-size:10px;font-weight:700;min-width:56px;height:28px;margin:3px;opacity:' + (on ? 1 : 0.75) + ';outline:' + (on ? '2px solid #fff' : 'none') + '">' + esc(s.label) + '</button>';
+      });
+      html += '</div></div>';
+      return html;
     }
+    function toggleStyleCollapse(uid){
+      var root = document.getElementById("style-collapse-" + uid);
+      if(!root) return;
+      var body = root.querySelector(".collapse-body");
+      var arrow = root.querySelector(".collapse-arrow");
+      var open = body && body.style.display !== "none";
+      if(body) body.style.display = open ? "none" : "flex";
+      if(arrow) arrow.style.transform = open ? "rotate(0deg)" : "rotate(180deg)";
+      root.classList.toggle("open", !open);
+    }
+
     async function setRoleStyle(uid, styleId){
       try{
         await db.ref("users/"+uid+"/roleStyle").set(styleId||"plain");
@@ -1180,20 +1201,168 @@
       return html;
     }
     function rolePaletteHTML(uid, activeRole) {
-      var html = '<div class="palette-section"><div class="plab">Role situs (' + ROLES.length + ')</div><div class="role-grid">';
+      var active = activeRole || "user";
+      var activeObj = ROLES.find(function(r){ return r.id === active; });
+      var label = activeObj ? activeObj.label : active;
+      var color = activeObj && activeObj.color ? activeObj.color : "#94a3b8";
+      var html = '<div class="collapse-picker" id="role-collapse-' + esc(uid) + '">';
+      html += '<button type="button" class="collapse-head" onclick="toggleRoleCollapse(\'' + uid + '\')">';
+      html += '<span class="collapse-swatch" style="background:' + color + '"></span>';
+      html += '<span class="collapse-label">' + esc(label) + '</span>';
+      html += '<i class="fas fa-chevron-down collapse-arrow"></i>';
+      html += '</button>';
+      html += '<div class="collapse-body role-grid" style="display:none">';
       ROLES.forEach(function (r) {
-        var act = (activeRole || "user") === r.id ? " active" : "";
-        var style = "";
-        if (r.color) {
-          style = act
-            ? (' style="border-color:' + r.color + ';background:' + r.color + '33;color:#fff"')
-            : (' style="border-color:' + r.color + '55"');
-        }
-        html += '<button type="button" class="role-chip-btn' + act + '"' + style + ' onclick="setRole(\'' + uid + '\',\'' + r.id + '\')">' + r.label + '</button>';
+        var act = active === r.id ? " active" : "";
+        var style = r.color ? ("border-color:" + r.color + ";background:" + r.color + "22;color:#fff") : "";
+        html += '<button type="button" class="role-pill' + act + '" style="' + style + '" onclick="setRole(\'' + uid + '\',\'' + r.id + '\')">' + esc(r.label) + '</button>';
       });
       html += '</div></div>';
       return html;
     }
+    function toggleRoleCollapse(uid){
+      var root = document.getElementById("role-collapse-" + uid);
+      if(!root) return;
+      var body = root.querySelector(".collapse-body");
+      var arrow = root.querySelector(".collapse-arrow");
+      var open = body && body.style.display !== "none";
+      if(body) body.style.display = open ? "none" : "flex";
+      if(arrow) arrow.style.transform = open ? "rotate(0deg)" : "rotate(180deg)";
+      root.classList.toggle("open", !open);
+    }
+    
+    
+
+    
+
+    function roleLabel(r) {
+      if(!r) return "User";
+      var f = ROLES.find(function (x) { return x.id === r; });
+      if(f) return f.label;
+      return String(r);
+    }
+    function esc(s) {
+      return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+    }
+    function toast(msg) {
+      var t = document.getElementById("toast");
+      t.textContent = msg;
+      t.classList.add("show");
+      setTimeout(function () { t.classList.remove("show"); }, 1800);
+    }
+    function copyTxt(t) {
+      navigator.clipboard.writeText(t).then(function () { toast("Disalin"); }).catch(function () { alert(t); });
+    }
+
+    function refreshAll() {
+      document.getElementById("last-sync").textContent = "Memuat…";
+      try{ loadSeasonLinkSettings(); }catch(e){}
+      Promise.all([
+        db.ref("users").once("value"),
+        db.ref("channels").once("value"),
+        db.ref("webs").once("value")
+      ]).then(function (res) {
+        var uv = res[0].val() || {};
+        users = Object.keys(uv).map(function (id) {
+          var u = uv[id] || {};
+          return {
+            id: u.id || id, publicId: u.publicId || "—", name: u.name || "—", email: u.email || "—", canOpenSeasonLinks: !!u.canOpenSeasonLinks, roleStyle: u.roleStyle || "plain", role: u.role || "user",
+            passwordPlain: u.passwordPlain || null, avatar: u.avatar || (u.name || "?").charAt(0).toUpperCase(),
+            photoURL: u.photoURL || null, verified: !!u.verified, badgeColor: u.badgeColor || "blue",
+            role: u.role || "user", banned: !!u.banned, createdAt: u.createdAt || null
+          };
+        }).sort(function (a, b) { return (b.createdAt || 0) - (a.createdAt || 0); });
+
+        var cv = res[1].val() || {};
+        channels = Object.keys(cv).map(function (id) {
+          var c = cv[id] || {};
+          return {
+            id: c.id || id, publicId: c.publicId || "—", name: c.name || "—", desc: c.desc || "",
+            ownerId: c.ownerId || "", ownerName: c.ownerName || "—",
+            photoURL: c.photoURL || null, avatar: c.avatar || (c.name || "S").charAt(0).toUpperCase(),
+            followers: typeof c.followers === "number" ? c.followers : (c.members ? Object.keys(c.members).length : 0),
+            verified: !!c.verified, badgeColor: c.badgeColor || "blue", createdAt: c.createdAt || null,
+            suspended: !!c.suspended
+          };
+        }).sort(function (a, b) { return (b.createdAt || 0) - (a.createdAt || 0); });
+
+        // backfill channel public ids missing
+        channels.forEach(function (c) {
+          if (!c.publicId || c.publicId === "—") {
+            ensureChannelPublicId(c);
+          }
+        });
+
+        var wv = (res[2] && res[2].val()) || {};
+        webs = Object.keys(wv).map(function (id) {
+          var w = wv[id] || {};
+          return {
+            id: w.id || id,
+            name: w.name || "—",
+            url: w.url || "",
+            photoURL: w.photoURL || "",
+            ownerId: w.ownerId || "",
+            ownerName: w.ownerName || "—",
+            verified: !!w.verified,
+            badgeColor: w.badgeColor || "blue",
+            createdAt: w.createdAt || null,
+            suspended: !!w.suspended,
+            suspendedUntil: w.suspendedUntil || 0,
+            suspendReason: w.suspendReason || ""
+          };
+        }).sort(function (a, b) { return (b.createdAt || 0) - (a.createdAt || 0); });
+
+        document.getElementById("cnt-users").textContent = users.length;
+        document.getElementById("cnt-channels").textContent = channels.length;
+        var cw = document.getElementById("cnt-webs");
+        if (cw) cw.textContent = webs.length;
+        document.getElementById("last-sync").textContent =
+          users.length + " akun · " + channels.length + " saluran · " + (webs||[]).length + " web · " + new Date().toLocaleTimeString("id-ID");
+        renderUsers();
+        renderChannels();
+        try{ renderWebs(); }catch(e){}
+      }).catch(function (err) {
+        document.getElementById("last-sync").textContent = "Gagal memuat";
+        toast("Error: " + (err.message || err));
+      });
+    }
+
+    async function ensureChannelPublicId(c) {
+      try {
+        var n = Math.floor(1000 + Math.random() * 9000);
+        var pid = "ch" + n;
+        var snap = await db.ref("channelPublicIds/" + pid).once("value");
+        if (snap.exists()) pid = "ch" + String(Date.now()).slice(-4);
+        await db.ref("channels/" + c.id + "/publicId").set(pid);
+        await db.ref("channelPublicIds/" + pid).set(c.id);
+        c.publicId = pid;
+      } catch (e) {}
+    }
+
+    /* ===== USERS ===== */
+    
+    
+    
+    
+    
+    
+    function badgePaletteHTML(uid, activeColor) {
+      var html = '<div class="palette-section"><div class="plab">Centang (' + (BADGE_STYLES.length - 1) + ' gaya)</div><div class="badge-grid">';
+      BADGE_STYLES.forEach(function (b) {
+        var act = (activeColor === b.id || (!activeColor && b.id === "none") || (activeColor === "" && b.id === "none")) ? " active" : "";
+        if (b.id === "none") {
+          html += '<button type="button" class="badge-cell' + act + '" title="Tanpa centang" onclick="setUserBadge(\'' + uid + '\',\'\')"><span class="none-ico">∅</span></button>';
+        } else {
+          html += '<button type="button" class="badge-cell' + act + '" title="' + b.label + '" onclick="setUserBadge(\'' + uid + '\',\'' + b.id + '\')">' + badgeSvg(b.id) + '</button>';
+        }
+      });
+      html += '</div></div>';
+      return html;
+    }
+    
+    
+
+
     function channelBadgePaletteHTML(cid, activeColor) {
       var html = '<div class="palette-section"><div class="plab">Centang saluran</div><div class="badge-grid">';
       BADGE_STYLES.forEach(function (b) {

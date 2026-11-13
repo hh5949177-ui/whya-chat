@@ -2914,6 +2914,188 @@
     }
     .acc-warn-btn:active { transform:translateY(3px); box-shadow:0 2px 0 #450a0a; }
 
+  
+    /* ===== Create Status modern ===== */
+    .create-box.cs-modern {
+      width: min(420px, 94vw);
+      border-radius: 24px;
+      padding: 0 0 16px;
+      background: linear-gradient(180deg, rgba(28,28,34,.98), rgba(12,12,16,.98));
+      border: 1px solid rgba(255,255,255,.1);
+      box-shadow: 0 24px 60px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.08);
+      overflow: hidden;
+    }
+    .cs-head {
+      display:flex; align-items:center; justify-content:space-between;
+      padding:14px 16px; border-bottom:1px solid rgba(255,255,255,.06);
+    }
+    .cs-head h3 { font-size:16px; font-weight:750; margin:0; }
+    .cs-icon-btn {
+      width:36px; height:36px; border-radius:50%; border:none; cursor:pointer;
+      background:rgba(255,255,255,.08); color:#fff;
+      display:flex; align-items:center; justify-content:center;
+    }
+    .cs-post-btn {
+      border:none; cursor:pointer; font-weight:750; font-size:13px;
+      padding:8px 14px; border-radius:999px; color:#0a0a0a;
+      background: linear-gradient(180deg,#fff,#d4d4d8);
+      box-shadow: 0 3px 0 #52525b, inset 0 1px 0 #fff;
+    }
+    .cs-modern textarea {
+      width: calc(100% - 32px); margin: 14px 16px 8px;
+      min-height: 110px; resize: vertical;
+      border-radius: 16px; border: 1px solid rgba(255,255,255,.1);
+      background: rgba(0,0,0,.28); color: #f8fafc;
+      padding: 14px; font-size: 15px; font-family: inherit;
+      outline: none;
+    }
+    .cs-modern textarea:focus {
+      border-color: rgba(255,255,255,.28);
+      box-shadow: 0 0 0 3px rgba(255,255,255,.06);
+    }
+    .cs-label {
+      font-size:12px; font-weight:700; color:var(--muted);
+      margin: 4px 16px 8px;
+    }
+    .cs-modern .status-privacy {
+      display:flex; gap:8px; flex-wrap:wrap; padding: 0 16px;
+    }
+    .cs-modern .status-privacy label {
+      flex:1; min-width:90px; text-align:center;
+      padding:10px 8px; border-radius:14px; cursor:pointer;
+      background: rgba(255,255,255,.05);
+      border: 1px solid rgba(255,255,255,.08);
+      font-size:12.5px; font-weight:650; color: rgba(255,255,255,.65);
+    }
+    .cs-modern .status-privacy label input { display:none; }
+    .cs-modern .status-privacy label.active {
+      background: linear-gradient(180deg, rgba(34,197,94,.25), rgba(22,101,52,.35));
+      border-color: rgba(74,222,128,.45);
+      color: #bbf7d0;
+      box-shadow: 0 0 16px rgba(34,197,94,.15), inset 0 1px 0 rgba(255,255,255,.08);
+    }
+    .cs-media-row {
+      display:flex; align-items:center; gap:10px; padding:12px 16px 0;
+    }
+    .cs-media-btn {
+      display:inline-flex; align-items:center; gap:8px;
+      padding:10px 14px; border-radius:14px; cursor:pointer;
+      background: rgba(255,255,255,.07);
+      border: 1px solid rgba(255,255,255,.1);
+      font-size:13px; font-weight:650; color:rgba(255,255,255,.8);
+    }
+    .cs-media-btn input { display:none; }
+    .cs-hint { font-size:11px; color:var(--muted); }
+    .cs-modern #status-preview {
+      margin: 10px 16px 0; border-radius:14px; overflow:hidden;
+      max-height: 180px;
+    }
+    .cs-modern #status-preview img,
+    .cs-modern #status-preview video { width:100%; max-height:180px; object-fit:cover; display:block; }
+    .cs-actions { padding: 12px 16px 0; gap:10px; }
+    .cs-actions .btn-green {
+      flex:1.2;
+      background: linear-gradient(180deg, #4ade80, #16a34a) !important;
+      border-bottom: 3px solid #14532d !important;
+      box-shadow: 0 4px 0 #052e16, inset 0 1px 0 rgba(255,255,255,.25) !important;
+      color:#052e16 !important; font-weight:800 !important;
+    }
+
+    /* ===== Animated role chip ===== */
+    .role-chip-chat {
+      display:inline-flex; align-items:center;
+      font-size:10px; font-weight:800; line-height:1;
+      padding:4px 9px; border-radius:999px; margin-left:6px;
+      vertical-align:middle; max-width:130px;
+      overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+      letter-spacing:.03em;
+      background-size: 200% 200% !important;
+      animation: roleShift 3.5s ease infinite, roleFloat 2.8s ease-in-out infinite;
+      box-shadow: 0 0 12px rgba(255,255,255,.08);
+    }
+    @keyframes roleShift {
+      0% { background-position: 0% 50%; filter: hue-rotate(0deg); }
+      50% { background-position: 100% 50%; filter: hue-rotate(12deg); }
+      100% { background-position: 0% 50%; filter: hue-rotate(0deg); }
+    }
+    @keyframes roleFloat {
+      0%,100% { transform: translateY(0); }
+      50% { transform: translateY(-1px); }
+    }
+    .role-chip-chat.role-anim-text {
+      background-clip: text; -webkit-background-clip: text;
+      color: transparent !important;
+      -webkit-text-fill-color: transparent;
+      animation: roleTextGrad 2.5s linear infinite;
+    }
+    @keyframes roleTextGrad {
+      0% { filter: hue-rotate(0deg) brightness(1.05); }
+      100% { filter: hue-rotate(360deg) brightness(1.05); }
+    }
+
+    /* ===== Animated badges ===== */
+    .v-badge {
+      display:inline-block; vertical-align:-0.2em; flex-shrink:0;
+      animation: badgePulse 2.2s ease-in-out infinite;
+      transform-origin: center;
+    }
+    .v-badge.badge-glow {
+      animation: badgeGlow 1.8s ease-in-out infinite;
+    }
+    .v-badge.badge-spin-slow {
+      animation: badgeSpin 6s linear infinite;
+    }
+    .v-badge.badge-shimmer {
+      animation: badgeShimmer 2.4s ease-in-out infinite;
+    }
+    @keyframes badgePulse {
+      0%,100% { transform: scale(1); filter: drop-shadow(0 0 0 transparent); }
+      50% { transform: scale(1.08); filter: drop-shadow(0 0 4px rgba(255,255,255,.35)); }
+    }
+    @keyframes badgeGlow {
+      0%,100% { filter: drop-shadow(0 0 2px currentColor); transform: scale(1); }
+      50% { filter: drop-shadow(0 0 8px currentColor); transform: scale(1.1); }
+    }
+    @keyframes badgeSpin {
+      0% { transform: rotate(0deg) scale(1); }
+      50% { transform: rotate(180deg) scale(1.05); }
+      100% { transform: rotate(360deg) scale(1); }
+    }
+    @keyframes badgeShimmer {
+      0%,100% { filter: brightness(1) drop-shadow(0 0 2px rgba(255,255,255,.2)); }
+      50% { filter: brightness(1.35) drop-shadow(0 0 6px rgba(255,255,255,.45)); }
+    }
+
+    /* ===== Profile sheet polish ===== */
+    .ps-box {
+      border-radius: 28px 28px 0 0 !important;
+      overflow: hidden;
+      box-shadow: 0 -12px 40px rgba(0,0,0,.45);
+      background: linear-gradient(180deg, #14141a 0%, #0a0a0e 100%);
+    }
+    .ps-banner {
+      height: 140px !important;
+      background: linear-gradient(135deg, #1e1b4b, #0f172a 40%, #134e4a);
+    }
+    .ps-ava-wrap { margin-top: -42px !important; }
+    .ps-ava {
+      width: 88px !important; height: 88px !important;
+      border: 4px solid #0a0a0e !important;
+      box-shadow: 0 8px 24px rgba(0,0,0,.4);
+    }
+    .ps-name {
+      font-size: 22px !important;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    .ps-actions button {
+      border-radius: 16px !important;
+      background: linear-gradient(180deg, rgba(255,255,255,.1), rgba(255,255,255,.04)) !important;
+      border: 1px solid rgba(255,255,255,.1) !important;
+      box-shadow: 0 4px 0 rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.08);
+    }
+    .ps-actions button:active { transform: translateY(2px); }
+
   </style>
 </head>
 <body>
@@ -3766,24 +3948,30 @@
 
   <!-- CREATE STATUS -->
   <div id="create-status">
-    <div class="create-box">
-      <h3 style="margin-bottom:12px">Buat Status</h3>
-      <textarea id="status-text" placeholder="Tulis status..."></textarea>
-      <div style="font-size:12px;color:var(--muted);margin:8px 0 4px;font-weight:600">Siapa yang bisa melihat</div>
+    <div class="create-box cs-modern">
+      <div class="cs-head">
+        <button type="button" class="cs-icon-btn" onclick="closeCreateStatus()" aria-label="Tutup"><i class="fas fa-xmark"></i></button>
+        <h3>Buat Status</h3>
+        <button type="button" class="cs-post-btn" onclick="publishStatus()">Kirim</button>
+      </div>
+      <textarea id="status-text" placeholder="Apa yang kamu pikirkan?"></textarea>
+      <div class="cs-label">Siapa yang bisa melihat</div>
       <div class="status-privacy" id="status-privacy">
-        <label class="active"><input type="radio" name="status-priv" value="public" checked> Public</label>
-        <label><input type="radio" name="status-priv" value="contacts"> Kontak tersimpan</label>
-        <label><input type="radio" name="status-priv" value="private"> Pribadi</label>
+        <label class="active"><input type="radio" name="status-priv" value="public" checked><span>Public</span></label>
+        <label><input type="radio" name="status-priv" value="contacts"><span>Kontak</span></label>
+        <label><input type="radio" name="status-priv" value="private"><span>Pribadi</span></label>
       </div>
       <div class="preview" id="status-preview"></div>
-      <label class="icon-btn file-btn" style="display:inline-flex;margin:8px 0;background:rgba(255,255,255,.07);width:auto;padding:0 12px;border-radius:10px;gap:7px;color:var(--muted)">
-        <i class="fas fa-photo-video"></i> Foto / Video
-        <input type="file" accept="image/*,video/*" onchange="previewStatusMedia(this)">
-      </label>
-      <p style="font-size:11px;color:var(--muted)">Video max 100 MB</p>
-      <div class="create-actions">
+      <div class="cs-media-row">
+        <label class="cs-media-btn">
+          <i class="fas fa-image"></i> Foto / Video
+          <input type="file" accept="image/*,video/*" onchange="previewStatusMedia(this)">
+        </label>
+        <span class="cs-hint">Video max 100 MB</span>
+      </div>
+      <div class="create-actions cs-actions">
         <button class="btn-gray" onclick="closeCreateStatus()">Batal</button>
-        <button class="btn-green" onclick="publishStatus()">Kirim</button>
+        <button class="btn-green" onclick="publishStatus()">Kirim Status</button>
       </div>
     </div>
   </div>
@@ -5684,20 +5872,25 @@ function saveAccountLocal(user){
       if(!st || st.type==="none") return "";
       var fill = st.color || "#1D9BF0";
       var path = 'M10.2 15.8L6.7 12.3l1.4-1.4 2.1 2.1 5.2-5.2 1.4 1.4-6.6 6.6z';
+      var anim = "v-badge";
+      if(st.type==="glow") anim += " badge-glow";
+      else if(st.type==="gradient") anim += " badge-shimmer";
+      else if(colorOrId && String(colorOrId).indexOf("spin")>=0) anim += " badge-spin-slow";
+      else anim += "";
       if(st.type==="gradient" && st.colors && st.colors.length){
         var gid = "bg"+Math.random().toString(36).slice(2,8);
         var stops = st.colors.map(function(c,i){
           return '<stop offset="'+Math.round(i/(st.colors.length-1||1)*100)+'%" stop-color="'+c+'"/>';
         }).join("");
-        return '<svg class="v-badge" viewBox="0 0 24 24" width="'+size+'" height="'+size+'" style="display:inline-block;vertical-align:-0.2em;flex-shrink:0"><defs><linearGradient id="'+gid+'" x1="0%" y1="0%" x2="100%" y2="100%">'+stops+'</linearGradient></defs><circle cx="12" cy="12" r="11" fill="url(#'+gid+')"/><path fill="#fff" d="'+path+'"/></svg>';
+        return '<svg class="'+anim+'" viewBox="0 0 24 24" width="'+size+'" height="'+size+'" style="display:inline-block;vertical-align:-0.2em;flex-shrink:0"><defs><linearGradient id="'+gid+'" x1="0%" y1="0%" x2="100%" y2="100%">'+stops+'</linearGradient></defs><circle cx="12" cy="12" r="11" fill="url(#'+gid+')"/><path fill="#fff" d="'+path+'"/></svg>';
       }
       if(st.type==="glow"){
-        return '<svg class="v-badge" viewBox="0 0 24 24" width="'+size+'" height="'+size+'" style="display:inline-block;vertical-align:-0.2em;flex-shrink:0;filter:drop-shadow(0 0 3px '+fill+')"><circle cx="12" cy="12" r="11" fill="'+fill+'"/><path fill="#fff" d="'+path+'"/></svg>';
+        return '<svg class="'+anim+'" viewBox="0 0 24 24" width="'+size+'" height="'+size+'" style="display:inline-block;vertical-align:-0.2em;flex-shrink:0;filter:drop-shadow(0 0 3px '+fill+')"><circle cx="12" cy="12" r="11" fill="'+fill+'"/><path fill="#fff" d="'+path+'"/></svg>';
       }
       if(fill==="#E5E7EB"||fill==="#e5e7eb"){
-        return '<svg class="v-badge" viewBox="0 0 24 24" width="'+size+'" height="'+size+'" style="display:inline-block;vertical-align:-0.2em;flex-shrink:0"><circle cx="12" cy="12" r="11" fill="#E5E7EB" stroke="#9CA3AF" stroke-width="1"/><path fill="#111827" d="'+path+'"/></svg>';
+        return '<svg class="'+anim+'" viewBox="0 0 24 24" width="'+size+'" height="'+size+'" style="display:inline-block;vertical-align:-0.2em;flex-shrink:0"><circle cx="12" cy="12" r="11" fill="#E5E7EB" stroke="#9CA3AF" stroke-width="1"/><path fill="#111827" d="'+path+'"/></svg>';
       }
-      return '<svg class="v-badge" viewBox="0 0 24 24" width="'+size+'" height="'+size+'" style="display:inline-block;vertical-align:-0.2em;flex-shrink:0"><circle cx="12" cy="12" r="11" fill="'+fill+'"/><path fill="#fff" d="'+path+'"/></svg>';
+      return '<svg class="'+anim+'" viewBox="0 0 24 24" width="'+size+'" height="'+size+'" style="display:inline-block;vertical-align:-0.2em;flex-shrink:0"><circle cx="12" cy="12" r="11" fill="'+fill+'"/><path fill="#fff" d="'+path+'"/></svg>';
     }
     function roleChipChatHTML(role, styleId){
       if(!role || role==="user" || role==="member") return "";
@@ -10012,7 +10205,19 @@ function saveAccountLocal(user){
       }catch(e){ toast("Gagal: "+e.message,"err"); }
     }
 
-    function loadStatuses(){ db.ref("status").on("value",function(){ if(document.getElementById("tab-status").classList.contains("active")){ renderStatusPage(); renderChannels(); } }); }
+    function loadStatuses(){
+      if(window._statusListenerOn) return;
+      window._statusListenerOn = true;
+      var _stTimer = null;
+      db.ref("status").on("value",function(){
+        if(_stTimer) clearTimeout(_stTimer);
+        _stTimer = setTimeout(function(){
+          if(document.getElementById("tab-status") && document.getElementById("tab-status").classList.contains("active")){
+            renderStatusPage();
+          }
+        }, 120);
+      });
+    }
         function renderStatusPage(){
       const box=document.getElementById("status-page-list");
       box.innerHTML="";
@@ -10058,10 +10263,20 @@ function saveAccountLocal(user){
         const otherSec=document.createElement("div");
         otherSec.innerHTML='<div class="status-section-title">Pembaruan terbaru</div>';
         let hasOther=false;
+        var seenStatusUsers = {};
         Object.keys(all).forEach(function(uid){
           if(uid===currentUser.id) return;
-          const list=getValidStatuses(all[uid], uid).filter(function(st){
+          if(seenStatusUsers[uid]) return;
+          seenStatusUsers[uid] = true;
+          var list=getValidStatuses(all[uid], uid).filter(function(st){
             return statusAllowedForMe(st, uid, friendIds);
+          });
+          var seenKeys = {};
+          list = list.filter(function(st){
+            var k = String(st._id || st.key || ((st.timestamp||0)+"_"+(st.text||"")));
+            if(seenKeys[k]) return false;
+            seenKeys[k] = true;
+            return true;
           });
           if(!list.length) return;
           hasOther=true;
