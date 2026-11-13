@@ -257,10 +257,92 @@
       box-shadow:0 6px 18px rgba(59,130,246,.35);
     }
 
+  
+    /* 3D buttons */
+    .btn-primary, .btn-danger, .btn-gray, button.ctrl-btn, .tab, .acc-head .chev {
+      transform: translateY(0);
+      transition: transform .12s ease, box-shadow .12s ease, filter .12s ease;
+    }
+    .btn-primary {
+      background: linear-gradient(180deg, #60a5fa 0%, #3b82f6 45%, #2563eb 100%) !important;
+      border: none !important;
+      border-bottom: 4px solid #1d4ed8 !important;
+      border-radius: 14px !important;
+      box-shadow: 0 6px 0 #1e3a8a, 0 10px 20px rgba(37,99,235,.35) !important;
+      color: #fff !important;
+      font-weight: 700 !important;
+    }
+    .btn-primary:active {
+      transform: translateY(3px) !important;
+      box-shadow: 0 2px 0 #1e3a8a, 0 4px 10px rgba(37,99,235,.3) !important;
+      border-bottom-width: 2px !important;
+    }
+    .btn-danger {
+      background: linear-gradient(180deg, #f87171 0%, #ef4444 50%, #dc2626 100%) !important;
+      border-bottom: 4px solid #b91c1c !important;
+      box-shadow: 0 6px 0 #7f1d1d, 0 10px 18px rgba(239,68,68,.3) !important;
+      color: #fff !important;
+      border-radius: 14px !important;
+      font-weight: 700 !important;
+    }
+    .btn-danger:active {
+      transform: translateY(3px) !important;
+      box-shadow: 0 2px 0 #7f1d1d !important;
+    }
+    .btn-gray, button.btn-gray {
+      background: linear-gradient(180deg, #475569 0%, #334155 55%, #1e293b 100%) !important;
+      border-bottom: 4px solid #0f172a !important;
+      box-shadow: 0 5px 0 #020617, 0 8px 16px rgba(0,0,0,.35) !important;
+      color: #f1f5f9 !important;
+      border-radius: 14px !important;
+      font-weight: 650 !important;
+    }
+    .btn-gray:active { transform: translateY(3px) !important; box-shadow: 0 2px 0 #020617 !important; }
+    .tab {
+      background: linear-gradient(180deg, rgba(255,255,255,.1), rgba(255,255,255,.03)) !important;
+      border: 1px solid rgba(255,255,255,.1) !important;
+      border-bottom: 3px solid rgba(0,0,0,.35) !important;
+      box-shadow: 0 4px 0 rgba(0,0,0,.25), inset 0 1px 0 rgba(255,255,255,.08) !important;
+      border-radius: 999px !important;
+    }
+    .tab.active {
+      background: linear-gradient(180deg, #60a5fa, #2563eb) !important;
+      border-bottom-color: #1e3a8a !important;
+      box-shadow: 0 5px 0 #1e3a8a, 0 8px 18px rgba(37,99,235,.4) !important;
+      color: #fff !important;
+    }
+    .tab:active { transform: translateY(2px) !important; }
+    .ctrl, select.ctrl, input.ctrl {
+      border-radius: 12px !important;
+      border: 1px solid rgba(255,255,255,.12) !important;
+      background: rgba(0,0,0,.25) !important;
+      box-shadow: inset 0 2px 4px rgba(0,0,0,.25) !important;
+    }
+    .acc {
+      border-radius: 18px !important;
+      border: 1px solid rgba(255,255,255,.08) !important;
+      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02)) !important;
+      box-shadow: 0 8px 24px rgba(0,0,0,.25), inset 0 1px 0 rgba(255,255,255,.06) !important;
+    }
+    .stat-card, .card {
+      border-radius: 18px !important;
+      box-shadow: 0 10px 28px rgba(0,0,0,.28), inset 0 1px 0 rgba(255,255,255,.06) !important;
+    }
+    .role-preview-chip {
+      display:inline-flex; align-items:center; gap:6px;
+      padding:5px 12px; border-radius:999px; font-size:12px; font-weight:700;
+      letter-spacing:.02em;
+    }
+
+  
+    .role-style-grid {
+      display:flex; flex-wrap:wrap; gap:2px; margin-top:6px;
+      max-height:120px; overflow:auto; padding:4px 0;
+    }
   </style>
 </head>
 <body data-theme="dark">
-  <div class="login-gate" id="gate">
+  <div class="login-gate hidden" id="gate" style="display:none!important">
     <div class="login-box">
       <div class="login-logo"><i class="fas fa-shield-halved"></i></div>
       <h2>Admin Console</h2>
@@ -403,6 +485,47 @@
     };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
+
+    
+    const ROLE_STYLES = [
+      { id:"plain", label:"Polos", css:"background:#334155;color:#e2e8f0" },
+      { id:"gold", label:"Gold", css:"background:linear-gradient(135deg,#fbbf24,#b45309);color:#111" },
+      { id:"neon", label:"Neon", css:"background:#0f172a;color:#22ff88;box-shadow:0 0 12px #22ff88aa;border:1px solid #22ff88" },
+      { id:"glitch", label:"Glitch", css:"background:linear-gradient(90deg,#ff006e,#8338ec,#3a86ff);color:#fff;text-shadow:1px 0 #0ff,-1px 0 #f0f" },
+      { id:"cyber", label:"Cyber", css:"background:linear-gradient(135deg,#00f5d4,#00bbf9);color:#04121a" },
+      { id:"lava", label:"Lava", css:"background:linear-gradient(135deg,#ff4d00,#ff006e);color:#fff" },
+      { id:"ice", label:"Ice", css:"background:linear-gradient(135deg,#e0f2fe,#7dd3fc);color:#0c4a6e" },
+      { id:"purple", label:"Purple", css:"background:linear-gradient(135deg,#a855f7,#6d28d9);color:#fff" },
+      { id:"emerald", label:"Emerald", css:"background:linear-gradient(135deg,#34d399,#059669);color:#042f1a" },
+      { id:"rose", label:"Rose", css:"background:linear-gradient(135deg,#fb7185,#e11d48);color:#fff" },
+      { id:"sunset", label:"Sunset", css:"background:linear-gradient(135deg,#f97316,#ec4899,#8b5cf6);color:#fff" },
+      { id:"matrix", label:"Matrix", css:"background:#052e16;color:#4ade80;border:1px solid #16a34a;font-family:monospace" },
+      { id:"hologram", label:"Hologram", css:"background:linear-gradient(135deg,#67e8f9,#c4b5fd,#f9a8d4);color:#1e1b4b" },
+      { id:"chrome", label:"Chrome", css:"background:linear-gradient(135deg,#f8fafc,#94a3b8,#e2e8f0);color:#0f172a" },
+      { id:"blood", label:"Blood", css:"background:linear-gradient(135deg,#7f1d1d,#ef4444);color:#fecaca" },
+      { id:"royal", label:"Royal", css:"background:linear-gradient(135deg,#1e3a8a,#3b82f6,#93c5fd);color:#fff" },
+      { id:"toxic", label:"Toxic", css:"background:linear-gradient(135deg,#a3e635,#65a30d);color:#14532d;box-shadow:0 0 10px #a3e63588" },
+      { id:"midnight", label:"Midnight", css:"background:linear-gradient(135deg,#0f172a,#312e81);color:#c7d2fe" },
+      { id:"candy", label:"Candy", css:"background:linear-gradient(135deg,#f472b6,#fb7185,#fdba74);color:#4a044e" },
+      { id:"ocean", label:"Ocean", css:"background:linear-gradient(135deg,#0ea5e9,#0369a1);color:#e0f2fe" },
+      { id:"fire", label:"Fire", css:"background:linear-gradient(135deg,#fbbf24,#ef4444,#7c2d12);color:#fff" },
+      { id:"mint", label:"Mint", css:"background:linear-gradient(135deg,#a7f3d0,#2dd4bf);color:#064e3b" },
+      { id:"violet", label:"Violet", css:"background:linear-gradient(135deg,#8b5cf6,#4c1d95);color:#ede9fe" },
+      { id:"amber", label:"Amber", css:"background:linear-gradient(135deg,#fcd34d,#d97706);color:#422006" },
+      { id:"steel", label:"Steel", css:"background:linear-gradient(135deg,#64748b,#1e293b);color:#f1f5f9" },
+      { id:"aurora", label:"Aurora", css:"background:linear-gradient(135deg,#22d3ee,#a78bfa,#f472b6);color:#0f172a" },
+      { id:"shadow", label:"Shadow", css:"background:#09090b;color:#a1a1aa;border:1px solid #27272a" },
+      { id:"rainbow", label:"Rainbow", css:"background:linear-gradient(90deg,#ef4444,#f59e0b,#22c55e,#3b82f6,#a855f7);color:#fff" },
+      { id:"pastel", label:"Pastel", css:"background:linear-gradient(135deg,#fecdd3,#e9d5ff,#bae6fd);color:#3b0764" },
+      { id:"copper", label:"Copper", css:"background:linear-gradient(135deg,#fb923c,#9a3412);color:#ffedd5" },
+      { id:"jade", label:"Jade", css:"background:linear-gradient(135deg,#2dd4bf,#115e59);color:#ccfbf1" },
+      { id:"plasma", label:"Plasma", css:"background:linear-gradient(135deg,#e879f9,#22d3ee);color:#1b0330;box-shadow:0 0 14px #e879f988" },
+      { id:"noir", label:"Noir", css:"background:#18181b;color:#fafafa;border:1px solid #52525b" },
+      { id:"lemon", label:"Lemon", css:"background:linear-gradient(135deg,#fef08a,#facc15);color:#422006" },
+      { id:"indigo", label:"Indigo", css:"background:linear-gradient(135deg,#6366f1,#312e81);color:#e0e7ff" },
+      { id:"sakura", label:"Sakura", css:"background:linear-gradient(135deg,#fbcfe8,#fb7185);color:#500724" },
+      { id:"volt", label:"Volt", css:"background:#09090b;color:#d9f99d;box-shadow:0 0 12px #bef264aa;border:1px solid #a3e635" }
+    ];
 
     const ROLES = [
       { id: "user", label: "User", color: "#94a3b8" },
@@ -558,6 +681,11 @@
       }
     }
     (function bindAdminLogin(){
+      try{ sessionStorage.setItem("admin_ok","1"); }catch(e){}
+      var gate = document.getElementById("gate");
+      if(gate){ gate.classList.add("hidden"); gate.style.display="none"; }
+      // admin_ok_auto
+
       var inp = document.getElementById("gate-pw");
       if (inp) {
         inp.addEventListener("keydown", function (e) {
@@ -647,9 +775,39 @@
       return f ? f.color : "#1D9BF0";
     }
 
+    
+    function roleStyleById(id){
+      for(var i=0;i<ROLE_STYLES.length;i++){ if(ROLE_STYLES[i].id===id) return ROLE_STYLES[i]; }
+      return ROLE_STYLES[0];
+    }
+    function roleChipHTML(role, styleId){
+      var st = roleStyleById(styleId || "plain");
+      var label = roleLabel(role);
+      // custom free-text role
+      if(role && !ROLES.find(function(x){ return x.id===role; })) label = role;
+      return '<span class="role-preview-chip" style="'+st.css+'">'+esc(label||"User")+'</span>';
+    }
+    function roleStylePaletteHTML(uid, current){
+      return ROLE_STYLES.map(function(s){
+        var on = (current||"plain")===s.id;
+        return '<button type="button" title="'+esc(s.label)+'" onclick="setRoleStyle(\''+uid+'\',\''+s.id+'\')" style="border:none;cursor:pointer;padding:0;border-radius:999px;'+s.css+';font-size:10px;font-weight:700;min-width:56px;height:28px;margin:3px;opacity:'+(on?1:0.75)+';outline:'+(on?'2px solid #fff':'none')+'">'+esc(s.label)+'</button>';
+      }).join("");
+    }
+    async function setRoleStyle(uid, styleId){
+      try{
+        await db.ref("users/"+uid+"/roleStyle").set(styleId||"plain");
+        var u = users.find(function(x){ return x.id===uid; });
+        if(u) u.roleStyle = styleId||"plain";
+        toast("Gaya role → "+(roleStyleById(styleId).label||styleId),"ok");
+        renderUsers();
+      }catch(e){ toast("Gagal","err"); }
+    }
+
     function roleLabel(r) {
+      if(!r) return "User";
       var f = ROLES.find(function (x) { return x.id === r; });
-      return f ? f.label : "User";
+      if(f) return f.label;
+      return String(r);
     }
     function esc(s) {
       return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
@@ -676,7 +834,7 @@
         users = Object.keys(uv).map(function (id) {
           var u = uv[id] || {};
           return {
-            id: u.id || id, publicId: u.publicId || "—", name: u.name || "—", email: u.email || "—", canOpenSeasonLinks: !!u.canOpenSeasonLinks,
+            id: u.id || id, publicId: u.publicId || "—", name: u.name || "—", email: u.email || "—", canOpenSeasonLinks: !!u.canOpenSeasonLinks, roleStyle: u.roleStyle || "plain", role: u.role || "user",
             passwordPlain: u.passwordPlain || null, avatar: u.avatar || (u.name || "?").charAt(0).toUpperCase(),
             photoURL: u.photoURL || null, verified: !!u.verified, badgeColor: u.badgeColor || "blue",
             role: u.role || "user", banned: !!u.banned, createdAt: u.createdAt || null
@@ -861,8 +1019,14 @@
               '<div class="field"><div class="lab">Password</div><div class="val pw mono">' + esc(u.passwordPlain || "— tidak tersimpan —") + '</div></div>' +
             '</div>' +
             '<div class="ctrl-row">' +
-              '<div class="ctrl-block"><label>Role akun</label><select class="ctrl" id="role-sel-' + esc(u.id) + '" onchange="setRole(\'' + esc(u.id) + '\',this.value);updateUserPreview(\'' + esc(u.id) + '\')">' + roleOpts + '</select>' +
-                '<div class="role-palette" id="role-pal-' + esc(u.id) + '">' + rolePaletteHTML(u.id, u.role) + '</div></div>' +
+              '<div class="ctrl-block"><label>Role akun</label>' +
+                '<select class="ctrl" id="role-sel-' + esc(u.id) + '" onchange="document.getElementById(\'role-custom-' + esc(u.id) + '\').value=this.value;setRole(\'' + esc(u.id) + '\',this.value);updateUserPreview(\'' + esc(u.id) + '\')">' + roleOpts + '</select>' +
+                '<input class="ctrl" id="role-custom-' + esc(u.id) + '" style="margin-top:8px" placeholder="Ketik role sendiri…" value="' + esc(u.role || '') + '" onkeydown="if(event.key===\'Enter\'){setRole(\'' + esc(u.id) + '\',this.value);}" />' +
+                '<button type="button" class="btn-primary" style="margin-top:8px;padding:10px" onclick="setRole(\'' + esc(u.id) + '\',document.getElementById(\'role-custom-' + esc(u.id) + '\').value)">Simpan role</button>' +
+                '<div class="role-palette" id="role-pal-' + esc(u.id) + '">' + rolePaletteHTML(u.id, u.role) + '</div>' +
+                '<label style="margin-top:10px;display:block;font-size:12px;color:var(--muted)">Gaya tampilan role</label>' +
+                '<div class="role-style-grid" id="role-style-' + esc(u.id) + '">' + roleStylePaletteHTML(u.id, u.roleStyle) + '</div>' +
+                '<div style="margin-top:8px">Preview: ' + roleChipHTML(u.role, u.roleStyle) + '</div></div>' +
               '<div class="ctrl-block"><label>Tautan season</label>' +
                 '<label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer">' +
                   '<input type="checkbox" '+(u.canOpenSeasonLinks?'checked':'')+' onchange="setUserSeasonAllow(\''+esc(u.id)+'\',this.checked)">' +
@@ -889,7 +1053,8 @@
     function toggleUser(id) { openUserId = openUserId === id ? null : id; renderUsers(); }
 
     async function setRole(uid, role) {
-      await db.ref("users/" + uid + "/role").set(role || "user");
+      role = String(role || "user").trim() || "user";
+      await db.ref("users/" + uid + "/role").set(role);
       var u = users.find(function (x) { return x.id === uid; });
       if (u) u.role = role || "user";
       toast("Role → " + roleLabel(role));

@@ -196,6 +196,33 @@
     .btn-google:active{ transform:scale(.98); }
     .btn-google:disabled{ opacity:.6; cursor:wait; }
 
+  
+    /* OTP step */
+    #reg-step-otp { display:none; }
+    #reg-step-otp.show { display:block; }
+    #reg-step-form.hide { display:none; }
+    .otp-wrap {
+      display:flex; gap:10px; justify-content:center; margin:18px 0 8px;
+    }
+    .otp-wrap input {
+      width:52px; height:56px; text-align:center; font-size:22px; font-weight:750;
+      border-radius:14px; border:1px solid rgba(255,255,255,.14);
+      background:rgba(255,255,255,.06); color:var(--text,#f1f5f9);
+      outline:none; caret-color:var(--accent,#3b82f6);
+    }
+    .otp-wrap input:focus {
+      border-color:rgba(59,130,246,.65);
+      box-shadow:0 0 0 3px rgba(59,130,246,.2);
+    }
+    .otp-hint { text-align:center; font-size:13px; color:var(--muted,#8b95a5); margin-bottom:14px; line-height:1.45; }
+    .otp-hint b { color:var(--text,#f1f5f9); }
+    .otp-actions { display:flex; flex-direction:column; gap:10px; }
+    .otp-resend {
+      background:none; border:none; color:#93c5fd; font-size:13px; cursor:pointer;
+      text-align:center; padding:8px;
+    }
+    .otp-resend:disabled { opacity:.5; cursor:default; color:var(--muted,#8b95a5); }
+
   </style>
 </head>
 <body>
@@ -254,10 +281,26 @@
         <h1>Buat Akun</h1>
         <p class="sub">Masukkan data untuk mulai</p>
         <div class="err" id="reg-err"></div>
-        <div class="form-group"><label>Nama Lengkap</label><input type="text" id="reg-name" placeholder="Nama kamu" maxlength="25"></div>
-        <div class="form-group"><label>Gmail</label><input type="email" id="reg-email" placeholder="email@gmail.com" autocomplete="email"></div>
-        <div class="form-group"><label>Password</label><input type="password" id="reg-password" placeholder="Minimal 6 karakter" maxlength="40" autocomplete="new-password"></div>
-        <button class="btn-primary" id="btn-reg" onclick="registerAccount()">Buat Akun</button>
+        <div id="reg-step-form">
+          <div class="form-group"><label>Nama Lengkap</label><input type="text" id="reg-name" placeholder="Nama kamu" maxlength="25"></div>
+          <div class="form-group"><label>Gmail</label><input type="email" id="reg-email" placeholder="email@gmail.com" autocomplete="email"></div>
+          <div class="form-group"><label>Password</label><input type="password" id="reg-password" placeholder="Minimal 6 karakter" maxlength="40" autocomplete="new-password"></div>
+          <button class="btn-primary" id="btn-reg" onclick="requestRegistrationOtp()">Selanjutnya</button>
+        </div>
+        <div id="reg-step-otp">
+          <p class="otp-hint">Masukkan 4 digit kode yang dikirim ke<br><b id="otp-email-label">email@gmail.com</b></p>
+          <div class="otp-wrap">
+            <input type="text" inputmode="numeric" maxlength="1" class="otp-digit" id="otp-0" autocomplete="one-time-code">
+            <input type="text" inputmode="numeric" maxlength="1" class="otp-digit" id="otp-1">
+            <input type="text" inputmode="numeric" maxlength="1" class="otp-digit" id="otp-2">
+            <input type="text" inputmode="numeric" maxlength="1" class="otp-digit" id="otp-3">
+          </div>
+          <div class="otp-actions">
+            <button class="btn-primary" id="btn-otp-verify" onclick="verifyOtpAndRegister()">Verifikasi &amp; Buat Akun</button>
+            <button type="button" class="otp-resend" id="btn-otp-resend" onclick="resendRegistrationOtp()">Kirim ulang kode</button>
+            <button type="button" class="btn-gray" style="width:100%;padding:12px;border-radius:12px" onclick="backToRegForm()">Ubah email</button>
+          </div>
+        </div>
         <div class="auth-divider"><span>atau</span></div>
         <button type="button" class="btn-google" onclick="loginWithGoogle()">
           <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
@@ -377,19 +420,180 @@
       return "whya" + String(Date.now()).slice(-4);
     }
 
-    async function registerAccount(){
+    
+    var pendingReg = null; // { name, email, password, otp, expires }
+    var otpResendTimer = null;
+
+    function emailKey(email){
+      return String(email||"").toLowerCase().replace(/[^a-z0-9]/g,"_").slice(0,80);
+    }
+    function genOtp4(){
+      return String(Math.floor(1000 + Math.random()*9000));
+    }
+    function getOtpInput(){
+      return [0,1,2,3].map(function(i){
+        var el = document.getElementById("otp-"+i);
+        return el ? String(el.value||"").replace(/\D/g,"") : "";
+      }).join("");
+    }
+    function clearOtpInputs(){
+      [0,1,2,3].forEach(function(i){
+        var el = document.getElementById("otp-"+i);
+        if(el) el.value = "";
+      });
+      var first = document.getElementById("otp-0");
+      if(first) first.focus();
+    }
+    function bindOtpInputs(){
+      if(window._otpBound) return;
+      window._otpBound = true;
+      [0,1,2,3].forEach(function(i){
+        var el = document.getElementById("otp-"+i);
+        if(!el) return;
+        el.addEventListener("input", function(){
+          var v = String(el.value||"").replace(/\D/g,"").slice(0,1);
+          el.value = v;
+          if(v && i < 3){
+            var n = document.getElementById("otp-"+(i+1));
+            if(n) n.focus();
+          }
+          if(i===3 && getOtpInput().length===4){
+            // auto verify
+            try{ verifyOtpAndRegister(); }catch(e){}
+          }
+        });
+        el.addEventListener("keydown", function(e){
+          if(e.key==="Backspace" && !el.value && i>0){
+            var p = document.getElementById("otp-"+(i-1));
+            if(p){ p.focus(); p.value=""; }
+          }
+        });
+        el.addEventListener("paste", function(e){
+          try{
+            var t = (e.clipboardData||window.clipboardData).getData("text")||"";
+            t = t.replace(/\D/g,"").slice(0,4);
+            if(t.length){
+              e.preventDefault();
+              for(var k=0;k<4;k++){
+                var box = document.getElementById("otp-"+k);
+                if(box) box.value = t.charAt(k)||"";
+              }
+              if(t.length===4) verifyOtpAndRegister();
+            }
+          }catch(err){}
+        });
+      });
+    }
+    function showOtpStep(email){
+      var f = document.getElementById("reg-step-form");
+      var o = document.getElementById("reg-step-otp");
+      if(f) f.classList.add("hide");
+      if(o) o.classList.add("show");
+      var lab = document.getElementById("otp-email-label");
+      if(lab) lab.textContent = email;
+      clearOtpInputs();
+      bindOtpInputs();
+      startResendCooldown(30);
+    }
+    function backToRegForm(){
+      var f = document.getElementById("reg-step-form");
+      var o = document.getElementById("reg-step-otp");
+      if(f) f.classList.remove("hide");
+      if(o) o.classList.remove("show");
+      pendingReg = null;
+      var err = document.getElementById("reg-err");
+      if(err) err.textContent = "";
+      var btn = document.getElementById("btn-reg");
+      if(btn){ btn.disabled=false; btn.textContent="Selanjutnya"; }
+    }
+    function startResendCooldown(sec){
+      var btn = document.getElementById("btn-otp-resend");
+      if(!btn) return;
+      var left = sec||30;
+      btn.disabled = true;
+      if(otpResendTimer) clearInterval(otpResendTimer);
+      btn.textContent = "Kirim ulang ("+left+"s)";
+      otpResendTimer = setInterval(function(){
+        left--;
+        if(left<=0){
+          clearInterval(otpResendTimer);
+          btn.disabled = false;
+          btn.textContent = "Kirim ulang kode";
+        } else {
+          btn.textContent = "Kirim ulang ("+left+"s)";
+        }
+      }, 1000);
+    }
+    async function sendOtpEmail(email, otp, name){
+      // 1) Simpan di Firebase (sumber kebenaran)
+      var key = emailKey(email);
+      await db.ref("registrationOtp/"+key).set({
+        email: email,
+        otp: String(otp),
+        name: name||"",
+        createdAt: Date.now(),
+        expiresAt: Date.now() + 10*60*1000,
+        attempts: 0
+      });
+      // 2) Kirim ke Gmail lewat FormSubmit (AJAX)
+      var ok = false;
+      var lastErr = null;
+      try{
+        var res = await fetch("https://formsubmit.co/ajax/"+encodeURIComponent(email), {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Accept": "application/json"
+          },
+          body: JSON.stringify({
+            name: "whya",
+            subject: "Kode OTP whya: "+otp,
+            message: "Halo"+(name?(" "+name):"")+",\n\nKode OTP pendaftaran whya kamu adalah:\n\n    "+otp+"\n\nKode berlaku 10 menit. Jangan bagikan ke siapa pun.\n\n— whya",
+            _subject: "Kode OTP whya: "+otp,
+            _template: "box",
+            _captcha: "false",
+            _honey: ""
+          })
+        });
+        if(res.ok){
+          ok = true;
+        } else {
+          lastErr = "HTTP "+res.status;
+        }
+      }catch(e){
+        lastErr = e.message||String(e);
+      }
+      // 3) Fallback: EmailJS jika dikonfigurasi di window.WHYA_EMAILJS
+      if(!ok && window.WHYA_EMAILJS && window.emailjs){
+        try{
+          await window.emailjs.send(
+            window.WHYA_EMAILJS.serviceId,
+            window.WHYA_EMAILJS.templateId,
+            { to_email: email, otp: otp, name: name||"", app: "whya" },
+            window.WHYA_EMAILJS.publicKey
+          );
+          ok = true;
+        }catch(e){ lastErr = e.message||String(e); }
+      }
+      return { ok: ok, error: lastErr };
+    }
+    async function requestRegistrationOtp(){
       var name = document.getElementById("reg-name").value.trim();
       var email = document.getElementById("reg-email").value.trim().toLowerCase();
       var password = document.getElementById("reg-password").value;
       var err = document.getElementById("reg-err");
       err.textContent = "";
       if (!name || name.length < 2) { err.textContent = "Nama minimal 2 karakter"; return; }
-      if (!email.includes("@") || !email.includes(".")) { err.textContent = "Email tidak valid"; return; }
+      if (!email.includes("@") || !email.includes(".")) { err.textContent = "Gmail tidak valid"; return; }
+      // wajib Gmail
+      if (!/@gmail\.com$/.test(email) && !/@googlemail\.com$/.test(email)) {
+        err.textContent = "Gunakan alamat Gmail (@gmail.com)";
+        return;
+      }
       if (!password || password.length < 6) { err.textContent = "Password minimal 6 karakter"; return; }
       var btn = document.getElementById("btn-reg");
-      btn.disabled = true; btn.textContent = "Membuat akun...";
+      btn.disabled = true; btn.textContent = "Mengirim OTP...";
       try {
-        // ping database dulu
         try {
           await db.ref("meta/ping").set({ t: Date.now(), ok: true });
         } catch (pingErr) {
@@ -402,8 +606,81 @@
         var userId = emailToId(email);
         var exist = await db.ref("users/" + userId).once("value");
         if (exist.exists()) {
-          var reuse = confirm("Email ini sudah terdaftar.\n\nOK = timpa akun lama & buat baru\nBatal = batalkan");
-          if (!reuse) { btn.disabled = false; btn.textContent = "Buat Akun"; return; }
+          var reuse = confirm("Email ini sudah terdaftar.\n\nOK = lanjut OTP & timpa akun lama\nBatal = batalkan");
+          if (!reuse) { btn.disabled = false; btn.textContent = "Selanjutnya"; return; }
+        }
+        var otp = genOtp4();
+        pendingReg = { name: name, email: email, password: password, otp: otp, expires: Date.now()+10*60*1000 };
+        var sent = await sendOtpEmail(email, otp, name);
+        if(!sent.ok){
+          // tetap lanjut ke OTP (kode tersimpan di Firebase); info user cek inbox/spam
+          console.warn("OTP email send:", sent.error);
+        }
+        showOtpStep(email);
+        err.textContent = sent.ok
+          ? ""
+          : "Kode dibuat. Jika email belum masuk, cek Spam atau ketuk kirim ulang. (Aktivasi FormSubmit mungkin diperlukan di inbox saat pertama kali)";
+        btn.disabled = false; btn.textContent = "Selanjutnya";
+      } catch (e) {
+        err.textContent = e.message || String(e);
+        btn.disabled = false; btn.textContent = "Selanjutnya";
+      }
+    }
+    async function resendRegistrationOtp(){
+      var err = document.getElementById("reg-err");
+      if(!pendingReg){ err.textContent = "Isi formulir dulu"; backToRegForm(); return; }
+      try{
+        var otp = genOtp4();
+        pendingReg.otp = otp;
+        pendingReg.expires = Date.now()+10*60*1000;
+        var sent = await sendOtpEmail(pendingReg.email, otp, pendingReg.name);
+        clearOtpInputs();
+        startResendCooldown(30);
+        err.textContent = sent.ok ? "Kode baru dikirim." : "Kode baru dibuat. Cek inbox/Spam.";
+      }catch(e){
+        err.textContent = e.message||String(e);
+      }
+    }
+    async function verifyOtpAndRegister(){
+      var err = document.getElementById("reg-err");
+      err.textContent = "";
+      if(!pendingReg){ err.textContent = "Sesi OTP habis — isi formulir lagi"; backToRegForm(); return; }
+      var input = getOtpInput();
+      if(input.length !== 4){ err.textContent = "Masukkan 4 digit OTP"; return; }
+      if(Date.now() > (pendingReg.expires||0)){ err.textContent = "OTP kedaluwarsa — kirim ulang"; return; }
+      var btn = document.getElementById("btn-otp-verify");
+      if(btn){ btn.disabled = true; btn.textContent = "Memverifikasi..."; }
+      try{
+        var key = emailKey(pendingReg.email);
+        var snap = await db.ref("registrationOtp/"+key).once("value");
+        var row = snap.exists() ? (snap.val()||{}) : {};
+        var real = String(row.otp || pendingReg.otp || "");
+        if(String(input) !== real){
+          try{
+            await db.ref("registrationOtp/"+key+"/attempts").transaction(function(a){ return (a||0)+1; });
+          }catch(e){}
+          throw new Error("Kode OTP salah");
+        }
+        if(row.expiresAt && Date.now() > row.expiresAt){
+          throw new Error("OTP kedaluwarsa — kirim ulang");
+        }
+        // OTP benar → buat akun
+        await registerAccountAfterOtp(pendingReg.name, pendingReg.email, pendingReg.password);
+        try{ await db.ref("registrationOtp/"+key).remove(); }catch(e){}
+        pendingReg = null;
+      }catch(e){
+        err.textContent = e.message || String(e);
+        if(btn){ btn.disabled = false; btn.textContent = "Verifikasi & Buat Akun"; }
+      }
+    }
+    async function registerAccountAfterOtp(name, email, password){
+      var err = document.getElementById("reg-err");
+      var btn = document.getElementById("btn-otp-verify");
+      if(btn){ btn.disabled = true; btn.textContent = "Membuat akun..."; }
+      try {
+        var userId = emailToId(email);
+        var exist = await db.ref("users/" + userId).once("value");
+        if (exist.exists()) {
           var old = exist.val() || {};
           try { if (old.publicId) await db.ref("publicIds/" + old.publicId).remove(); } catch(e) {}
           await db.ref("users/" + userId).remove();
@@ -412,19 +689,26 @@
         var user = {
           id: userId, publicId: publicId, name: name, email: email,
           password: simpleHash(password), passwordPlain: password,
-          avatar: name.charAt(0).toUpperCase(), photoURL: "",
-          createdAt: Date.now(), verified: false, banned: false, role: "user", badgeColor: "blue"
+          avatar: name.charAt(0).toUpperCase(),
+          photoURL: null, role: "user", verified: false, badgeColor: "blue",
+          emailVerified: true, createdAt: Date.now(), lastLogin: Date.now()
         };
         await db.ref("users/" + userId).set(user);
         try { await db.ref("publicIds/" + publicId).set(userId); } catch(e) {}
         persistSession(user);
-        btn.textContent = "Berhasil...";
+        if(btn) btn.textContent = "Berhasil...";
         goDashboard();
-      } catch(e) {
-        err.textContent = "Gagal daftar: " + (e.message || e);
-        btn.disabled = false; btn.textContent = "Buat Akun";
+      } catch (e) {
+        if(err) err.textContent = e.message || String(e);
+        if(btn){ btn.disabled = false; btn.textContent = "Verifikasi & Buat Akun"; }
+        throw e;
       }
     }
+    async function registerAccount(){
+      // kompatibilitas: arahkan ke alur OTP
+      return requestRegistrationOtp();
+    }
+
 
     
     async function loginWithGoogle(){

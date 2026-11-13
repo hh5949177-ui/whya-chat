@@ -5547,28 +5547,134 @@ function saveAccountLocal(user){
       }catch(e){}
       applySavedTheme();
     }
+    
+    // ===== Badge system (sync with admin) =====
+    var BADGE_STYLES = [
+      { id:"none", type:"none" },
+      { id:"blue", type:"solid", color:"#1D9BF0" },
+      { id:"blue-bright", type:"solid", color:"#3B82F6" },
+      { id:"sky", type:"solid", color:"#38BDF8" },
+      { id:"cyan", type:"solid", color:"#22D3EE" },
+      { id:"cyan-glow", type:"glow", color:"#06B6D4" },
+      { id:"teal", type:"solid", color:"#14B8A6" },
+      { id:"mint", type:"solid", color:"#2DD4BF" },
+      { id:"emerald", type:"solid", color:"#10B981" },
+      { id:"green", type:"solid", color:"#16A34A" },
+      { id:"green-neon", type:"glow", color:"#22C55E" },
+      { id:"lime", type:"solid", color:"#84CC16" },
+      { id:"yellow", type:"solid", color:"#FACC15" },
+      { id:"gold", type:"solid", color:"#EAB308" },
+      { id:"gold-glow", type:"glow", color:"#EAB308" },
+      { id:"amber", type:"solid", color:"#F59E0B" },
+      { id:"orange", type:"solid", color:"#EA580C" },
+      { id:"orange-glow", type:"glow", color:"#F97316" },
+      { id:"red", type:"solid", color:"#EF4444" },
+      { id:"rose", type:"solid", color:"#F43F5E" },
+      { id:"pink", type:"solid", color:"#EC4899" },
+      { id:"pink-glow", type:"glow", color:"#F472B6" },
+      { id:"fuchsia", type:"solid", color:"#D946EF" },
+      { id:"purple", type:"solid", color:"#A855F7" },
+      { id:"violet", type:"solid", color:"#8B5CF6" },
+      { id:"indigo", type:"solid", color:"#6366F1" },
+      { id:"blue-glow", type:"glow", color:"#3B82F6" },
+      { id:"white", type:"solid", color:"#E5E7EB" },
+      { id:"gray", type:"solid", color:"#94A3B8" },
+      { id:"gradient-sunset", type:"gradient", colors:["#f97316","#ec4899","#8b5cf6"] },
+      { id:"gradient-ocean", type:"gradient", colors:["#0ea5e9","#22d3ee","#a5f3fc"] },
+      { id:"gradient-minty", type:"gradient", colors:["#0f766e","#2dd4bf","#99f6e4"] },
+      { id:"gradient-fire", type:"gradient", colors:["#fbbf24","#ef4444","#7c2d12"] },
+      { id:"gradient-aurora", type:"gradient", colors:["#22d3ee","#a78bfa","#f472b6"] },
+      { id:"gradient-gold", type:"gradient", colors:["#fde68a","#f59e0b","#b45309"] }
+    ];
+    var ROLE_STYLES_CHAT = {
+      plain:"background:#334155;color:#e2e8f0",
+      gold:"background:linear-gradient(135deg,#fbbf24,#b45309);color:#111",
+      neon:"background:#0f172a;color:#22ff88;box-shadow:0 0 10px #22ff88aa;border:1px solid #22ff88",
+      glitch:"background:linear-gradient(90deg,#ff006e,#8338ec,#3a86ff);color:#fff;text-shadow:1px 0 #0ff,-1px 0 #f0f",
+      cyber:"background:linear-gradient(135deg,#00f5d4,#00bbf9);color:#04121a",
+      lava:"background:linear-gradient(135deg,#ff4d00,#ff006e);color:#fff",
+      ice:"background:linear-gradient(135deg,#e0f2fe,#7dd3fc);color:#0c4a6e",
+      purple:"background:linear-gradient(135deg,#a855f7,#6d28d9);color:#fff",
+      emerald:"background:linear-gradient(135deg,#34d399,#059669);color:#042f1a",
+      rose:"background:linear-gradient(135deg,#fb7185,#e11d48);color:#fff",
+      sunset:"background:linear-gradient(135deg,#f97316,#ec4899,#8b5cf6);color:#fff",
+      matrix:"background:#052e16;color:#4ade80;border:1px solid #16a34a",
+      hologram:"background:linear-gradient(135deg,#67e8f9,#c4b5fd,#f9a8d4);color:#1e1b4b",
+      chrome:"background:linear-gradient(135deg,#f8fafc,#94a3b8,#e2e8f0);color:#0f172a",
+      blood:"background:linear-gradient(135deg,#7f1d1d,#ef4444);color:#fecaca",
+      royal:"background:linear-gradient(135deg,#1e3a8a,#3b82f6,#93c5fd);color:#fff",
+      toxic:"background:linear-gradient(135deg,#a3e635,#65a30d);color:#14532d",
+      midnight:"background:linear-gradient(135deg,#0f172a,#312e81);color:#c7d2fe",
+      candy:"background:linear-gradient(135deg,#f472b6,#fb7185,#fdba74);color:#4a044e",
+      ocean:"background:linear-gradient(135deg,#0ea5e9,#0369a1);color:#e0f2fe",
+      fire:"background:linear-gradient(135deg,#fbbf24,#ef4444,#7c2d12);color:#fff",
+      mint:"background:linear-gradient(135deg,#a7f3d0,#2dd4bf);color:#064e3b",
+      violet:"background:linear-gradient(135deg,#8b5cf6,#4c1d95);color:#ede9fe",
+      amber:"background:linear-gradient(135deg,#fcd34d,#d97706);color:#422006",
+      steel:"background:linear-gradient(135deg,#64748b,#1e293b);color:#f1f5f9",
+      aurora:"background:linear-gradient(135deg,#22d3ee,#a78bfa,#f472b6);color:#0f172a",
+      shadow:"background:#09090b;color:#a1a1aa;border:1px solid #27272a",
+      rainbow:"background:linear-gradient(90deg,#ef4444,#f59e0b,#22c55e,#3b82f6,#a855f7);color:#fff",
+      pastel:"background:linear-gradient(135deg,#fecdd3,#e9d5ff,#bae6fd);color:#3b0764",
+      copper:"background:linear-gradient(135deg,#fb923c,#9a3412);color:#ffedd5",
+      jade:"background:linear-gradient(135deg,#2dd4bf,#115e59);color:#ccfbf1",
+      plasma:"background:linear-gradient(135deg,#e879f9,#22d3ee);color:#1b0330",
+      noir:"background:#18181b;color:#fafafa;border:1px solid #52525b",
+      lemon:"background:linear-gradient(135deg,#fef08a,#facc15);color:#422006",
+      indigo:"background:linear-gradient(135deg,#6366f1,#312e81);color:#e0e7ff",
+      sakura:"background:linear-gradient(135deg,#fbcfe8,#fb7185);color:#500724",
+      volt:"background:#09090b;color:#d9f99d;box-shadow:0 0 10px #bef264aa;border:1px solid #a3e635"
+    };
+    function badgeStyleById(id){
+      if(!id || id==="none") return null;
+      for(var i=0;i<BADGE_STYLES.length;i++){ if(BADGE_STYLES[i].id===id) return BADGE_STYLES[i]; }
+      return { id:id, type:"solid", color:"#1D9BF0" };
+    }
+    function badgeSvgHTML(colorOrId, size){
+      size = size || 16;
+      var st = null;
+      if(typeof colorOrId==="string" && colorOrId.charAt(0)==="#"){
+        st = { type:"solid", color:colorOrId };
+      } else {
+        st = badgeStyleById(colorOrId) || { type:"solid", color:"#1D9BF0" };
+      }
+      if(!st || st.type==="none") return "";
+      var fill = st.color || "#1D9BF0";
+      var path = 'M10.2 15.8L6.7 12.3l1.4-1.4 2.1 2.1 5.2-5.2 1.4 1.4-6.6 6.6z';
+      if(st.type==="gradient" && st.colors && st.colors.length){
+        var gid = "bg"+Math.random().toString(36).slice(2,8);
+        var stops = st.colors.map(function(c,i){
+          return '<stop offset="'+Math.round(i/(st.colors.length-1||1)*100)+'%" stop-color="'+c+'"/>';
+        }).join("");
+        return '<svg class="v-badge" viewBox="0 0 24 24" width="'+size+'" height="'+size+'" style="display:inline-block;vertical-align:-0.2em;flex-shrink:0"><defs><linearGradient id="'+gid+'" x1="0%" y1="0%" x2="100%" y2="100%">'+stops+'</linearGradient></defs><circle cx="12" cy="12" r="11" fill="url(#'+gid+')"/><path fill="#fff" d="'+path+'"/></svg>';
+      }
+      if(st.type==="glow"){
+        return '<svg class="v-badge" viewBox="0 0 24 24" width="'+size+'" height="'+size+'" style="display:inline-block;vertical-align:-0.2em;flex-shrink:0;filter:drop-shadow(0 0 3px '+fill+')"><circle cx="12" cy="12" r="11" fill="'+fill+'"/><path fill="#fff" d="'+path+'"/></svg>';
+      }
+      if(fill==="#E5E7EB"||fill==="#e5e7eb"){
+        return '<svg class="v-badge" viewBox="0 0 24 24" width="'+size+'" height="'+size+'" style="display:inline-block;vertical-align:-0.2em;flex-shrink:0"><circle cx="12" cy="12" r="11" fill="#E5E7EB" stroke="#9CA3AF" stroke-width="1"/><path fill="#111827" d="'+path+'"/></svg>';
+      }
+      return '<svg class="v-badge" viewBox="0 0 24 24" width="'+size+'" height="'+size+'" style="display:inline-block;vertical-align:-0.2em;flex-shrink:0"><circle cx="12" cy="12" r="11" fill="'+fill+'"/><path fill="#fff" d="'+path+'"/></svg>';
+    }
+    function roleChipChatHTML(role, styleId){
+      if(!role || role==="user" || role==="member") return "";
+      var css = ROLE_STYLES_CHAT[styleId] || ROLE_STYLES_CHAT.plain;
+      var label = String(role);
+      // prettify known ids
+      var map = {vip:"VIP",premium:"Premium",owner:"Owner",admin:"Admin",developer:"Developer",founder:"Founder",moderator:"Moderator",staff:"Staf",creator:"Creator"};
+      if(map[label]) label = map[label];
+      else label = label.replace(/[-_]/g," ").replace(/\b\w/g, function(c){ return c.toUpperCase(); });
+      return '<span class="role-chip-chat" style="'+css+'">'+label.replace(/</g,"&lt;")+'</span>';
+    }
+
     function verifiedBadgeHTML(u){
       if(!u) return "";
-      var isOwner=(u.role==="owner");
+      var isOwner = (u.role==="owner" || u.role==="founder");
       if(!u.verified && !isOwner) return "";
-      if(!u.verified && isOwner){ u=Object.assign({},u,{verified:true,badgeColor:u.badgeColor||"gold"}); }
-      var colors={
-        blue:"#1D9BF0","blue-bright":"#3B82F6",sky:"#38BDF8",cyan:"#22D3EE","cyan-glow":"#06B6D4",
-        teal:"#14B8A6",mint:"#2DD4BF",emerald:"#10B981",green:"#16A34A","green-neon":"#22C55E",lime:"#84CC16",
-        yellow:"#FACC15",gold:"#EAB308",amber:"#F59E0B",orange:"#EA580C","orange-glow":"#F97316",
-        red:"#EF4444",rose:"#F43F5E",pink:"#EC4899","pink-glow":"#F472B6",fuchsia:"#D946EF",
-        purple:"#A855F7",violet:"#8B5CF6",indigo:"#6366F1","blue-glow":"#3B82F6","gold-glow":"#EAB308",
-        "gradient-sunset":"#FB7185","gradient-ocean":"#22D3EE","gradient-minty":"#2DD4BF",
-        white:"#F8FAFC",gray:"#94A3B8",black:"#0F172A"
-      };
-      var fill=colors[u.badgeColor]||colors.blue;
-      // centang bulat, ceklis putih di tengah
-      if(u.badgeColor==="white"){
-        return ' <svg class="v-badge" viewBox="0 0 24 24" width="1em" height="1em" aria-label="Terverifikasi" style="display:inline-block;vertical-align:-0.18em;flex-shrink:0"><circle cx="12" cy="12" r="11" fill="#E5E7EB" stroke="#9CA3AF" stroke-width="1"/><path fill="#111827" d="M10.2 15.8L6.7 12.3l1.4-1.4 2.1 2.1 5.2-5.2 1.4 1.4-6.6 6.6z"/></svg>';
-      }
-      var shine=isOwner||u.role==="owner"||u.badgeColor==="gold"?" owner-shine":"";
-      return ' <svg class="v-badge'+shine+'" viewBox="0 0 24 24" width="1em" height="1em" aria-label="Terverifikasi" style="display:inline-block;vertical-align:-0.18em;flex-shrink:0"><circle cx="12" cy="12" r="11" fill="'+fill+'"/><path fill="#fff" d="M10.2 15.8L6.7 12.3l1.4-1.4 2.1 2.1 5.2-5.2 1.4 1.4-6.6 6.6z"/></svg>';
+      var color = u.badgeColor || (isOwner ? "gold" : "blue");
+      return " " + badgeSvgHTML(color, 15);
     }
+
 
     function updateMyUI(){
       const nav=document.getElementById("nav-avatar");
@@ -6174,7 +6280,7 @@ function saveAccountLocal(user){
       box.innerHTML =
         '<div class="ps-banner">'+(banner?mediaTag(banner,'width:100%;height:100%;object-fit:cover'):'')+'</div>'+
         '<div class="ps-ava-wrap"><div class="ps-ava">'+av+'</div></div>'+
-        '<div class="ps-info"><div class="ps-name">'+escHtml(u.name||"User")+badge+'</div>'+
+        '<div class="ps-info"><div class="ps-name">'+escHtml(u.name||"User")+badge+roleChipChatHTML(u.role, u.roleStyle)+'</div>'+
         '<div class="ps-about">'+escHtml(about)+'</div></div>'+
         '<div class="ps-actions">'+
           '<button type="button" onclick="profileActionCall(\''+uid+'\')"><i class="fas fa-phone"></i>Telepon</button>'+
@@ -7336,6 +7442,8 @@ function saveAccountLocal(user){
         photoURL:currentUser.photoURL||null,
         verified:!!currentUser.verified,
         badgeColor:currentUser.badgeColor||"blue",
+        role:currentUser.role||"user",
+        roleStyle:currentUser.roleStyle||"plain",
         timestamp:Date.now(),
         time:new Date().toLocaleTimeString("id-ID",{hour:"2-digit",minute:"2-digit"}),
         reactions:{},
@@ -8368,7 +8476,7 @@ function saveAccountLocal(user){
         // avatar hanya di luar bubble (message-row), bukan di dalam
       }
       // nama pengirim hanya untuk pesan orang lain (grup/general)
-      if(!isMe && currentChatType!=="private") html+='<div class="sender">'+(msg.sender||"")+verifiedBadgeHTML({verified:!!msg.verified,badgeColor:msg.badgeColor||"blue"})+'</div>';
+      if(!isMe && currentChatType!=="private") html+='<div class="sender">'+(msg.sender||"")+verifiedBadgeHTML({verified:!!msg.verified,badgeColor:msg.badgeColor||"blue",role:msg.role})+roleChipChatHTML(msg.role, msg.roleStyle)+'</div>';
       if(msg.deleted||msg._deleted){
         html+='<div class="bubble-text"><span class="deleted-label">Pesan ini telah dihapus</span></div>';
       } else if(false){ /* placeholder */ }

@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
+  <title>whya · Login (Supabase)</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <style>
+    :root {
+      --bg:#07090c; --card:rgba(255,255,255,.05); --border:rgba(255,255,255,.1);
+      --text:#f1f5f9; --muted:#8b95a5; --accent:#3b82f6;
+    }
+    * { box-sizing:border-box; margin:0; padding:0; }
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: radial-gradient(ellipse 80% 50% at 50% -10%, rgba(59,130,246,.2), transparent), var(--bg);
+      color: var(--text); min-height: 100dvh;
+      display:flex; align-items:center; justify-content:center; padding:20px;
+    }
+    .card {
+      width: min(400px, 100%);
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 32px 24px;
+      backdrop-filter: blur(20px);
+      box-shadow: 0 20px 50px rgba(0,0,0,.4);
+    }
+    .logo {
+      width:56px; height:56px; border-radius:16px; margin:0 auto 16px;
+      background: linear-gradient(145deg,#3b82f6,#8b5cf6);
+      display:flex; align-items:center; justify-content:center;
+      font-size:22px; color:#fff;
+    }
+    h1 { text-align:center; font-size:22px; margin-bottom:6px; }
+    .sub { text-align:center; color:var(--muted); font-size:13px; margin-bottom:20px; }
+    .tabs { display:flex; gap:8px; margin-bottom:18px; }
+    .tabs button {
+      flex:1; padding:10px; border-radius:12px; border:1px solid var(--border);
+      background:transparent; color:var(--muted); font-weight:600; cursor:pointer;
+    }
+    .tabs button.active { background:var(--accent); color:#fff; border-color:var(--accent); }
+    .form-group { margin-bottom:12px; }
+    .form-group label { display:block; font-size:12px; color:var(--muted); margin-bottom:6px; font-weight:600; }
+    .form-group input {
+      width:100%; padding:12px 14px; border-radius:12px;
+      border:1px solid var(--border); background:rgba(0,0,0,.25); color:var(--text);
+      font-size:14px; outline:none;
+    }
+    .form-group input:focus { border-color: rgba(59,130,246,.6); }
+    .btn {
+      width:100%; padding:13px; border:none; border-radius:12px;
+      background: linear-gradient(135deg,#3b82f6,#2563eb); color:#fff;
+      font-weight:700; font-size:14px; cursor:pointer; margin-top:6px;
+    }
+    .btn:disabled { opacity:.6; cursor:wait; }
+    .btn-gray {
+      background: rgba(255,255,255,.08); color:var(--text);
+      border:1px solid var(--border); margin-top:8px;
+    }
+    .err { color:#f87171; font-size:12.5px; min-height:18px; margin-bottom:8px; }
+    .ok { color:#4ade80; font-size:12.5px; min-height:18px; margin-bottom:8px; }
+    .hidden { display:none !important; }
+    .otp-wrap { display:flex; gap:10px; justify-content:center; margin:16px 0; }
+    .otp-wrap input {
+      width:52px; height:56px; text-align:center; font-size:22px; font-weight:750;
+      border-radius:14px; border:1px solid var(--border); background:rgba(0,0,0,.25); color:var(--text);
+    }
+    .hint { text-align:center; font-size:13px; color:var(--muted); margin-bottom:10px; line-height:1.4; }
+    .hint b { color:var(--text); }
+    pre.result {
+      margin-top:16px; padding:12px; border-radius:12px; background:rgba(0,0,0,.35);
+      font-size:11px; overflow:auto; max-height:160px; color:#a5b4fc;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="logo"><i class="fas fa-comment-dots"></i></div>
+    <h1>whya</h1>
+    <p class="sub">Demo login & daftar · Supabase</p>
+
+    <div class="tabs">
+      <button type="button" class="active" id="tab-login" onclick="showTab('login')">Masuk</button>
+      <button type="button" id="tab-reg" onclick="showTab('reg')">Daftar</button>
+    </div>
+
+    <div class="err" id="err"></div>
+    <div class="ok" id="ok"></div>
+
+    <!-- LOGIN -->
+    <div id="panel-login">
+      <div class="form-group"><label>Gmail</label><input type="email" id="login-email" placeholder="email@gmail.com"></div>
+      <div class="form-group"><label>Password</label><input type="password" id="login-password" placeholder="Password"></div>
+      <button class="btn" id="btn-login" onclick="doLogin()">Masuk</button>
+    </div>
+
+    <!-- REGISTER -->
+    <div id="panel-reg" class="hidden">
+      <div id="reg-form">
+        <div class="form-group"><label>Nama</label><input type="text" id="reg-name" placeholder="Nama kamu" maxlength="25"></div>
+        <div class="form-group"><label>Gmail</label><input type="email" id="reg-email" placeholder="email@gmail.com"></div>
+        <div class="form-group"><label>Password</label><input type="password" id="reg-password" placeholder="Minimal 6 karakter"></div>
+        <button class="btn" id="btn-reg" onclick="requestOtp()">Selanjutnya</button>
+      </div>
+      <div id="reg-otp" class="hidden">
+        <p class="hint">Masukkan 4 digit OTP ke<br><b id="otp-email-label">email</b></p>
+        <div class="otp-wrap">
+          <input maxlength="1" inputmode="numeric" id="o0" class="od">
+          <input maxlength="1" inputmode="numeric" id="o1" class="od">
+          <input maxlength="1" inputmode="numeric" id="o2" class="od">
+          <input maxlength="1" inputmode="numeric" id="o3" class="od">
+        </div>
+        <button class="btn" id="btn-verify" onclick="verifyAndRegister()">Verifikasi & Buat Akun</button>
+        <button class="btn btn-gray" onclick="requestOtp()">Kirim ulang OTP</button>
+        <button class="btn btn-gray" onclick="document.getElementById('reg-otp').classList.add('hidden');document.getElementById('reg-form').classList.remove('hidden')">Ubah email</button>
+      </div>
+    </div>
+
+    <pre class="result hidden" id="result"></pre>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/js/supabase-client.js"></script>
+  <script>
+    function showTab(which) {
+      document.getElementById("tab-login").classList.toggle("active", which === "login");
+      document.getElementById("tab-reg").classList.toggle("active", which === "reg");
+      document.getElementById("panel-login").classList.toggle("hidden", which !== "login");
+      document.getElementById("panel-reg").classList.toggle("hidden", which !== "reg");
+      setErr(""); setOk("");
+    }
+    function setErr(t){ document.getElementById("err").textContent = t || ""; }
+    function setOk(t){ document.getElementById("ok").textContent = t || ""; }
+    function showResult(obj){
+      var el = document.getElementById("result");
+      el.classList.remove("hidden");
+      el.textContent = JSON.stringify(obj, null, 2);
+    }
+
+    // OTP boxes
+    document.querySelectorAll(".od").forEach(function(el, i, arr){
+      el.addEventListener("input", function(){
+        el.value = el.value.replace(/\D/g,"").slice(0,1);
+        if(el.value && i < 3) arr[i+1].focus();
+      });
+      el.addEventListener("keydown", function(e){
+        if(e.key==="Backspace" && !el.value && i>0) arr[i-1].focus();
+      });
+    });
+    function getOtp(){
+      return [0,1,2,3].map(function(i){ return (document.getElementById("o"+i).value||""); }).join("");
+    }
+
+    var pending = null;
+
+    async function doLogin(){
+      setErr(""); setOk("");
+      var email = document.getElementById("login-email").value.trim();
+      var password = document.getElementById("login-password").value;
+      var btn = document.getElementById("btn-login");
+      btn.disabled = true; btn.textContent = "Masuk...";
+      try{
+        var user = await WhyaDB.login(email, password);
+        setOk("Berhasil masuk sebagai " + user.name);
+        localStorage.setItem("wg_user", JSON.stringify({
+          id: user.id,
+          publicId: user.public_id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+          verified: user.verified,
+          badgeColor: user.badge_color
+        }));
+        showResult(user);
+      }catch(e){
+        setErr(e.message || String(e));
+      }
+      btn.disabled = false; btn.textContent = "Masuk";
+    }
+
+    async function requestOtp(){
+      setErr(""); setOk("");
+      var name = document.getElementById("reg-name").value.trim();
+      var email = document.getElementById("reg-email").value.trim().toLowerCase();
+      var password = document.getElementById("reg-password").value;
+      if(name.length < 2) return setErr("Nama minimal 2 karakter");
+      if(password.length < 6) return setErr("Password minimal 6 karakter");
+      var btn = document.getElementById("btn-reg");
+      btn.disabled = true; btn.textContent = "Mengirim OTP...";
+      try{
+        await WhyaDB.requestOtp(name, email, password);
+        pending = { name:name, email:email, password:password };
+        document.getElementById("reg-form").classList.add("hidden");
+        document.getElementById("reg-otp").classList.remove("hidden");
+        document.getElementById("otp-email-label").textContent = email;
+        setOk("OTP dikirim (cek inbox/Spam Gmail).");
+      }catch(e){
+        setErr(e.message || String(e));
+      }
+      btn.disabled = false; btn.textContent = "Selanjutnya";
+    }
+
+    async function verifyAndRegister(){
+      setErr(""); setOk("");
+      if(!pending) return setErr("Sesi habis — ulangi daftar");
+      var code = getOtp();
+      if(code.length !== 4) return setErr("Masukkan 4 digit OTP");
+      var btn = document.getElementById("btn-verify");
+      btn.disabled = true; btn.textContent = "Memverifikasi...";
+      try{
+        await WhyaDB.verifyOtp(pending.email, code);
+        var user = await WhyaDB.registerUser(pending.name, pending.email, pending.password);
+        localStorage.setItem("wg_user", JSON.stringify({
+          id: user.id,
+          publicId: user.public_id,
+          name: user.name,
+          email: user.email,
+          role: user.role
+        }));
+        setOk("Akun dibuat: " + user.public_id);
+        showResult(user);
+        pending = null;
+      }catch(e){
+        setErr(e.message || String(e));
+      }
+      btn.disabled = false; btn.textContent = "Verifikasi & Buat Akun";
+    }
+  </script>
+</body>
+</html>
