@@ -2883,6 +2883,37 @@
       min-height: 18px;
     }
 
+  
+    .acc-warn-overlay {
+      position:fixed; inset:0; z-index:100100;
+      background:rgba(0,0,0,.82);
+      display:flex; align-items:center; justify-content:center;
+      padding:24px; backdrop-filter:blur(10px);
+    }
+    .acc-warn-card {
+      width:min(100%, 380px); text-align:center;
+      background:linear-gradient(180deg,#1a1020,#0c0c12);
+      border:1px solid rgba(248,113,113,.35);
+      border-radius:24px; padding:28px 22px;
+      box-shadow:0 24px 60px rgba(0,0,0,.55), 0 0 40px rgba(239,68,68,.15);
+    }
+    .acc-warn-ico {
+      width:64px; height:64px; margin:0 auto 14px; border-radius:50%;
+      background:rgba(239,68,68,.15); color:#f87171;
+      display:flex; align-items:center; justify-content:center; font-size:28px;
+    }
+    .acc-warn-card h2 { font-size:22px; margin-bottom:10px; }
+    .acc-warn-card p { color:rgba(255,255,255,.75); font-size:14px; line-height:1.45; margin-bottom:8px; }
+    .acc-warn-meta { font-size:12px !important; color:rgba(255,255,255,.4) !important; }
+    .acc-warn-btn {
+      margin-top:16px; width:100%; padding:14px;
+      border:none; border-radius:14px; cursor:pointer; font-weight:750;
+      color:#fff; background:linear-gradient(180deg,#f87171,#dc2626);
+      border-bottom:4px solid #7f1d1d;
+      box-shadow:0 6px 0 #450a0a, 0 10px 20px rgba(239,68,68,.3);
+    }
+    .acc-warn-btn:active { transform:translateY(3px); box-shadow:0 2px 0 #450a0a; }
+
   </style>
 </head>
 <body>
@@ -2909,6 +2940,17 @@
   </div>
 
 
+
+  
+  <div id="account-warning-overlay" class="acc-warn-overlay" style="display:none">
+    <div class="acc-warn-card">
+      <div class="acc-warn-ico"><i class="fas fa-triangle-exclamation"></i></div>
+      <h2>Peringatan</h2>
+      <p id="acc-warn-text">Akun Anda mendapat peringatan dari admin.</p>
+      <p class="acc-warn-meta" id="acc-warn-meta"></p>
+      <button type="button" class="acc-warn-btn" onclick="dismissAccountWarning()">Saya mengerti</button>
+    </div>
+  </div>
 
   <div id="app-loader">
     <div class="loader-bg" aria-hidden="true">
@@ -3738,7 +3780,7 @@
         <i class="fas fa-photo-video"></i> Foto / Video
         <input type="file" accept="image/*,video/*" onchange="previewStatusMedia(this)">
       </label>
-      <p style="font-size:11px;color:var(--muted)">Video max 6 MB</p>
+      <p style="font-size:11px;color:var(--muted)">Video max 100 MB</p>
       <div class="create-actions">
         <button class="btn-gray" onclick="closeCreateStatus()">Batal</button>
         <button class="btn-green" onclick="publishStatus()">Kirim</button>
@@ -4021,7 +4063,7 @@
     let isGroupCall=false, isCallHost=false, groupCallParticipants={}, peerConnections={}, remoteStreams={}, speakerOn=false, selectedCallPeerId=null;
     const MAX_GROUP_CALL=10;
     let callMsgKey=null;
-    const MAX_VIDEO_BYTES=6*1024*1024, MAX_BASE64_CHARS=9.5*1024*1024;
+    const MAX_VIDEO_BYTES=100*1024*1024, MAX_BASE64_CHARS=140*1024*1024;
 
     /* ===== TABS ===== */
     function switchTab(name){
@@ -4078,7 +4120,7 @@
     }
     function fileToDataURL(file){
       return new Promise(function(resolve,reject){
-        if(file.size>MAX_VIDEO_BYTES) return reject(new Error("Video max 6 MB"));
+        if(file.size>MAX_VIDEO_BYTES) return reject(new Error("Video max 100 MB"));
         const r=new FileReader();
         r.onload=function(){
           const data=r.result;
@@ -4545,6 +4587,7 @@ async function generateUniqueChannelId(){
         try{ toast("Berhasil masuk","ok"); }catch(e){}
         
       try{ handleDeepLinks(); }catch(e){}
+        try{ listenAccountWarning(); }catch(e){}
 
           try{ startApp(); }catch(err){ console.error(err); alert("Login OK tapi gagal buka app: "+err.message); }
       }catch(e){
@@ -5845,7 +5888,7 @@ function saveAccountLocal(user){
       var isVid=file.type.startsWith("video/");
       if(!file.type.startsWith("image/") && !isVid) return alert("Pilih gambar atau video");
       if(isVid && !canUseAnimatedMedia(currentUser)) return alert("Video profil hanya untuk akun centang atau role (moderator/staff/admin/owner)");
-      if(isVid && file.size>4*1024*1024) return alert("Video max 4MB");
+      if(isVid && file.size>100*1024*1024) return alert("Video max 100MB");
       profilePhotoFile=file;
       var url=URL.createObjectURL(file);
       var media=isVid
@@ -5859,7 +5902,7 @@ function saveAccountLocal(user){
       var isVid=file.type.startsWith("video/");
       if(!file.type.startsWith("image/") && !isVid) return alert("Pilih gambar atau video");
       if(isVid && !canUseAnimatedMedia(currentUser)) return alert("Video banner hanya untuk akun centang atau role");
-      if(isVid && file.size>5*1024*1024) return alert("Video max 5MB");
+      if(isVid && file.size>100*1024*1024) return alert("Video max 100MB");
       profileBannerFile=file;
       var url=URL.createObjectURL(file);
       var box=document.getElementById("edit-banner-preview");
@@ -9048,7 +9091,7 @@ function saveAccountLocal(user){
         var isVid=file.type && file.type.startsWith("video/");
         if(isVid){
           if(!(currentChannelData.verified)) return toast("Video banner hanya untuk saluran bercentang","err");
-          if(file.size>5*1024*1024) return toast("Video max 5MB","err");
+          if(file.size>100*1024*1024) return toast("Video max 100MB","err");
         }
         var url=isVid ? await fileToDataUrl(file) : await compressImage(file,1280,720,0.7);
         await db.ref("channels/"+currentChannelId+"/bannerURL").set(url);
@@ -11758,6 +11801,40 @@ function openStatusViewer(uid,list,index){
       return null;
     }
 
+    
+    function dismissAccountWarning(){
+      var el = document.getElementById("account-warning-overlay");
+      if(el) el.style.display = "none";
+      if(!currentUser || !currentUser.id) return;
+      try{
+        db.ref("users/"+currentUser.id+"/activeWarning").update({
+          dismissed: true,
+          dismissedAt: Date.now()
+        });
+      }catch(e){}
+    }
+    function showAccountWarning(w){
+      if(!w || w.dismissed) return;
+      var el = document.getElementById("account-warning-overlay");
+      var tx = document.getElementById("acc-warn-text");
+      var meta = document.getElementById("acc-warn-meta");
+      if(tx) tx.textContent = w.message || "Akun Anda mendapat peringatan dari admin.";
+      if(meta){
+        var t = w.createdAt ? new Date(w.createdAt).toLocaleString("id-ID") : "";
+        meta.textContent = t ? ("Dikirim: "+t) : "";
+      }
+      if(el) el.style.display = "flex";
+    }
+    function listenAccountWarning(){
+      if(!currentUser || !currentUser.id) return;
+      try{
+        db.ref("users/"+currentUser.id+"/activeWarning").on("value", function(snap){
+          var w = snap.val();
+          if(w && !w.dismissed) showAccountWarning(w);
+        });
+      }catch(e){}
+    }
+
     function handleDeepLinks(){
       try{
         // path-based season links
@@ -11845,11 +11922,13 @@ function openStatusViewer(uid,list,index){
           }
         }catch(e){}
         try{ handleDeepLinks(); }catch(e){}
+        try{ listenAccountWarning(); }catch(e){}
         try{ startApp(); }catch(err){
           console.error("boot startApp", err);
           alert("Gagal membuka app: "+(err.message||err));
         }
         try{ handleDeepLinks(); }catch(e){}
+        try{ listenAccountWarning(); }catch(e){}
       }, 400);
     })();
 

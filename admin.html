@@ -339,9 +339,198 @@
       display:flex; flex-wrap:wrap; gap:2px; margin-top:6px;
       max-height:120px; overflow:auto; padding:4px 0;
     }
+  
+    /* 3D black + white light */
+    .btn-primary, .btn-danger, .btn-gray, .tab, .act, button.btn-primary, button.btn-danger, button.btn-gray {
+      position: relative;
+      border: none !important;
+      border-radius: 14px !important;
+      font-weight: 750 !important;
+      color: #fff !important;
+      transform: translateY(0);
+      transition: transform .12s ease, box-shadow .12s ease, filter .12s ease;
+      text-shadow: 0 1px 0 rgba(0,0,0,.35);
+    }
+    .btn-primary, .gis-join, .acc-warn-btn {
+      background: linear-gradient(180deg, #3a3a42 0%, #1a1a20 55%, #0c0c10 100%) !important;
+      border-bottom: 4px solid #000 !important;
+      box-shadow:
+        0 6px 0 #000,
+        0 10px 22px rgba(0,0,0,.45),
+        inset 0 1px 0 rgba(255,255,255,.22),
+        inset 0 -1px 0 rgba(0,0,0,.4) !important;
+    }
+    .btn-primary:hover { filter: brightness(1.08); }
+    .btn-primary:active, .btn-danger:active, .btn-gray:active, .tab:active, .act:active {
+      transform: translateY(3px) !important;
+      box-shadow:
+        0 2px 0 #000,
+        0 4px 10px rgba(0,0,0,.4),
+        inset 0 1px 0 rgba(255,255,255,.15) !important;
+      border-bottom-width: 2px !important;
+    }
+    .btn-danger {
+      background: linear-gradient(180deg, #5a2020 0%, #2a0c0c 100%) !important;
+      border-bottom: 4px solid #000 !important;
+      box-shadow: 0 6px 0 #000, 0 10px 20px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,200,200,.18) !important;
+    }
+    .btn-gray, button.btn-gray {
+      background: linear-gradient(180deg, #2e2e36 0%, #141418 100%) !important;
+      border-bottom: 4px solid #000 !important;
+      box-shadow: 0 5px 0 #000, 0 8px 16px rgba(0,0,0,.4), inset 0 1px 0 rgba(255,255,255,.14) !important;
+    }
+    .tab {
+      background: linear-gradient(180deg, #2a2a32 0%, #121218 100%) !important;
+      border-bottom: 3px solid #000 !important;
+      box-shadow: 0 4px 0 #000, inset 0 1px 0 rgba(255,255,255,.12) !important;
+      color: rgba(255,255,255,.7) !important;
+    }
+    .tab.active {
+      background: linear-gradient(180deg, #4a4a55 0%, #1e1e28 100%) !important;
+      color: #fff !important;
+      box-shadow:
+        0 5px 0 #000,
+        0 0 18px rgba(255,255,255,.08),
+        inset 0 1px 0 rgba(255,255,255,.28) !important;
+    }
+    .act {
+      background: linear-gradient(180deg, #2c2c34 0%, #141418 100%) !important;
+      border-bottom: 3px solid #000 !important;
+      box-shadow: 0 4px 0 #000, inset 0 1px 0 rgba(255,255,255,.12) !important;
+      color: #fff !important;
+      border-radius: 12px !important;
+      padding: 8px 12px !important;
+      cursor: pointer;
+    }
+    .act-delete {
+      background: linear-gradient(180deg, #4a2020 0%, #1a0a0a 100%) !important;
+    }
+    .stat, .card, .acc {
+      box-shadow: 0 10px 28px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.06) !important;
+    }
+    /* Admin top bar */
+    .admin-top {
+      display:flex; align-items:center; justify-content:space-between;
+      padding:16px 16px 8px; gap:12px;
+    }
+    .admin-top h1 { font-size:22px; font-weight:800; letter-spacing:-.02em; }
+    .admin-back-chat {
+      display:inline-flex; align-items:center; gap:8px;
+      padding:10px 16px; border-radius:14px; cursor:pointer;
+      font-weight:700; font-size:13px; color:#fff;
+      background: linear-gradient(180deg, #3a3a42 0%, #1a1a20 100%);
+      border-bottom: 4px solid #000;
+      box-shadow: 0 5px 0 #000, inset 0 1px 0 rgba(255,255,255,.2);
+      text-decoration:none;
+    }
+    .admin-back-chat:active { transform:translateY(3px); box-shadow:0 2px 0 #000; }
+    /* Database panel */
+    .db-stats {
+      display:grid; grid-template-columns:repeat(3,1fr); gap:10px;
+      margin:12px 0 16px;
+    }
+    .db-stat {
+      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
+      border:1px solid rgba(255,255,255,.08);
+      border-radius:16px; padding:14px 12px; text-align:center;
+      box-shadow: 0 8px 20px rgba(0,0,0,.25), inset 0 1px 0 rgba(255,255,255,.06);
+    }
+    .db-stat .n { font-size:18px; font-weight:800; }
+    .db-stat .l { font-size:11px; color:var(--muted); margin-top:4px; }
+    .db-clean-all {
+      width:100%; padding:14px; border-radius:16px; margin-bottom:16px;
+      font-size:15px; font-weight:800; cursor:pointer; color:#fff;
+      background: linear-gradient(180deg, #3a3a42, #15151c);
+      border:none; border-bottom:4px solid #000;
+      box-shadow: 0 6px 0 #000, 0 0 24px rgba(255,255,255,.06), inset 0 1px 0 rgba(255,255,255,.22);
+    }
+    .db-clean-all:active { transform:translateY(3px); box-shadow:0 2px 0 #000; }
+    .db-section-title {
+      font-size:13px; font-weight:700; color:var(--muted); margin:8px 0 10px;
+    }
+    .db-row {
+      display:flex; align-items:center; justify-content:space-between; gap:12px;
+      padding:14px 0; border-bottom:1px solid rgba(255,255,255,.06);
+    }
+    .db-row:last-child { border-bottom:none; }
+    .db-row h4 { font-size:15px; font-weight:750; margin-bottom:4px; }
+    .db-row p { font-size:12px; color:var(--muted); line-height:1.4; max-width:220px; }
+    .db-row .count {
+      min-width:28px; text-align:center; font-weight:800; font-size:14px;
+      margin-right:8px; color:rgba(255,255,255,.55);
+    }
+    .db-row .btn-clean {
+      padding:8px 14px; border-radius:12px; font-size:12px; font-weight:700;
+      cursor:pointer; color:#fff;
+      background: linear-gradient(180deg, #2e2e36, #141418);
+      border:none; border-bottom:3px solid #000;
+      box-shadow: 0 4px 0 #000, inset 0 1px 0 rgba(255,255,255,.14);
+    }
+    .db-row .btn-clean:active { transform:translateY(2px); box-shadow:0 1px 0 #000; }
+    /* Loader like chat */
+    #admin-loader {
+      position:fixed; inset:0; z-index:99999;
+      display:flex; align-items:center; justify-content:center;
+      background:#07070c;
+    }
+    #admin-loader.hide { opacity:0; pointer-events:none; transition:opacity .4s; }
+    #admin-loader.gone { display:none !important; }
+    .admin-loader-bg {
+      position:absolute; inset:0; overflow:hidden;
+      background:
+        radial-gradient(ellipse 80% 40% at 50% 0%, rgba(255,255,255,.06), transparent 60%),
+        #07070c;
+    }
+    .admin-loader-grid {
+      position:absolute; inset:-50%;
+      background-image:
+        linear-gradient(rgba(255,255,255,.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.03) 1px, transparent 1px);
+      background-size:40px 40px;
+      animation: adminGridMove 12s linear infinite;
+    }
+    @keyframes adminGridMove {
+      0% { transform: translate(0,0); }
+      100% { transform: translate(40px,40px); }
+    }
+    .admin-loader-panel {
+      position:relative; z-index:1; width:min(280px,80vw); text-align:center;
+    }
+    .admin-loader-brand {
+      font-size:28px; font-weight:850; letter-spacing:-.03em; margin-bottom:18px;
+      color:#fff; text-shadow:0 0 24px rgba(255,255,255,.25);
+    }
+    .admin-loader-track {
+      height:3px; width:100%; border-radius:999px; overflow:hidden;
+      background:rgba(255,255,255,.08);
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.04);
+    }
+    .admin-loader-bar {
+      height:100%; width:30%; border-radius:999px;
+      background: linear-gradient(90deg, transparent, #fff, transparent);
+      box-shadow: 0 0 12px rgba(255,255,255,.5);
+      animation: adminBar 1.1s ease-in-out infinite;
+    }
+    @keyframes adminBar {
+      0% { transform: translateX(-100%); }
+      100% { transform: translateX(400%); }
+    }
+    .admin-loader-text {
+      margin-top:12px; font-size:12px; color:rgba(255,255,255,.45);
+    }
+
   </style>
 </head>
 <body data-theme="dark">
+  <div id="admin-loader">
+    <div class="admin-loader-bg"><div class="admin-loader-grid"></div></div>
+    <div class="admin-loader-panel">
+      <div class="admin-loader-brand">whya</div>
+      <div class="admin-loader-track"><div class="admin-loader-bar"></div></div>
+      <div class="admin-loader-text">Memuat admin…</div>
+    </div>
+  </div>
+
   <div class="login-gate hidden" id="gate" style="display:none!important">
     <div class="login-box">
       <div class="login-logo"><i class="fas fa-shield-halved"></i></div>
@@ -393,6 +582,9 @@
       </button>
       <button class="tab" id="tab-webs" onclick="switchAdminTab('webs')">
         <i class="fas fa-globe"></i> Web <span class="cnt" id="cnt-webs">0</span>
+      </button>
+      <button class="tab" id="tab-database" onclick="switchAdminTab('database')">
+        <i class="fas fa-database"></i> Database
       </button>
       <button class="tab" id="tab-settings" onclick="switchAdminTab('settings')">
         <i class="fas fa-gear"></i> Pengaturan
@@ -448,6 +640,65 @@
     </div>
 
 <!-- SETTINGS SECTION -->
+    <div class="panel-section" 
+    <div class="panel-section" id="sec-database">
+      <div class="db-stats">
+        <div class="db-stat"><div class="n" id="db-size">—</div><div class="l">Database</div></div>
+        <div class="db-stat"><div class="n" id="db-files">—</div><div class="l">File / media</div></div>
+        <div class="db-stat"><div class="n" id="db-msgs">—</div><div class="l">Pesan</div></div>
+      </div>
+      <button type="button" class="db-clean-all" onclick="cleanAllSafe()">
+        <i class="fas fa-wand-magic-sparkles"></i> Bersihkan semua yang aman
+      </button>
+      <div class="db-section-title">Aman dibersihkan</div>
+      <div class="card" style="padding:8px 16px">
+        <div class="db-row">
+          <div>
+            <h4>OTP kedaluwarsa</h4>
+            <p>Kode OTP daftar yang sudah lewat masa berlaku.</p>
+          </div>
+          <div style="display:flex;align-items:center">
+            <span class="count" id="db-otp-count">0</span>
+            <button type="button" class="btn-clean" onclick="cleanExpiredOtp()">Bersihkan</button>
+          </div>
+        </div>
+        <div class="db-row">
+          <div>
+            <h4>Pesan sistem lama</h4>
+            <p>Log sistem / call log berusia lebih dari 30 hari.</p>
+          </div>
+          <div style="display:flex;align-items:center">
+            <span class="count" id="db-old-sys">0</span>
+            <button type="button" class="btn-clean" onclick="cleanOldSystemMsgs()">Bersihkan</button>
+          </div>
+        </div>
+        <div class="db-row">
+          <div>
+            <h4>Season link nonaktif</h4>
+            <p>Tautan season yang dinonaktifkan.</p>
+          </div>
+          <div style="display:flex;align-items:center">
+            <span class="count" id="db-season-off">0</span>
+            <button type="button" class="btn-clean" onclick="cleanInactiveSeason()">Bersihkan</button>
+          </div>
+        </div>
+        <div class="db-row">
+          <div>
+            <h4>Meta ping</h4>
+            <p>Data teknis ping koneksi.</p>
+          </div>
+          <div style="display:flex;align-items:center">
+            <span class="count" id="db-meta">0</span>
+            <button type="button" class="btn-clean" onclick="cleanMeta()">Bersihkan</button>
+          </div>
+        </div>
+      </div>
+      <p style="font-size:12px;color:var(--muted);margin-top:12px;line-height:1.45">
+        Pembersihan aman tidak menghapus akun, chat aktif, atau media yang masih dipakai.
+        Estimasi ukuran bersifat perkiraan dari jumlah node.
+      </p>
+    </div>
+
     <div class="panel-section" id="sec-settings">
       <div class="acc open" style="margin-bottom:14px">
         <div class="acc-body" style="display:block;border-top:none">
@@ -717,12 +968,13 @@
 
     function switchAdminTab(name) {
       adminTab = name;
-      ["users","channels","webs","settings"].forEach(function(t){
+      ["users","channels","webs","database","settings"].forEach(function(t){
         var tab = document.getElementById("tab-" + t);
         var sec = document.getElementById("sec-" + t);
         if (tab) tab.classList.toggle("active", name === t);
         if (sec) sec.classList.toggle("active", name === t);
       });
+      if (name === "database") { try { refreshDatabaseStats(); } catch(e){} }
       if (name === "webs") { try { renderWebs(); } catch(e){} }
       if (name === "settings") loadLoginBannerSetting();
     }
@@ -1045,6 +1297,7 @@
               '<button class="act act-verify" onclick="toggleUserVerified(\'' + esc(u.id) + '\',' + (u.verified ? "false" : "true") + ')"><i class="fas fa-badge-check"></i> ' + (u.verified ? "Cabut centang" : "Beri centang") + '</button>' +
               '<button class="act act-pass" onclick="setPassword(\'' + esc(u.id) + '\')"><i class="fas fa-key"></i> Set password</button>' +
               '<button class="act ' + (u.banned ? "act-unban" : "act-ban") + '" onclick="toggleBan(\'' + esc(u.id) + '\',' + (u.banned ? "false" : "true") + ')"><i class="fas fa-ban"></i> ' + (u.banned ? "Unban" : "Ban") + '</button>' +
+              '<button class="act" onclick="sendUserWarning(\'' + esc(u.id) + '\',\'' + esc(u.name) + '\')"><i class="fas fa-triangle-exclamation"></i> Peringatan</button>' +
               '<button class="act act-delete" onclick="deleteUser(\'' + esc(u.id) + '\',\'' + esc(u.publicId) + '\')"><i class="fas fa-trash"></i> Hapus akun</button>' +
             '</div></div></div></div>';
       }).join("");
@@ -1454,6 +1707,143 @@ async function deleteChannel(cid, publicId) {
         await db.ref("users/"+uid+"/canOpenSeasonLinks").set(!!allow);
         toast(allow?"Diizinkan buka tautan season":"Tidak diizinkan buka tautan season","ok");
       }catch(e){ toast("Gagal","err"); }
+    }
+
+  
+    function hideAdminLoader(){
+      var l = document.getElementById("admin-loader");
+      if(!l) return;
+      l.classList.add("hide");
+      setTimeout(function(){ try{ l.classList.add("gone"); l.style.display="none"; }catch(e){} }, 450);
+    }
+    setTimeout(function(){ try{ hideAdminLoader(); }catch(e){} }, 500);
+    setTimeout(function(){ try{ hideAdminLoader(); }catch(e){} }, 2500);
+
+    async function sendUserWarning(uid, name){
+      var msg = prompt("Pesan peringatan untuk "+(name||"user")+":", "Anda melanggar aturan komunitas. Mohon patuhi ketentuan whya.");
+      if(msg==null) return;
+      msg = String(msg).trim();
+      if(!msg) return toast("Pesan kosong","err");
+      try{
+        await db.ref("users/"+uid+"/activeWarning").set({
+          message: msg,
+          createdAt: Date.now(),
+          dismissed: false,
+          by: "admin"
+        });
+        toast("Peringatan dikirim","ok");
+      }catch(e){ toast("Gagal: "+(e.message||e),"err"); }
+    }
+
+    async function refreshDatabaseStats(){
+      try{
+        var msgCount = 0, otpCount = 0, seasonOff = 0, metaN = 0, approxBytes = 0;
+        var chats = await db.ref("chats").once("value");
+        if(chats.exists()){
+          chats.forEach(function(room){
+            room.forEach(function(m){ msgCount++; approxBytes += JSON.stringify(m.val()||{}).length; });
+          });
+        }
+        var otp = await db.ref("registrationOtp").once("value");
+        var now = Date.now();
+        if(otp.exists()){
+          otp.forEach(function(c){
+            var v=c.val()||{};
+            if(!v.expiresAt || v.expiresAt < now) otpCount++;
+            approxBytes += JSON.stringify(v).length;
+          });
+        }
+        var season = await db.ref("seasonLinks").once("value");
+        if(season.exists()){
+          season.forEach(function(c){
+            var v=c.val()||{};
+            if(v.active===false) seasonOff++;
+          });
+        }
+        var meta = await db.ref("meta").once("value");
+        if(meta.exists()) metaN = 1;
+        var mb = (approxBytes / (1024*1024));
+        var el = document.getElementById("db-size");
+        if(el) el.textContent = (mb < 0.1 ? (approxBytes/1024).toFixed(1)+" KB" : mb.toFixed(1)+" MB");
+        var el2 = document.getElementById("db-files");
+        if(el2) el2.textContent = "—";
+        var el3 = document.getElementById("db-msgs");
+        if(el3) el3.textContent = String(msgCount);
+        var o = document.getElementById("db-otp-count"); if(o) o.textContent = String(otpCount);
+        var s = document.getElementById("db-season-off"); if(s) s.textContent = String(seasonOff);
+        var m = document.getElementById("db-meta"); if(m) m.textContent = String(metaN);
+        var os = document.getElementById("db-old-sys"); if(os) os.textContent = "—";
+      }catch(e){ console.warn(e); toast("Gagal muat statistik DB","err"); }
+    }
+    async function cleanExpiredOtp(){
+      try{
+        var snap = await db.ref("registrationOtp").once("value");
+        var now = Date.now(); var n=0;
+        if(snap.exists()){
+          var updates = {};
+          snap.forEach(function(c){
+            var v=c.val()||{};
+            if(!v.expiresAt || v.expiresAt < now){ updates[c.key] = null; n++; }
+          });
+          if(n) await db.ref("registrationOtp").update(updates);
+        }
+        toast("OTP dibersihkan: "+n,"ok");
+        refreshDatabaseStats();
+      }catch(e){ toast("Gagal","err"); }
+    }
+    async function cleanInactiveSeason(){
+      try{
+        var snap = await db.ref("seasonLinks").once("value");
+        var n=0; var updates={};
+        if(snap.exists()){
+          snap.forEach(function(c){
+            var v=c.val()||{};
+            if(v.active===false){ updates[c.key]=null; n++; }
+          });
+          if(n) await db.ref("seasonLinks").update(updates);
+        }
+        toast("Season nonaktif dihapus: "+n,"ok");
+        refreshDatabaseStats();
+      }catch(e){ toast("Gagal","err"); }
+    }
+    async function cleanMeta(){
+      try{
+        await db.ref("meta").remove();
+        toast("Meta dibersihkan","ok");
+        refreshDatabaseStats();
+      }catch(e){ toast("Gagal","err"); }
+    }
+    async function cleanOldSystemMsgs(){
+      toast("Memindai pesan sistem lama…","info");
+      try{
+        var snap = await db.ref("chats").once("value");
+        var cutoff = Date.now() - 30*86400000;
+        var n=0;
+        if(snap.exists()){
+          var rooms = [];
+          snap.forEach(function(r){ rooms.push(r); });
+          for(var i=0;i<rooms.length;i++){
+            var updates={};
+            rooms[i].forEach(function(m){
+              var v=m.val()||{};
+              if((v.type==="system"||v.type==="call") && (v.timestamp||0) < cutoff){
+                updates[m.key]=null; n++;
+              }
+            });
+            if(Object.keys(updates).length) await rooms[i].ref.update(updates);
+          }
+        }
+        toast("Pesan sistem lama dihapus: "+n,"ok");
+        refreshDatabaseStats();
+      }catch(e){ toast("Gagal: "+(e.message||e),"err"); }
+    }
+    async function cleanAllSafe(){
+      if(!confirm("Bersihkan semua data aman (OTP kedaluwarsa, season nonaktif, meta, pesan sistem >30 hari)?")) return;
+      await cleanExpiredOtp();
+      await cleanInactiveSeason();
+      await cleanMeta();
+      await cleanOldSystemMsgs();
+      toast("Pembersihan aman selesai","ok");
     }
 
   </script>
