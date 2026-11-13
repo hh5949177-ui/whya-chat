@@ -3,8 +3,8 @@
  * Ganti SUPABASE_URL dan SUPABASE_ANON_KEY dari Project Settings → API
  */
 (function (global) {
-  var SUPABASE_URL = "https://YOUR_PROJECT_REF.supabase.co";
-  var SUPABASE_ANON_KEY = "YOUR_ANON_PUBLIC_KEY";
+  var SUPABASE_URL = "https://wjmxiedkyklmmoxcxjlw.supabase.co/rest/v1/";
+  var SUPABASE_ANON_KEY = "sb_publishable_TMNireG8PZENCgtHdh-HQA_BkAlGAle";
 
   function createClient() {
     if (!global.supabase || !global.supabase.createClient) {
