@@ -18,6 +18,9 @@
     }
   ],
   "rewrites": [
-    { "source": "/admin", "destination": "/admin.html" }
+    { "source": "/admin", "destination": "/admin.html" },
+    { "source": "/admin/(.*)", "destination": "/admin.html" },
+    { "source": "/season/:type/:code", "destination": "/dashboard.html" },
+    { "source": "/season/:type/:code/", "destination": "/dashboard.html" }
   ]
 }

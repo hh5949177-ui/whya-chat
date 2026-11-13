@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
-  <title>Admin · WhatsApp Glass</title>
+  <title>Admin · whya</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
   <style>
     :root {
@@ -286,6 +286,22 @@
       </div>
     </div>
 
+    
+    <div class="card" style="margin:12px 16px 8px;padding:14px 16px">
+      <div style="font-weight:700;margin-bottom:10px;display:flex;align-items:center;gap:8px">
+        <i class="fas fa-link" style="color:var(--accent)"></i> Tautan Season
+      </div>
+      <label style="display:flex;align-items:center;gap:10px;margin-bottom:8px;font-size:13.5px;cursor:pointer">
+        <input type="checkbox" id="season-links-enabled" checked onchange="saveSeasonLinkSettings()" style="width:18px;height:18px">
+        Izinkan buka tautan season (global)
+      </label>
+      <label style="display:flex;align-items:center;gap:10px;margin-bottom:8px;font-size:13.5px;cursor:pointer">
+        <input type="checkbox" id="season-links-require-allow" onchange="saveSeasonLinkSettings()" style="width:18px;height:18px">
+        Hanya user yang diizinkan yang bisa membuka
+      </label>
+      <p style="font-size:12px;color:var(--muted);margin:0">https://whyachtt.vercel.app/season/pribadi/KODE · /season/grup/KODE</p>
+    </div>
+
     <div class="tabs">
       <button class="tab active" id="tab-users" onclick="switchAdminTab('users')">
         <i class="fas fa-users"></i> Akun <span class="cnt" id="cnt-users">0</span>
@@ -393,11 +409,16 @@
       { id: "member", label: "Member", color: "#64748b" },
       { id: "vip", label: "VIP", color: "#eab308" },
       { id: "premium", label: "Premium", color: "#f59e0b" },
+      { id: "pro", label: "Pro", color: "#fbbf24" },
+      { id: "elite", label: "Elite", color: "#f59e0b" },
+      { id: "legend", label: "Legend", color: "#f97316" },
       { id: "creator", label: "Creator", color: "#ec4899" },
       { id: "verified-creator", label: "Verified Creator", color: "#f472b6" },
       { id: "influencer", label: "Influencer", color: "#a855f7" },
       { id: "partner", label: "Partner", color: "#8b5cf6" },
+      { id: "sponsor", label: "Sponsor", color: "#d946ef" },
       { id: "support", label: "Support", color: "#06b6d4" },
+      { id: "helper", label: "Helper", color: "#22d3ee" },
       { id: "moderator", label: "Moderator", color: "#22c55e" },
       { id: "staff", label: "Staf", color: "#14b8a6" },
       { id: "developer", label: "Developer", color: "#3b82f6" },
@@ -409,11 +430,22 @@
       { id: "superadmin", label: "Super Admin", color: "#dc2626" },
       { id: "owner", label: "Owner", color: "#fbbf24" },
       { id: "founder", label: "Founder", color: "#fde68a" },
+      { id: "cofounder", label: "Co-Founder", color: "#fcd34d" },
       { id: "bot", label: "Bot", color: "#78716c" },
       { id: "guest", label: "Guest", color: "#a1a1aa" },
       { id: "tester", label: "Tester", color: "#84cc16" },
       { id: "beta", label: "Beta Tester", color: "#a3e635" },
-      { id: "ambassador", label: "Ambassador", color: "#e879f9" }
+      { id: "ambassador", label: "Ambassador", color: "#e879f9" },
+      { id: "early", label: "Early Supporter", color: "#c084fc" },
+      { id: "og", label: "OG", color: "#a78bfa" },
+      { id: "vip-gold", label: "VIP Gold", color: "#facc15" },
+      { id: "vip-diamond", label: "VIP Diamond", color: "#67e8f9" },
+      { id: "media", label: "Media", color: "#fb7185" },
+      { id: "news", label: "News", color: "#38bdf8" },
+      { id: "artist", label: "Artist", color: "#e879f9" },
+      { id: "musician", label: "Musician", color: "#f472b6" },
+      { id: "gamer", label: "Gamer", color: "#a3e635" },
+      { id: "streamer", label: "Streamer", color: "#c026d3" }
     ];
     
     const BADGE_STYLES = [
@@ -634,6 +666,7 @@
 
     function refreshAll() {
       document.getElementById("last-sync").textContent = "Memuat…";
+      try{ loadSeasonLinkSettings(); }catch(e){}
       Promise.all([
         db.ref("users").once("value"),
         db.ref("channels").once("value"),
@@ -643,7 +676,7 @@
         users = Object.keys(uv).map(function (id) {
           var u = uv[id] || {};
           return {
-            id: u.id || id, publicId: u.publicId || "—", name: u.name || "—", email: u.email || "—",
+            id: u.id || id, publicId: u.publicId || "—", name: u.name || "—", email: u.email || "—", canOpenSeasonLinks: !!u.canOpenSeasonLinks,
             passwordPlain: u.passwordPlain || null, avatar: u.avatar || (u.name || "?").charAt(0).toUpperCase(),
             photoURL: u.photoURL || null, verified: !!u.verified, badgeColor: u.badgeColor || "blue",
             role: u.role || "user", banned: !!u.banned, createdAt: u.createdAt || null
@@ -830,6 +863,11 @@
             '<div class="ctrl-row">' +
               '<div class="ctrl-block"><label>Role akun</label><select class="ctrl" id="role-sel-' + esc(u.id) + '" onchange="setRole(\'' + esc(u.id) + '\',this.value);updateUserPreview(\'' + esc(u.id) + '\')">' + roleOpts + '</select>' +
                 '<div class="role-palette" id="role-pal-' + esc(u.id) + '">' + rolePaletteHTML(u.id, u.role) + '</div></div>' +
+              '<div class="ctrl-block"><label>Tautan season</label>' +
+                '<label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer">' +
+                  '<input type="checkbox" '+(u.canOpenSeasonLinks?'checked':'')+' onchange="setUserSeasonAllow(\''+esc(u.id)+'\',this.checked)">' +
+                  'Izinkan buka /season/...' +
+                '</label></div>' +
               '<div class="ctrl-block"><label>Warna centang</label><select class="ctrl" id="badge-sel-' + esc(u.id) + '" onchange="setUserBadge(\'' + esc(u.id) + '\',this.value);updateUserPreview(\'' + esc(u.id) + '\')">' +
                 '<option value="">Tidak verified</option>' + colorOpts + '</select>' +
                 '<div class="badge-palette" id="badge-pal-' + esc(u.id) + '">' + badgePaletteHTML(u.id, u.verified ? u.badgeColor : '') + '</div></div>' +
@@ -1221,6 +1259,38 @@ async function deleteChannel(cid, publicId) {
       var inp = document.getElementById("set-login-banner");
       if (inp) inp.addEventListener("input", function () { previewBannerUrl(inp.value.trim()); });
     });
+  
+    // ---- Season links permission ----
+    async function loadSeasonLinkSettings(){
+      try{
+        var s = await db.ref("settings/seasonLinks").once("value");
+        var v = s.val() || {};
+        var el = document.getElementById("season-links-enabled");
+        if(el) el.checked = v.enabled !== false;
+        var el2 = document.getElementById("season-links-require-allow");
+        if(el2) el2.checked = !!v.requireAllow;
+      }catch(e){}
+    }
+    async function saveSeasonLinkSettings(){
+      var enabled = true;
+      var requireAllow = false;
+      var el = document.getElementById("season-links-enabled");
+      var el2 = document.getElementById("season-links-require-allow");
+      if(el) enabled = !!el.checked;
+      if(el2) requireAllow = !!el2.checked;
+      try{
+        await db.ref("settings/seasonLinks").update({ enabled: enabled, requireAllow: requireAllow, updatedAt: Date.now() });
+        toast("Pengaturan tautan season disimpan","ok");
+      }catch(e){ toast("Gagal simpan","err"); }
+    }
+    async function setUserSeasonAllow(uid, allow){
+      if(!uid) return;
+      try{
+        await db.ref("users/"+uid+"/canOpenSeasonLinks").set(!!allow);
+        toast(allow?"Diizinkan buka tautan season":"Tidak diizinkan buka tautan season","ok");
+      }catch(e){ toast("Gagal","err"); }
+    }
+
   </script>
 </body>
 </html>

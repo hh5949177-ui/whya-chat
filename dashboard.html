@@ -5553,33 +5553,13 @@ function saveAccountLocal(user){
       if(!u.verified && !isOwner) return "";
       if(!u.verified && isOwner){ u=Object.assign({},u,{verified:true,badgeColor:u.badgeColor||"gold"}); }
       var colors={
-        blue:"#1D9BF0",
-        sky:"#0EA5E9",
-        cyan:"#06B6D4",
-        teal:"#14B8A6",
-        green:"#22C55E",
-        lime:"#84CC16",
-        emerald:"#10B981",
-        red:"#EF4444",
-        rose:"#F43F5E",
-        pink:"#EC4899",
-        fuchsia:"#D946EF",
-        purple:"#A855F7",
-        violet:"#8B5CF6",
-        indigo:"#6366F1",
-        orange:"#F97316", "gradient-sunset":"#FF6B6B","gradient-ocean":"#00C9FF","orange-glow":"#F97316","pastel-rainbow":"#C4B5FD","green-neon":"#22C55E","pink-glow":"#EC4899","red-glow":"#EF4444","cyan-glow":"#06B6D4","silver":"#9CA3AF","blue-bright":"#3B82F6","violet-glow":"#8B5CF6","sky":"#38BDF8","lime":"#84CC16","mint":"#2DD4BF","emerald":"#10B981","teal":"#14B8A6","indigo":"#6366F1","amber":"#F59E0B","rose":"#FB7185","gray":"#6B7280","violet":"#8B5CF6","cyan":"#06B6D4","fuchsia":"#D946EF",
-        amber:"#F59E0B",
-        gold:"#EAB308",
-        yellow:"#FACC15",
-        black:"#111827",
-        gray:"#6B7280",
-        slate:"#475569",
-        brown:"#92400E",
-        maroon:"#9F1239",
-        navy:"#1E3A8A",
-        mint:"#2DD4BF",
-        coral:"#FB7185",
-        white:"#E5E7EB"
+        blue:"#1D9BF0","blue-bright":"#3B82F6",sky:"#38BDF8",cyan:"#22D3EE","cyan-glow":"#06B6D4",
+        teal:"#14B8A6",mint:"#2DD4BF",emerald:"#10B981",green:"#16A34A","green-neon":"#22C55E",lime:"#84CC16",
+        yellow:"#FACC15",gold:"#EAB308",amber:"#F59E0B",orange:"#EA580C","orange-glow":"#F97316",
+        red:"#EF4444",rose:"#F43F5E",pink:"#EC4899","pink-glow":"#F472B6",fuchsia:"#D946EF",
+        purple:"#A855F7",violet:"#8B5CF6",indigo:"#6366F1","blue-glow":"#3B82F6","gold-glow":"#EAB308",
+        "gradient-sunset":"#FB7185","gradient-ocean":"#22D3EE","gradient-minty":"#2DD4BF",
+        white:"#F8FAFC",gray:"#94A3B8",black:"#0F172A"
       };
       var fill=colors[u.badgeColor]||colors.blue;
       // centang bulat, ceklis putih di tengah
@@ -6200,6 +6180,7 @@ function saveAccountLocal(user){
           '<button type="button" onclick="profileActionCall(\''+uid+'\')"><i class="fas fa-phone"></i>Telepon</button>'+
           '<button type="button" onclick="profileActionVideo(\''+uid+'\')"><i class="fas fa-video"></i>Video</button>'+
           '<button type="button" onclick="profileActionChat(\''+uid+'\')"><i class="fas fa-comment"></i>Chat</button>'+
+          '<button type="button" onclick="sharePrivateSeasonLink()"><i class="fas fa-link"></i>Tautan</button>'+
           '<button type="button" onclick="profileActionSave(\''+uid+'\')"><i class="fas fa-user-plus"></i>Simpan</button>'+
         '</div>'+
         '<div class="ps-section">'+
@@ -9365,13 +9346,35 @@ function saveAccountLocal(user){
       if(currentGroupData) currentGroupData.inviteCode = code;
       return code;
     }
+    
+    async function sharePrivateSeasonLink(){
+      if(!currentRoom || currentChatType!=="private") return toast("Hanya chat pribadi","err");
+      if(!currentUser) return toast("Login dulu","err");
+      try{
+        var name = (document.getElementById("chat-name")||{}).textContent || "Chat";
+        var code = await ensureSeasonLink("pribadi", currentRoom, { name: name });
+        var link = buildSeasonUrl("pribadi", code);
+        var msg = 'Chat pribadi di whya:\n'+link;
+        if(navigator.share){
+          try{ await navigator.share({title:name, text:msg, url:link}); return; }catch(e){}
+        }
+        if(navigator.clipboard && navigator.clipboard.writeText){
+          await navigator.clipboard.writeText(msg);
+          toast("Tautan chat disalin","ok");
+        } else {
+          prompt("Salin tautan:", link);
+        }
+      }catch(e){ toast("Gagal buat tautan: "+(e.message||e),"err"); }
+    }
+
     async function shareGroupInviteLink(){
       try{
         var code = await ensureGroupInviteCode();
         var g = currentGroupData || {};
-        var link = (typeof buildShareLink==="function")
-          ? buildShareLink({join:code})
-          : (location.origin+location.pathname+"?join="+encodeURIComponent(code));
+        var link =  await (async function(){
+          var seasonCode = await ensureSeasonLink("grup", currentRoom, { name: g.name, avatar: g.avatar, photoURL: g.photoURL });
+          return buildSeasonUrl("grup", seasonCode);
+        })();
         var msg = 'Gabung grup "'+(g.name||"Grup")+'" di whya:\n'+link;
         if(navigator.share){
           try{ await navigator.share({title:g.name||"Grup", text:msg, url:link}); return; }catch(e){}
@@ -11489,8 +11492,173 @@ function openStatusViewer(uid,list,index){
         toast("Gagal membuka web","err");
       }
     }
+    
+    // ========== Season links: /season/pribadi|grup/CODE ==========
+    function generateSeasonCode(){
+      var n = Math.floor(100000 + Math.random()*900000);
+      var s = Math.random().toString(36).slice(2,8).toUpperCase();
+      return String(n)+s;
+    }
+    function buildSeasonUrl(type, code){
+      type = (type==="grup"||type==="group") ? "grup" : "pribadi";
+      var origin = location.origin || "https://whyachtt.vercel.app";
+      return origin + "/season/" + type + "/" + encodeURIComponent(code);
+    }
+    async function ensureSeasonLink(type, roomId, meta){
+      meta = meta || {};
+      type = (type==="grup"||type==="group") ? "grup" : "pribadi";
+      if(!roomId) throw new Error("room kosong");
+      // reuse existing active link for this room if any
+      try{
+        var q = await db.ref("seasonLinks").orderByChild("roomId").equalTo(roomId).once("value");
+        if(q.exists()){
+          var found=null;
+          q.forEach(function(ch){
+            var v=ch.val()||{};
+            if(!found && v.active!==false && v.type===type) found={code:ch.key, data:v};
+          });
+          if(found) return found.code;
+        }
+      }catch(e){}
+      var code = generateSeasonCode();
+      var payload = {
+        type: type,
+        roomId: roomId,
+        createdBy: currentUser ? currentUser.id : null,
+        createdAt: Date.now(),
+        active: true,
+        name: meta.name || null,
+        avatar: meta.avatar || null,
+        photoURL: meta.photoURL || null
+      };
+      await db.ref("seasonLinks/"+code).set(payload);
+      return code;
+    }
+    async function checkSeasonLinkAllowed(){
+      try{
+        var s = await db.ref("settings/seasonLinks").once("value");
+        var conf = s.val() || {};
+        if(conf.enabled === false){
+          return { ok:false, reason: "Tautan season dinonaktifkan admin" };
+        }
+        if(conf.requireAllow){
+          if(!currentUser) return { ok:false, reason: "Login dulu untuk membuka tautan" };
+          if(!currentUser.canOpenSeasonLinks){
+            // refresh from db
+            try{
+              var us = await db.ref("users/"+currentUser.id+"/canOpenSeasonLinks").once("value");
+              currentUser.canOpenSeasonLinks = !!us.val();
+            }catch(e){}
+            if(!currentUser.canOpenSeasonLinks){
+              return { ok:false, reason: "Akun Anda belum diizinkan membuka tautan season" };
+            }
+          }
+        }
+        return { ok:true };
+      }catch(e){
+        return { ok:true }; // fail open if settings missing
+      }
+    }
+    async function openSeasonLink(type, code){
+      code = String(code||"").trim().toUpperCase();
+      type = String(type||"").toLowerCase();
+      if(!code) return;
+      var allow = await checkSeasonLinkAllowed();
+      if(!allow.ok){
+        toast(allow.reason||"Tidak diizinkan","err");
+        return;
+      }
+      try{
+        var snap = await db.ref("seasonLinks/"+code).once("value");
+        if(!snap.exists()){
+          // try lowercase key
+          snap = await db.ref("seasonLinks/"+String(code).toLowerCase()).once("value");
+        }
+        if(!snap.exists()){
+          toast("Tautan season tidak valid","err");
+          return;
+        }
+        var data = snap.val() || {};
+        if(data.active === false){
+          toast("Tautan season nonaktif","err");
+          return;
+        }
+        var roomId = data.roomId;
+        var t = data.type || type;
+        if(t==="grup" || t==="group"){
+          // join or open group
+          var gsnap = await db.ref("groups/"+roomId).once("value");
+          if(!gsnap.exists()){ toast("Grup tidak ditemukan","err"); return; }
+          var g = gsnap.val() || {};
+          g.id = roomId;
+          if(currentUser && g.members && g.members[currentUser.id]){
+            openRoom(roomId, g.name, g.avatar, g.photoURL, null, null, "group");
+          } else if(g.inviteCode){
+            showGroupInvitePreview(g.inviteCode);
+          } else {
+            // auto-join as member if public season link
+            if(!currentUser){ toast("Login dulu","err"); return; }
+            await db.ref("groups/"+roomId+"/members/"+currentUser.id).set({
+              name: currentUser.name, avatar: currentUser.avatar, photoURL: currentUser.photoURL||null,
+              role: "member", joinedAt: Date.now()
+            });
+            await db.ref("userChats/"+currentUser.id+"/"+roomId).set({
+              type:"group", name:g.name, avatar:g.avatar, photoURL:g.photoURL||null,
+              lastMessage:"Kamu bergabung", lastMessageTime:Date.now(), unreadCount:0, archived:false
+            });
+            openRoom(roomId, g.name, g.avatar, g.photoURL, null, null, "group");
+          }
+        } else {
+          // pribadi
+          if(!currentUser){ toast("Login dulu","err"); return; }
+          // roomId may be chat room key between two users
+          var rsnap = await db.ref("userChats/"+currentUser.id+"/"+roomId).once("value");
+          if(rsnap.exists()){
+            var meta = rsnap.val() || {};
+            openRoom(roomId, meta.name, meta.avatar, meta.photoURL, meta.phone, meta.peerId||null, "private");
+          } else {
+            // try open as peer id
+            var us = await db.ref("users/"+roomId).once("value");
+            if(us.exists()){
+              var peer = us.val()||{};
+              // start/open private chat with peer - use existing helper if any
+              if(typeof openPrivateChatWith==="function"){
+                openPrivateChatWith(roomId, peer);
+              } else {
+                openRoom(roomId, peer.name, peer.avatar, peer.photoURL, peer.phone, roomId, "private");
+              }
+            } else {
+              toast("Chat tidak ditemukan","err");
+            }
+          }
+        }
+      }catch(e){
+        console.error(e);
+        toast("Gagal buka tautan: "+(e.message||e),"err");
+      }
+    }
+    function parseSeasonPath(){
+      try{
+        var path = location.pathname || "";
+        var m = path.match(/\/season\/(pribadi|grup|group|private)\/([^\/\?#]+)/i);
+        if(m){
+          var t = m[1].toLowerCase();
+          if(t==="group"||t==="private") t = (t==="group")?"grup":"pribadi";
+          return { type: t, code: decodeURIComponent(m[2]) };
+        }
+      }catch(e){}
+      return null;
+    }
+
     function handleDeepLinks(){
       try{
+        // path-based season links
+        var season = parseSeasonPath();
+        if(season && season.code){
+          setTimeout(function(){ try{ openSeasonLink(season.type, season.code); }catch(e){ console.warn(e); } }, 300);
+          setTimeout(function(){ try{ openSeasonLink(season.type, season.code); }catch(e){} }, 1500);
+          return;
+        }
         var params=new URLSearchParams(location.search||"");
         var jc=params.get("join");
         if(!jc){
@@ -11498,8 +11666,12 @@ function openStatusViewer(uid,list,index){
         }
         var ch=params.get("channel")||params.get("c");
         var web=params.get("web")||params.get("w");
+        var seasonQ = params.get("season");
+        if(seasonQ){
+          var parts = String(seasonQ).split("/");
+          if(parts.length>=2) setTimeout(function(){ openSeasonLink(parts[0], parts[1]); }, 300);
+        }
         if(jc){
-          // tampilkan segera (screen di root body, tidak tergantung active-chat)
           setTimeout(function(){ try{ showGroupInvitePreview(jc); }catch(e){ console.warn(e); } }, 200);
           setTimeout(function(){ try{ showGroupInvitePreview(jc); }catch(e){} }, 1200);
         } else if(ch){
