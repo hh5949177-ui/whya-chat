@@ -2,6 +2,28 @@
   "version": 2,
   "cleanUrls": true,
   "trailingSlash": false,
+  "rewrites": [
+    {
+      "source": "/dashboard",
+      "destination": "/dashboard.html"
+    },
+    {
+      "source": "/aiwhya",
+      "destination": "/dashboard.html"
+    },
+    {
+      "source": "/sesion/:path*",
+      "destination": "/dashboard.html"
+    },
+    {
+      "source": "/admin",
+      "destination": "/admin.html"
+    },
+    {
+      "source": "/login",
+      "destination": "/login.html"
+    }
+  ],
   "headers": [
     {
       "source": "/sw.js",
@@ -24,28 +46,6 @@
           "value": "nosniff"
         }
       ]
-    }
-  ],
-  "rewrites": [
-    {
-      "source": "/login-supabase",
-      "destination": "/login-supabase.html"
-    },
-    {
-      "source": "/admin",
-      "destination": "/admin.html"
-    },
-    {
-      "source": "/admin/(.*)",
-      "destination": "/admin.html"
-    },
-    {
-      "source": "/season/:type/:code",
-      "destination": "/dashboard.html"
-    },
-    {
-      "source": "/season/:type/:code/",
-      "destination": "/dashboard.html"
     }
   ]
 }

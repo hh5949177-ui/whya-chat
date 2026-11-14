@@ -3483,68 +3483,156 @@
   
     /* ===== AI Assistant ===== */
     #ai-fab {
-      position: fixed; right: 18px; bottom: calc(88px + env(safe-area-inset-bottom, 0px));
-      width: 58px; height: 58px; border-radius: 50%; z-index: 9000;
-      border: none; cursor: pointer;
-      background: linear-gradient(180deg, #f8fafc, #a1a1aa);
-      color: #0a0a0a; font-size: 22px;
-      box-shadow: 0 6px 0 #27272a, 0 12px 28px rgba(0,0,0,.45), inset 0 1px 0 #fff;
-      display: flex; align-items: center; justify-content: center;
-      transition: transform .15s ease;
+      position: fixed;
+      right: 16px;
+      bottom: calc(90px + env(safe-area-inset-bottom, 0px));
+      width: 48px; height: 48px;
+      border-radius: 50%;
+      z-index: 9000;
+      border: none;
+      cursor: grab;
+      padding: 0;
+      background: transparent;
+      box-shadow: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      touch-action: none;
+      user-select: none;
     }
-    #ai-fab:active { transform: translateY(3px); box-shadow: 0 2px 0 #27272a; }
+    #ai-fab:active { cursor: grabbing; }
+    #ai-fab .ai-bot {
+      width: 44px; height: 44px;
+      position: relative;
+      display: block;
+    }
+    #ai-fab .ai-bot-head {
+      width: 40px; height: 34px;
+      margin: 2px auto 0;
+      border-radius: 50% 50% 46% 46%;
+      background: radial-gradient(circle at 50% 35%, #2a2a32, #0a0a0e 70%);
+      border: 2px solid transparent;
+      background-clip: padding-box;
+      box-shadow:
+        0 0 0 2px rgba(255,255,255,.15),
+        0 0 16px rgba(167,139,250,.35),
+        0 0 28px rgba(56,189,248,.2);
+      position: relative;
+      transition: transform .2s ease;
+      animation: aiHeadBob 3.2s ease-in-out infinite;
+    }
+    #ai-fab .ai-bot-head::before {
+      content: "";
+      position: absolute;
+      inset: -3px;
+      border-radius: inherit;
+      background: conic-gradient(from 0deg, #a78bfa, #38bdf8, #f9a8d4, #fde68a, #a78bfa);
+      z-index: -1;
+      opacity: .85;
+      animation: aiRing 6s linear infinite;
+    }
+    #ai-fab .ai-bot-ant {
+      position: absolute;
+      top: -6px; left: 50%;
+      width: 4px; height: 8px;
+      margin-left: -2px;
+      background: linear-gradient(180deg, #e0e7ff, #94a3b8);
+      border-radius: 2px;
+    }
+    #ai-fab .ai-bot-ant::after {
+      content: "";
+      position: absolute;
+      top: -4px; left: 50%;
+      width: 7px; height: 7px;
+      margin-left: -3.5px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 30% 30%, #fef3c7, #fbbf24);
+      box-shadow: 0 0 8px rgba(251,191,36,.7);
+      animation: aiBlinkDot 2.4s ease-in-out infinite;
+    }
+    #ai-fab .ai-bot-face {
+      position: absolute;
+      left: 50%; top: 50%;
+      width: 28px; height: 16px;
+      margin: -8px 0 0 -14px;
+      background: #050508;
+      border-radius: 40%;
+    }
+    #ai-fab .ai-eye {
+      position: absolute;
+      top: 3px;
+      width: 5px; height: 9px;
+      border-radius: 999px;
+      background: #e2e8f0;
+      box-shadow: 0 0 6px rgba(255,255,255,.5);
+      transition: transform .12s ease;
+    }
+    #ai-fab .ai-eye.l { left: 5px; }
+    #ai-fab .ai-eye.r { right: 5px; }
+    @keyframes aiHeadBob {
+      0%,100% { transform: translateY(0) rotate(-2deg); }
+      50% { transform: translateY(-2px) rotate(2deg); }
+    }
+    @keyframes aiRing {
+      to { filter: hue-rotate(360deg); }
+    }
+    @keyframes aiBlinkDot {
+      0%,100% { opacity: 1; transform: scale(1); }
+      50% { opacity: .6; transform: scale(.85); }
+    }
     #ai-assistant {
       position: fixed; inset: 0; z-index: 9500; display: none;
       flex-direction: column;
-      background: linear-gradient(180deg, #121218, #07070c);
+      background: linear-gradient(180deg, #0e0e14, #07070c);
     }
     #ai-assistant.open { display: flex; animation: aiIn .28s ease; }
-    @keyframes aiIn { from { opacity:0; transform: translateY(12px); } to { opacity:1; transform:none; } }
+    @keyframes aiIn { from { opacity:0; transform: translateY(10px);} to { opacity:1; transform:none;} }
     .ai-top {
-      display:flex; align-items:center; gap:10px; padding:14px 14px 10px;
-      border-bottom: 1px solid rgba(255,255,255,.08);
-      background: linear-gradient(180deg, rgba(255,255,255,.06), transparent);
+      display:flex; align-items:center; gap:10px;
+      padding: 14px 14px 10px;
+      border-bottom: 1px solid rgba(255,255,255,.07);
     }
-    .ai-top h2 { flex:1; font-size:17px; font-weight:800; }
+    .ai-top .ai-avatar-mini {
+      width: 36px; height: 36px; border-radius: 50%;
+      background: radial-gradient(circle at 50% 30%, #1e1e28, #050508);
+      box-shadow: 0 0 0 2px rgba(167,139,250,.4);
+      display:flex; align-items:center; justify-content:center;
+      position: relative;
+    }
+    .ai-top .ai-avatar-mini span {
+      width: 18px; height: 10px; background:#0a0a0e; border-radius:40%;
+      position:relative; display:block;
+    }
+    .ai-top .ai-avatar-mini span::before,
+    .ai-top .ai-avatar-mini span::after {
+      content:""; position:absolute; top:2px; width:3px; height:6px;
+      background:#e2e8f0; border-radius:999px;
+    }
+    .ai-top .ai-avatar-mini span::before { left:3px; }
+    .ai-top .ai-avatar-mini span::after { right:3px; }
+    .ai-top h2 { flex:1; font-size:17px; font-weight:800; letter-spacing:-.02em; }
+    .ai-top h2 small { display:block; font-size:11px; font-weight:500; color:rgba(255,255,255,.4); }
     .ai-top button {
       width:38px; height:38px; border-radius:12px; border:none; cursor:pointer;
-      background: rgba(255,255,255,.08); color:#fff;
+      background: rgba(255,255,255,.07); color:#fff;
     }
-    .ai-models {
-      display:flex; gap:8px; padding:10px 14px; flex-wrap:wrap;
-    }
-    .ai-model-btn {
-      border:none; cursor:pointer; border-radius:999px; padding:8px 14px;
-      font-size:12.5px; font-weight:750; color:rgba(255,255,255,.7);
-      background: rgba(255,255,255,.06);
-      border-bottom: 2px solid transparent;
-    }
-    .ai-model-btn.active {
-      background: linear-gradient(180deg, #f4f4f5, #a1a1aa);
-      color: #0a0a0a;
-      box-shadow: 0 3px 0 #27272a, inset 0 1px 0 #fff;
-    }
-    .ai-model-sub {
-      display:none; gap:8px; padding:0 14px 8px; width:100%;
-    }
-    .ai-model-sub.show { display:flex; }
     .ai-msgs {
-      flex:1; overflow-y:auto; padding:12px 14px 20px;
+      flex:1; overflow-y:auto; padding:16px 14px 12px;
       display:flex; flex-direction:column; gap:12px;
     }
     .ai-bubble {
-      max-width: 92%; padding:12px 14px; border-radius:16px; font-size:14px; line-height:1.45;
-      white-space: pre-wrap; word-break: break-word;
+      max-width: 92%; padding:12px 14px; border-radius:18px;
+      font-size:14px; line-height:1.5; white-space:pre-wrap; word-break:break-word;
     }
     .ai-bubble.user {
       align-self:flex-end;
-      background: linear-gradient(165deg, rgba(255,255,255,.16), rgba(255,255,255,.07));
-      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.1);
+      border: 1px solid rgba(255,255,255,.1);
     }
     .ai-bubble.bot {
       align-self:flex-start;
-      background: linear-gradient(165deg, rgba(40,40,48,.95), rgba(16,16,22,.95));
-      border: 1px solid rgba(255,255,255,.08);
+      background: rgba(255,255,255,.05);
+      border: 1px solid rgba(255,255,255,.07);
     }
     .ai-bubble .ai-code-wrap {
       position: relative; margin-top:8px; border-radius:12px; overflow:hidden;
@@ -3566,9 +3654,9 @@
       max-width:100%; border-radius:12px; margin-top:8px; display:block;
     }
     .ai-composer {
-      border-top: 1px solid rgba(255,255,255,.1);
-      padding: 10px 12px calc(12px + env(safe-area-inset-bottom,0px));
-      background: linear-gradient(180deg, rgba(22,22,28,.98), rgba(10,10,14,.99));
+      border-top: 1px solid rgba(255,255,255,.08);
+      padding: 10px 12px calc(14px + env(safe-area-inset-bottom,0px));
+      background: rgba(10,10,14,.96);
     }
     .ai-attach-menu {
       display:none; flex-wrap:wrap; gap:8px; padding: 0 0 10px;
@@ -3585,32 +3673,74 @@
       border: 1px solid rgba(255,255,255,.08);
     }
     .ai-attach-menu button i { display:block; font-size:18px; margin-bottom:6px; color:#a1a1aa; }
-    .ai-row {
-      display:flex; align-items:flex-end; gap:8px;
+    .ai-shell {
+      background: rgba(255,255,255,.06);
+      border: 1px solid rgba(255,255,255,.1);
+      border-radius: 24px;
+      padding: 10px 10px 8px;
+    }
+    .ai-input {
+      width: 100%; min-height: 28px; max-height: 100px; resize: none;
+      border: none; outline: none; background: transparent;
+      color: #fff; font-family: inherit; font-size: 15px;
+      padding: 4px 6px 10px;
+    }
+    .ai-input::placeholder { color: rgba(255,255,255,.35); }
+    .ai-toolbar {
+      display: flex; align-items: center; gap: 8px;
     }
     .ai-plus {
-      width:44px; height:44px; border-radius:50%; border:none; cursor:pointer;
-      background: linear-gradient(180deg, #3f3f46, #18181b);
-      color:#fff; font-size:18px;
-      box-shadow: 0 4px 0 #000, inset 0 1px 0 rgba(255,255,255,.12);
+      width: 36px; height: 36px; border-radius: 50%; border: none; cursor: pointer;
+      background: rgba(255,255,255,.08); color: #fff; font-size: 15px;
+      display:flex; align-items:center; justify-content:center;
       transition: transform .3s ease;
-      flex-shrink:0;
+      flex-shrink: 0;
     }
     .ai-plus.open { transform: rotate(45deg); }
-    .ai-input {
-      flex:1; min-height:44px; max-height:120px; resize:none;
-      border-radius:22px; padding:12px 14px;
-      border: 1px solid rgba(255,255,255,.12);
-      background: rgba(255,255,255,.06); color:#fff;
-      font-family: inherit; font-size:14px; outline:none;
+    .ai-model-dd {
+      position: relative; flex-shrink: 0;
     }
-    .ai-send {
-      width:44px; height:44px; border-radius:50%; border:none; cursor:pointer;
-      background: linear-gradient(180deg, #f8fafc, #d4d4d8);
-      color:#0a0a0a; font-size:16px;
-      box-shadow: 0 4px 0 #27272a, inset 0 1px 0 #fff;
-      flex-shrink:0;
+    .ai-model-btn-main {
+      display: inline-flex; align-items: center; gap: 6px;
+      border: none; cursor: pointer;
+      background: rgba(255,255,255,.08);
+      color: #e2e8f0; font-size: 13px; font-weight: 700;
+      padding: 8px 12px; border-radius: 999px;
     }
+    .ai-model-btn-main i.bolt { color: #fbbf24; }
+    .ai-model-menu {
+      display: none; position: absolute; left: 0; bottom: 110%;
+      min-width: 140px; padding: 6px;
+      background: #1a1a22; border: 1px solid rgba(255,255,255,.12);
+      border-radius: 14px; box-shadow: 0 12px 32px rgba(0,0,0,.45);
+      z-index: 5;
+    }
+    .ai-model-menu.show { display: block; }
+    .ai-model-menu button {
+      display: block; width: 100%; text-align: left;
+      border: none; background: transparent; color: #fff;
+      padding: 10px 12px; border-radius: 10px; cursor: pointer;
+      font-size: 13px; font-weight: 650;
+    }
+    .ai-model-menu button:hover, .ai-model-menu button.active {
+      background: rgba(255,255,255,.08);
+    }
+    .ai-toolbar-right {
+      margin-left: auto; display: flex; align-items: center; gap: 8px;
+    }
+    .ai-mic {
+      width: 36px; height: 36px; border-radius: 50%; border: none; cursor: pointer;
+      background: rgba(255,255,255,.08); color: #fff;
+      display:flex; align-items:center; justify-content:center;
+    }
+    .ai-speak {
+      border: none; cursor: pointer;
+      background: #f4f4f5; color: #0a0a0a;
+      font-weight: 800; font-size: 13px;
+      padding: 8px 14px; border-radius: 999px;
+      display: inline-flex; align-items: center; gap: 6px;
+    }
+
 
   </style>
 </head>
@@ -6911,6 +7041,15 @@ function saveAccountLocal(user){
         currentChatPhone = phone || null;
         currentChatPeerId = peerId || null;
         currentChatType = type || (roomId==="general" ? "general" : (String(roomId).indexOf("channel_")==0 ? "channel" : (phone ? "private" : "group")));
+        try{
+          var sid = randSessionId();
+          var t = currentChatType;
+          if(t==="private") setWhyaPath("/sesion/pribadi/"+sid);
+          else if(t==="general") setWhyaPath("/sesion/general/"+sid);
+          else if(t==="channel") setWhyaPath("/sesion/saluran/"+slugify(name||roomId)+"/"+sid);
+          else if(t==="web") setWhyaPath("/sesion/web/"+slugify(name||roomId)+"/"+sid);
+          else setWhyaPath("/sesion/grup/"+sid);
+        }catch(e){}
         if(currentChatType==="private" && !currentChatPeerId && lastUserChats && lastUserChats[roomId]){
           currentChatPeerId = lastUserChats[roomId].peerId || null;
           if(!currentChatPhone) currentChatPhone = lastUserChats[roomId].phone || null;
@@ -12669,30 +12808,106 @@ function openStatusViewer(uid,list,index){
     var NEXA_BASE = "https://api.nexadev.my.id";
     // Opsional: window.NEXA_API_KEY = "..." jika endpoint butuh key
 
+    
+    (function setupAiFab(){
+      function init(){
+        var fab = document.getElementById("ai-fab");
+        if(!fab || fab._aiReady) return;
+        fab._aiReady = true;
+        var head = fab.querySelector(".ai-bot-head");
+        var eyeL = fab.querySelector(".ai-eye.l");
+        var eyeR = fab.querySelector(".ai-eye.r");
+        var dragging = false, moved = false, sx=0, sy=0, ox=0, oy=0;
+        function onMove(clientX, clientY){
+          if(eyeL && eyeR){
+            var r = fab.getBoundingClientRect();
+            var cx = r.left + r.width/2, cy = r.top + r.height/2;
+            var dx = Math.max(-1, Math.min(1, (clientX - cx) / 40));
+            var dy = Math.max(-1, Math.min(1, (clientY - cy) / 40));
+            eyeL.style.transform = "translate("+ (dx*3) +"px,"+ (dy*2) +"px)";
+            eyeR.style.transform = "translate("+ (dx*3) +"px,"+ (dy*2) +"px)";
+            if(head && !dragging) head.style.transform = "translateY("+ (dy) +"px) rotate("+ (dx*6) +"deg)";
+          }
+        }
+        window.addEventListener("pointermove", function(e){ onMove(e.clientX, e.clientY); }, { passive:true });
+        fab.addEventListener("pointerdown", function(e){
+          dragging = true; moved = false;
+          sx = e.clientX; sy = e.clientY;
+          var r = fab.getBoundingClientRect();
+          ox = r.left; oy = r.top;
+          fab.setPointerCapture(e.pointerId);
+        });
+        fab.addEventListener("pointermove", function(e){
+          if(!dragging) return;
+          var dx = e.clientX - sx, dy = e.clientY - sy;
+          if(Math.abs(dx)>4 || Math.abs(dy)>4) moved = true;
+          if(!moved) return;
+          var nx = ox + dx, ny = oy + dy;
+          nx = Math.max(4, Math.min(window.innerWidth - 52, nx));
+          ny = Math.max(4, Math.min(window.innerHeight - 52, ny));
+          fab.style.left = nx + "px";
+          fab.style.top = ny + "px";
+          fab.style.right = "auto";
+          fab.style.bottom = "auto";
+        });
+        fab.addEventListener("pointerup", function(e){
+          dragging = false;
+          if(!moved) openAiAssistant();
+        });
+        fab.addEventListener("click", function(e){ e.preventDefault(); });
+      }
+      if(document.readyState==="loading") document.addEventListener("DOMContentLoaded", init);
+      else init();
+      setTimeout(init, 500);
+    })();
+
     function openAiAssistant(){
       var el = document.getElementById("ai-assistant");
       if(el) el.classList.add("open");
+      try{ history.pushState({ whya: "ai" }, "", "/aiwhya"); }catch(e){}
     }
     function closeAiAssistant(){
       var el = document.getElementById("ai-assistant");
       if(el) el.classList.remove("open");
+      try{
+        if(location.pathname.indexOf("/aiwhya")===0) history.pushState({ whya: "dashboard" }, "", "/dashboard");
+      }catch(e){}
     }
     function clearAiChat(){
       var box = document.getElementById("ai-msgs");
-      if(box) box.innerHTML = '<div class="ai-bubble bot">Chat dikosongkan. Silakan tanya lagi.</div>';
+      if(box) box.innerHTML = "";
     }
     function selectAiModel(m){
       aiModel = m || "grok";
-      ["grok","gpt4","deepseek"].forEach(function(id){
-        var b = document.getElementById("ai-btn-"+id);
-        if(b) b.classList.toggle("active", id === aiModel);
-      });
-      var g = document.getElementById("ai-btn-grok");
-      if(g) g.classList.toggle("active", aiModel === "grok");
+      var label = { grok:"Grok", gpt4:"GPT-4", deepseek:"DeepSeek" }[aiModel] || "Grok";
+      var lab = document.getElementById("ai-model-label");
+      if(lab) lab.textContent = label;
+      var menu = document.getElementById("ai-model-menu");
+      if(menu){
+        menu.querySelectorAll("button").forEach(function(b){
+          b.classList.toggle("active", b.getAttribute("data-m")===aiModel);
+        });
+        menu.classList.remove("show");
+      }
     }
-    function toggleAiModelSub(){
-      var s = document.getElementById("ai-model-sub");
-      if(s) s.classList.toggle("show");
+    function toggleAiModelMenu(){
+      var menu = document.getElementById("ai-model-menu");
+      if(menu) menu.classList.toggle("show");
+    }
+    function aiVoiceInput(){
+      try{
+        var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if(!SR){ toast("Speech recognition tidak didukung","err"); return; }
+        var r = new SR();
+        r.lang = "id-ID";
+        r.onresult = function(ev){
+          var t = (ev.results[0]&&ev.results[0][0]&&ev.results[0][0].transcript)||"";
+          var inp = document.getElementById("ai-input");
+          if(inp){ inp.value = (inp.value?inp.value+" ":"")+t; }
+        };
+        r.start();
+        toast("Mendengarkan...","info");
+      }catch(e){ toast("Mikrofon gagal","err"); }
     }
     function toggleAiAttach(){
       var m = document.getElementById("ai-attach-menu");
@@ -12738,9 +12953,12 @@ function openStatusViewer(uid,list,index){
       appendAiBubble("user", "🎨 Generate: " + q);
       appendAiBubble("bot", "Membuat gambar...", { id: "ai-loading" });
       try{
-        var url = NEXA_BASE + "/ai/cai?q=" + encodeURIComponent(q);
-        if(window.NEXA_API_KEY) url += "&apikey=" + encodeURIComponent(window.NEXA_API_KEY);
-        var res = await fetch(url);
+        var target = "https://api.nexadev.my.id/ai/cai?q=" + encodeURIComponent(q);
+        if(window.NEXA_API_KEY) target += "&apikey=" + encodeURIComponent(window.NEXA_API_KEY);
+        var PROXY = "https://imghd.hh5949177.workers.dev/?url=";
+        var res;
+        try { res = await fetch(target); if(!res.ok) throw new Error("fail"); }
+        catch(e){ res = await fetch(PROXY + encodeURIComponent(target)); }
         var data = await res.json().catch(function(){ return {}; });
         removeAiLoading();
         var img = data.url || data.image || data.result || data.data || (data.result && data.result.url);
@@ -12826,33 +13044,44 @@ function openStatusViewer(uid,list,index){
       if(w){ w.document.open(); w.document.write(t); w.document.close(); }
     }
     async function callNexaAi(model, prompt){
+      var PROXY = "https://imghd.hh5949177.workers.dev/?url=";
+      var NEXA = "https://api.nexadev.my.id";
       var keyQ = window.NEXA_API_KEY ? ("&apikey="+encodeURIComponent(window.NEXA_API_KEY)) : "";
-      var url;
+      var target;
       if(model==="gpt4"){
-        url = NEXA_BASE + "/ai/gpt4?q=" + encodeURIComponent(prompt) + keyQ;
+        target = NEXA + "/ai/gpt4?q=" + encodeURIComponent(prompt) + keyQ;
       } else if(model==="deepseek"){
-        url = NEXA_BASE + "/ai/deepsek?text=" + encodeURIComponent(prompt) + keyQ;
+        target = NEXA + "/ai/deepsek?text=" + encodeURIComponent(prompt) + keyQ;
       } else {
-        // Grok — coba beberapa path umum Nexa
-        url = NEXA_BASE + "/ai/grok?q=" + encodeURIComponent(prompt) + keyQ;
+        target = NEXA + "/ai/grok?q=" + encodeURIComponent(prompt) + keyQ;
       }
-      var res = await fetch(url);
-      if(!res.ok && model==="grok"){
-        // fallback paths
+      async function tryFetch(u){
+        var res = await fetch(u, { method: "GET", mode: "cors" });
+        if(!res.ok) throw new Error("HTTP "+res.status);
+        var data = await res.json().catch(function(){ return null; });
+        if(data==null){
+          var t = await res.text();
+          return t;
+        }
+        if(typeof data === "string") return data;
+        return data.result || data.response || data.text || data.message || data.answer || data.data || data.output || JSON.stringify(data);
+      }
+      // 1) direct
+      try { return await tryFetch(target); } catch(e1) {}
+      // 2) cloudflare proxy
+      try { return await tryFetch(PROXY + encodeURIComponent(target)); } catch(e2) {}
+      // 3) grok fallbacks via proxy
+      if(model==="grok"){
         var alts = [
-          NEXA_BASE + "/ai/grok?text=" + encodeURIComponent(prompt) + keyQ,
-          NEXA_BASE + "/ai/gpt4?q=" + encodeURIComponent(prompt) + keyQ
+          NEXA + "/ai/grok?text=" + encodeURIComponent(prompt) + keyQ,
+          NEXA + "/ai/gpt4?q=" + encodeURIComponent(prompt) + keyQ
         ];
         for(var i=0;i<alts.length;i++){
-          try{
-            res = await fetch(alts[i]);
-            if(res.ok) break;
-          }catch(e){}
+          try { return await tryFetch(PROXY + encodeURIComponent(alts[i])); } catch(e) {}
+          try { return await tryFetch(alts[i]); } catch(e) {}
         }
       }
-      var data = await res.json().catch(function(){ return { raw: true }; });
-      if(typeof data === "string") return data;
-      return data.result || data.response || data.text || data.message || data.answer || data.data || JSON.stringify(data);
+      throw new Error("Gagal menghubungi AI (proxy & direct gagal)");
     }
     async function sendAiMessage(){
       if(aiBusy) return;
@@ -12861,14 +13090,20 @@ function openStatusViewer(uid,list,index){
       if(!text) return;
       inp.value = "";
       appendAiBubble("user", text);
+      // identitas whya
+      var low = text.toLowerCase().replace(/[?!.]/g," ").trim();
+      if(/^(siapa kamu|kamu siapa|who are you|nama kamu|namamu siapa|perkenalkan dirimu)/i.test(low)){
+        appendAiBubble("bot", "Halo! Aku **whya**, asisten AI resmi di aplikasi whya.\\n\\nAku dirancang untuk membantu kamu sehari-hari: menjawab pertanyaan, menjelaskan konsep, membantu menulis, membuat kode (HTML, JavaScript, Python, dan lainnya), menganalisis teks, hingga menghasilkan ide kreatif.\\n\\nKamu bisa ganti model di bawah (Grok, GPT-4, atau DeepSeek), kirim file/foto lewat tombol +, generate gambar, atau pakai mikrofon.\\n\\nTanya apa saja — aku siap bantu dengan gaya yang jelas dan ramah. Yuk mulai!");
+        return;
+      }
       aiBusy = true;
       appendAiBubble("bot", "Menulis...", { id: "ai-loading" });
       try{
-        // coding hint: ask model to use markdown fences
         var prompt = text;
         if(/kode|code|html|javascript|python|program/i.test(text)){
-          prompt = text + "\n\nJika ada kode, bungkus dengan markdown code fence (```bahasa).";
+          prompt = text + "\\n\\nJika ada kode, bungkus dengan markdown code fence (```bahasa).";
         }
+        prompt = "Kamu adalah whya, asisten AI di aplikasi whya. Jawab dalam bahasa pengguna. Tetap ramah dan jelas.\\n\\nPengguna: " + prompt;
         var out = await callNexaAi(aiModel, prompt);
         removeAiLoading();
         appendAiBubble("bot", String(out));
@@ -12878,6 +13113,46 @@ function openStatusViewer(uid,list,index){
       }
       aiBusy = false;
     }
+
+    
+    function randSessionId(){
+      return Math.random().toString(36).slice(2,8) + Date.now().toString(36).slice(-4);
+    }
+    function slugify(s){
+      return String(s||"x").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"").slice(0,40) || "x";
+    }
+    function setWhyaPath(path){
+      try{
+        if(location.pathname !== path) history.pushState({ whya: path }, "", path);
+      }catch(e){}
+    }
+    function routeAfterLoginHome(){
+      setWhyaPath("/dashboard");
+    }
+
+    
+    window.addEventListener("popstate", function(){
+      try{
+        var p = location.pathname || "";
+        if(p.indexOf("/aiwhya")===0){
+          var el=document.getElementById("ai-assistant");
+          if(el) el.classList.add("open");
+        } else {
+          var el=document.getElementById("ai-assistant");
+          if(el) el.classList.remove("open");
+        }
+      }catch(e){}
+    });
+    (function(){
+      try{
+        var p = location.pathname || "";
+        if(p.indexOf("/aiwhya")===0){
+          setTimeout(function(){ openAiAssistant(); }, 600);
+        } else if(p==="/" || p==="/dashboard.html" || p==="/dashboard"){
+          setTimeout(function(){ try{ setWhyaPath("/dashboard"); }catch(e){} }, 800);
+        }
+      }catch(e){}
+    })();
 
     function handleDeepLinks(){
       try{
@@ -12979,24 +13254,25 @@ function openStatusViewer(uid,list,index){
   </script>
 
   <!-- AI Assistant -->
-  <button type="button" id="ai-fab" onclick="openAiAssistant()" title="Asisten AI"><i class="fas fa-robot"></i></button>
+  <button type="button" id="ai-fab" title="whya AI" aria-label="whya AI">
+    <span class="ai-bot">
+      <span class="ai-bot-head">
+        <span class="ai-bot-ant"></span>
+        <span class="ai-bot-face">
+          <span class="ai-eye l"></span>
+          <span class="ai-eye r"></span>
+        </span>
+      </span>
+    </span>
+  </button>
   <div id="ai-assistant">
     <div class="ai-top">
-      <button type="button" onclick="closeAiAssistant()"><i class="fas fa-arrow-left"></i></button>
-      <h2>Asisten AI</h2>
-      <button type="button" onclick="clearAiChat()"><i class="fas fa-trash"></i></button>
+      <button type="button" onclick="closeAiAssistant()" aria-label="Kembali"><i class="fas fa-arrow-left"></i></button>
+      <div class="ai-avatar-mini"><span></span></div>
+      <h2>whya<small>Asisten AI</small></h2>
+      <button type="button" onclick="clearAiChat()" aria-label="Hapus"><i class="fas fa-trash"></i></button>
     </div>
-    <div class="ai-models">
-      <button type="button" class="ai-model-btn active" id="ai-btn-grok" onclick="selectAiModel('grok')">Grok</button>
-      <button type="button" class="ai-model-btn" id="ai-btn-more" onclick="toggleAiModelSub()">Model lain ▾</button>
-    </div>
-    <div class="ai-model-sub" id="ai-model-sub">
-      <button type="button" class="ai-model-btn" id="ai-btn-gpt4" onclick="selectAiModel('gpt4')">GPT-4</button>
-      <button type="button" class="ai-model-btn" id="ai-btn-deepseek" onclick="selectAiModel('deepseek')">DeepSeek</button>
-    </div>
-    <div class="ai-msgs" id="ai-msgs">
-      <div class="ai-bubble bot">Halo! Saya asisten AI. Pilih model (Grok / GPT-4 / DeepSeek), lalu ketik pertanyaan. Pakai + untuk foto, file, generate gambar, atau kamera.</div>
-    </div>
+    <div class="ai-msgs" id="ai-msgs"></div>
     <div class="ai-composer">
       <div class="ai-attach-menu" id="ai-attach-menu">
         <button type="button" onclick="aiPickFile('file')"><i class="fas fa-file"></i>File / Dokumen</button>
@@ -13004,15 +13280,33 @@ function openStatusViewer(uid,list,index){
         <button type="button" onclick="aiGenerateImage()"><i class="fas fa-wand-magic-sparkles"></i>Generate gambar</button>
         <button type="button" onclick="aiTakePhoto()"><i class="fas fa-camera"></i>Ambil foto</button>
       </div>
-      <div class="ai-row">
-        <button type="button" class="ai-plus" id="ai-plus-btn" onclick="toggleAiAttach()"><i class="fas fa-plus"></i></button>
-        <textarea class="ai-input" id="ai-input" rows="1" placeholder="Tanya apa saja..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendAiMessage();}"></textarea>
-        <button type="button" class="ai-send" onclick="sendAiMessage()"><i class="fas fa-paper-plane"></i></button>
+      <div class="ai-shell">
+        <textarea class="ai-input" id="ai-input" rows="1" placeholder="Tanya apa saja" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendAiMessage();}"></textarea>
+        <div class="ai-toolbar">
+          <button type="button" class="ai-plus" id="ai-plus-btn" onclick="toggleAiAttach()"><i class="fas fa-plus"></i></button>
+          <div class="ai-model-dd">
+            <button type="button" class="ai-model-btn-main" onclick="toggleAiModelMenu()">
+              <i class="fas fa-bolt bolt"></i>
+              <span id="ai-model-label">Grok</span>
+              <i class="fas fa-chevron-down" style="font-size:10px;opacity:.7"></i>
+            </button>
+            <div class="ai-model-menu" id="ai-model-menu">
+              <button type="button" data-m="grok" onclick="selectAiModel('grok')">Grok</button>
+              <button type="button" data-m="gpt4" onclick="selectAiModel('gpt4')">GPT-4</button>
+              <button type="button" data-m="deepseek" onclick="selectAiModel('deepseek')">DeepSeek</button>
+            </div>
+          </div>
+          <div class="ai-toolbar-right">
+            <button type="button" class="ai-mic" onclick="aiVoiceInput()" title="Mikrofon"><i class="fas fa-microphone"></i></button>
+            <button type="button" class="ai-speak" onclick="sendAiMessage()"><i class="fas fa-waveform-lines"></i> Speak</button>
+          </div>
+        </div>
       </div>
       <input type="file" id="ai-file-input" style="display:none" onchange="aiOnFilePicked(this)">
       <input type="file" id="ai-cam-input" accept="image/*" capture="environment" style="display:none" onchange="aiOnFilePicked(this)">
     </div>
   </div>
+
 
 </body>
 </html>
