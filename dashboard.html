@@ -3480,6 +3480,138 @@
         inset 0 -1px 0 rgba(0,0,0,.2) !important;
     }
 
+  
+    /* ===== AI Assistant ===== */
+    #ai-fab {
+      position: fixed; right: 18px; bottom: calc(88px + env(safe-area-inset-bottom, 0px));
+      width: 58px; height: 58px; border-radius: 50%; z-index: 9000;
+      border: none; cursor: pointer;
+      background: linear-gradient(180deg, #f8fafc, #a1a1aa);
+      color: #0a0a0a; font-size: 22px;
+      box-shadow: 0 6px 0 #27272a, 0 12px 28px rgba(0,0,0,.45), inset 0 1px 0 #fff;
+      display: flex; align-items: center; justify-content: center;
+      transition: transform .15s ease;
+    }
+    #ai-fab:active { transform: translateY(3px); box-shadow: 0 2px 0 #27272a; }
+    #ai-assistant {
+      position: fixed; inset: 0; z-index: 9500; display: none;
+      flex-direction: column;
+      background: linear-gradient(180deg, #121218, #07070c);
+    }
+    #ai-assistant.open { display: flex; animation: aiIn .28s ease; }
+    @keyframes aiIn { from { opacity:0; transform: translateY(12px); } to { opacity:1; transform:none; } }
+    .ai-top {
+      display:flex; align-items:center; gap:10px; padding:14px 14px 10px;
+      border-bottom: 1px solid rgba(255,255,255,.08);
+      background: linear-gradient(180deg, rgba(255,255,255,.06), transparent);
+    }
+    .ai-top h2 { flex:1; font-size:17px; font-weight:800; }
+    .ai-top button {
+      width:38px; height:38px; border-radius:12px; border:none; cursor:pointer;
+      background: rgba(255,255,255,.08); color:#fff;
+    }
+    .ai-models {
+      display:flex; gap:8px; padding:10px 14px; flex-wrap:wrap;
+    }
+    .ai-model-btn {
+      border:none; cursor:pointer; border-radius:999px; padding:8px 14px;
+      font-size:12.5px; font-weight:750; color:rgba(255,255,255,.7);
+      background: rgba(255,255,255,.06);
+      border-bottom: 2px solid transparent;
+    }
+    .ai-model-btn.active {
+      background: linear-gradient(180deg, #f4f4f5, #a1a1aa);
+      color: #0a0a0a;
+      box-shadow: 0 3px 0 #27272a, inset 0 1px 0 #fff;
+    }
+    .ai-model-sub {
+      display:none; gap:8px; padding:0 14px 8px; width:100%;
+    }
+    .ai-model-sub.show { display:flex; }
+    .ai-msgs {
+      flex:1; overflow-y:auto; padding:12px 14px 20px;
+      display:flex; flex-direction:column; gap:12px;
+    }
+    .ai-bubble {
+      max-width: 92%; padding:12px 14px; border-radius:16px; font-size:14px; line-height:1.45;
+      white-space: pre-wrap; word-break: break-word;
+    }
+    .ai-bubble.user {
+      align-self:flex-end;
+      background: linear-gradient(165deg, rgba(255,255,255,.16), rgba(255,255,255,.07));
+      border: 1px solid rgba(255,255,255,.12);
+    }
+    .ai-bubble.bot {
+      align-self:flex-start;
+      background: linear-gradient(165deg, rgba(40,40,48,.95), rgba(16,16,22,.95));
+      border: 1px solid rgba(255,255,255,.08);
+    }
+    .ai-bubble .ai-code-wrap {
+      position: relative; margin-top:8px; border-radius:12px; overflow:hidden;
+      background: #0b0b10; border: 1px solid rgba(255,255,255,.1);
+    }
+    .ai-code-tools {
+      position: absolute; top:8px; right:8px; display:flex; gap:6px; z-index:2;
+    }
+    .ai-code-tools button {
+      border:none; cursor:pointer; font-size:11px; font-weight:700;
+      padding:5px 8px; border-radius:8px;
+      background: rgba(255,255,255,.12); color:#fff;
+    }
+    .ai-code-wrap pre {
+      margin:0; padding:36px 12px 12px; overflow:auto; font-size:12px;
+      color:#e2e8f0; max-height:280px;
+    }
+    .ai-bubble img.ai-gen {
+      max-width:100%; border-radius:12px; margin-top:8px; display:block;
+    }
+    .ai-composer {
+      border-top: 1px solid rgba(255,255,255,.1);
+      padding: 10px 12px calc(12px + env(safe-area-inset-bottom,0px));
+      background: linear-gradient(180deg, rgba(22,22,28,.98), rgba(10,10,14,.99));
+    }
+    .ai-attach-menu {
+      display:none; flex-wrap:wrap; gap:8px; padding: 0 0 10px;
+      opacity:0; transform: translateY(8px);
+      transition: opacity .25s ease, transform .25s ease;
+    }
+    .ai-attach-menu.show {
+      display:flex; opacity:1; transform: translateY(0);
+    }
+    .ai-attach-menu button {
+      flex:1; min-width:30%; border:none; cursor:pointer;
+      padding:12px 8px; border-radius:14px; font-size:12px; font-weight:700;
+      background: rgba(255,255,255,.07); color:#fff;
+      border: 1px solid rgba(255,255,255,.08);
+    }
+    .ai-attach-menu button i { display:block; font-size:18px; margin-bottom:6px; color:#a1a1aa; }
+    .ai-row {
+      display:flex; align-items:flex-end; gap:8px;
+    }
+    .ai-plus {
+      width:44px; height:44px; border-radius:50%; border:none; cursor:pointer;
+      background: linear-gradient(180deg, #3f3f46, #18181b);
+      color:#fff; font-size:18px;
+      box-shadow: 0 4px 0 #000, inset 0 1px 0 rgba(255,255,255,.12);
+      transition: transform .3s ease;
+      flex-shrink:0;
+    }
+    .ai-plus.open { transform: rotate(45deg); }
+    .ai-input {
+      flex:1; min-height:44px; max-height:120px; resize:none;
+      border-radius:22px; padding:12px 14px;
+      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.06); color:#fff;
+      font-family: inherit; font-size:14px; outline:none;
+    }
+    .ai-send {
+      width:44px; height:44px; border-radius:50%; border:none; cursor:pointer;
+      background: linear-gradient(180deg, #f8fafc, #d4d4d8);
+      color:#0a0a0a; font-size:16px;
+      box-shadow: 0 4px 0 #27272a, inset 0 1px 0 #fff;
+      flex-shrink:0;
+    }
+
   </style>
 </head>
 <body>
@@ -4547,6 +4679,9 @@
 
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/js/supabase-client.js"></script>
   <script>
     try {
       emailjs.init({ publicKey: EMAILJS_PUBLIC_KEY });
@@ -4557,10 +4692,13 @@
       apiKey: "AIzaSyC1I2WinNF1_KrS8ijNmQr07dqGN4-EWhE",
       authDomain: "chat2-b2a96.firebaseapp.com",
       databaseURL: "https://chat2-b2a96-default-rtdb.asia-southeast1.firebasedatabase.app",
-      projectId: "chat2-b2a96"
+      projectId: "chat2-b2a96",
+      storageBucket: "chat2-b2a96.firebasestorage.app"
     };
     firebase.initializeApp(firebaseConfig);
     const db=firebase.database();
+    var storage = null;
+    try { storage = firebase.storage(); } catch(e) { console.warn("storage init", e); }
 
     let currentUser=null,currentRoom=null,messagesRef=null,lastUserChats={},pendingReg=null,generatedOTP=null;
     var isRecordingVoice=false, mediaRecorder=null, recordedChunks=[], voiceTimer=null, voiceSeconds=0;
@@ -4702,6 +4840,62 @@
         r.onerror=reject;r.readAsDataURL(file);
       });
     }
+
+    // Firebase RTDB max ~10MB per property. Base64 ~1.37x → safe direct embed ~6.5MB
+    var RTDB_SAFE_BYTES = 6.5 * 1024 * 1024;
+
+    async function uploadMediaToStorage(file, folder){
+      if(!storage) throw new Error("Firebase Storage belum siap. Aktifkan Storage di Firebase Console.");
+      if(!file) throw new Error("File kosong");
+      folder = folder || "media";
+      var uid = (currentUser && currentUser.id) ? currentUser.id : "anon";
+      var ext = (file.name && file.name.split(".").pop()) || (file.type && file.type.split("/")[1]) || "bin";
+      ext = String(ext).replace(/[^a-z0-9]/gi,"").slice(0,8) || "bin";
+      var path = folder + "/" + uid + "/" + Date.now() + "_" + Math.random().toString(36).slice(2,8) + "." + ext;
+      var ref = storage.ref(path);
+      var meta = { contentType: file.type || "application/octet-stream" };
+      await ref.put(file, meta);
+      var url = await ref.getDownloadURL();
+      return url;
+    }
+
+    async function mediaUrlFromFile(file, folder){
+      if(!file) return null;
+      folder = folder || "chat";
+      var isVideo = file.type && file.type.indexOf("video/") === 0;
+      var needCloud = isVideo || file.size > RTDB_SAFE_BYTES;
+
+      // 1) Prefer Supabase Storage (bisa > 10MB)
+      if(needCloud && window.WhyaDB && typeof WhyaDB.uploadMedia === "function" && WhyaDB.isConfigured && WhyaDB.isConfigured()){
+        try{
+          toast("Mengunggah ke Supabase...","info");
+          return await WhyaDB.uploadMedia(file, folder);
+        }catch(e){
+          console.warn("Supabase upload failed, fallback", e);
+          toast("Supabase gagal, coba Storage lain...","warn");
+        }
+      }
+
+      // 2) Firebase Storage fallback
+      if(needCloud){
+        try{
+          return await uploadMediaToStorage(file, folder || (isVideo ? "videos" : "images"));
+        }catch(e){
+          var msg = (e && e.message) ? e.message : String(e);
+          if(/storage|unauthorized|permission|404|bucket/i.test(msg)){
+            throw new Error("Upload gagal. Set Supabase (js/supabase-client.js) atau aktifkan Firebase Storage. ("+msg+")");
+          }
+          throw e;
+        }
+      }
+
+      // 3) File kecil: embed dataURL / compress
+      if(file.type && file.type.indexOf("image/") === 0){
+        try { return await compressImage(file, 1280, 1280, 0.72); } catch(e) {}
+      }
+      return await fileToDataURL(file);
+    }
+
     function extractLinks(text){return (text||"").match(/https?:\/\/[^\s<>"']+/gi)||[]}
     function getLinkPreview(url){
       try{
@@ -7137,7 +7331,12 @@ function saveAccountLocal(user){
       try{
         if(document.getElementById("active-chat") && document.getElementById("active-chat").classList.contains("active") && currentRoom===roomId) return;
       }catch(e){}
-      playNotifSound();
+      var nKind="private";
+      try{
+        var meta = (lastUserChats && lastUserChats[roomId]) || {};
+        if(meta.type==="group" || meta.type==="channel" || (roomId&&String(roomId).indexOf("channel_")==0)) nKind="group";
+      }catch(e){}
+      playNotifSound(nKind);
       var stack=document.getElementById("wa-notif-stack");
       if(!stack) return;
       meta = meta || (lastUserChats && lastUserChats[roomId]) || {};
@@ -7332,7 +7531,8 @@ function saveAccountLocal(user){
         var k="wa_notif_sound_"+((currentUser&&currentUser.id)||"guest");
         notifSoundPrefs=JSON.parse(localStorage.getItem(k)||localStorage.getItem("wa_notif_sound")||"null");
       }catch(e){ notifSoundPrefs=null; }
-      if(!notifSoundPrefs) notifSoundPrefs={ enabled:true, volume:0.7, duration:3, customDataUrl:null };
+      if(!notifSoundPrefs) notifSoundPrefs={ enabled:true, volume:0.7, duration:3, customDataUrl:null, privateDataUrl:null, groupDataUrl:null, callDataUrl:null };
+      if(notifSoundPrefs.privateDataUrl==null && notifSoundPrefs.customDataUrl) notifSoundPrefs.privateDataUrl=notifSoundPrefs.customDataUrl;
       if(typeof notifSoundPrefs.duration!=="number") notifSoundPrefs.duration=3;
       notifSoundPrefs.duration=Math.max(2, Math.min(8, notifSoundPrefs.duration||3));
       return notifSoundPrefs;
@@ -7344,12 +7544,16 @@ function saveAccountLocal(user){
         localStorage.setItem("wa_notif_sound", JSON.stringify(notifSoundPrefs||{}));
       }catch(e){}
     }
-    function playNotifSound(){
+    function playNotifSound(kind){
       try{
         var p=loadNotifSoundPrefs();
         if(!p || p.enabled===false) return;
         if(notifAudio){ try{ notifAudio.pause(); notifAudio.currentTime=0; }catch(e){} }
-        var src = p.customDataUrl || null;
+        kind = kind || "private";
+        var src = null;
+        if(kind==="group") src = p.groupDataUrl || p.customDataUrl || null;
+        else if(kind==="call") src = p.callDataUrl || p.customDataUrl || null;
+        else src = p.privateDataUrl || p.customDataUrl || null;
         if(!src){
           // short synthetic beep via WebAudio if no custom sound
           try{
@@ -7421,26 +7625,35 @@ function saveAccountLocal(user){
       notifSoundPrefs.enabled=document.getElementById("ns-enabled").value==="1";
       notifSoundPrefs.volume=Math.max(0, Math.min(1, (parseInt(document.getElementById("ns-vol").value,10)||70)/100));
       notifSoundPrefs.duration=Math.max(2, Math.min(8, parseInt(document.getElementById("ns-dur").value,10)||3));
-      var f=document.getElementById("ns-file").files && document.getElementById("ns-file").files[0];
-      if(f){
-        if(f.size>220*1024) return toast("File terlalu besar (max ~200KB)","err");
+      function readFile(inputId, key, done){
+        var inp=document.getElementById(inputId);
+        var f=inp && inp.files && inp.files[0];
+        if(!f){ done(); return; }
+        if(f.size>500*1024){ toast("File "+key+" terlalu besar (max ~500KB)","err"); done(); return; }
         var reader=new FileReader();
-        reader.onload=function(){
-          notifSoundPrefs.customDataUrl=reader.result;
+        reader.onload=function(){ notifSoundPrefs[key]=reader.result; done(); };
+        reader.onerror=function(){ done(); };
+        reader.readAsDataURL(f);
+      }
+      var left=3;
+      function step(){
+        left--;
+        if(left<=0){
           saveNotifSoundPrefs();
           toast("Suara notifikasi disimpan","ok");
           closeFs("fs-notif-sound");
-        };
-        reader.readAsDataURL(f);
-        return;
+        }
       }
-      saveNotifSoundPrefs();
-      toast("Suara notifikasi disimpan","ok");
-      closeFs("fs-notif-sound");
+      readFile("ns-file-private","privateDataUrl",step);
+      readFile("ns-file-group","groupDataUrl",step);
+      readFile("ns-file-call","callDataUrl",step);
     }
     function clearNotifCustomSound(){
       loadNotifSoundPrefs();
       notifSoundPrefs.customDataUrl=null;
+      notifSoundPrefs.privateDataUrl=null;
+      notifSoundPrefs.groupDataUrl=null;
+      notifSoundPrefs.callDataUrl=null;
       saveNotifSoundPrefs();
       toast("Suara kustom dihapus","ok");
       openNotifSoundSettings();
@@ -8833,17 +9046,11 @@ function saveAccountLocal(user){
       if(!file) return;
       if(!currentRoom){ toast("Pilih chat dulu","err"); input.value=""; return; }
       closeAttachMenu();
-      // limit ~4MB for dataURL in RTDB
-      var MAX=3.5*1024*1024;
-      if(file.size>MAX){ toast("File max ~3.5 MB","err"); input.value=""; return; }
+      var MAX=100*1024*1024;
+      if(file.size>MAX){ toast("File max ~100 MB","err"); input.value=""; return; }
       try{
-        toast("Mengirim file...","info");
-        var dataUrl=await new Promise(function(resolve,reject){
-          var r=new FileReader();
-          r.onload=function(){ resolve(r.result); };
-          r.onerror=reject;
-          r.readAsDataURL(file);
-        });
+        toast(file.size>RTDB_SAFE_BYTES || (file.type&&file.type.indexOf("video/")===0) ? "Mengunggah ke Storage..." : "Mengirim file...","info");
+        var dataUrl=await mediaUrlFromFile(file, "chat");
         var payload=baseMsgPayload();
         // auto-detect type
         if(file.type && file.type.startsWith("image/")){
@@ -8882,7 +9089,7 @@ function saveAccountLocal(user){
       try{
         let mediaUrl,type;
         if(isImage){mediaUrl=await compressImage(file,900,900,0.65);type="image"}
-        else{mediaUrl=await fileToDataURL(file);type="video"}
+        else{mediaUrl=await mediaUrlFromFile(file, "chat");type="video"}
         var payload=baseMsgPayload();
         payload.type=type;
         payload.mediaUrl=mediaUrl;
@@ -9426,8 +9633,14 @@ function saveAccountLocal(user){
       try{
         let mediaUrl=null,type="text";
         if(statusMediaFile){
-          if(statusMediaFile.type.startsWith("video/")){mediaUrl=await fileToDataURL(statusMediaFile);type="video"}
-          else{mediaUrl=await compressImage(statusMediaFile,720,1280,0.65);type="image"}
+          if(statusMediaFile.type.startsWith("video/")){
+            type="video";
+            toast("Mengunggah video...","info");
+            mediaUrl=await mediaUrlFromFile(statusMediaFile, "status");
+          } else {
+            type="image";
+            mediaUrl=await mediaUrlFromFile(statusMediaFile, "status");
+          }
         }
         var STATUS_COLORS=["#128C7E","#075E54","#1b6ca8","#2563eb","#7c3aed","#db2777","#dc2626","#d97706","#059669","#0f766e"];
         var bgColor=null;
@@ -11755,10 +11968,21 @@ function openStatusViewer(uid,list,index){
         if(vg){ vg.classList.remove("active"); vg.innerHTML=""; }
       }catch(e){}
       try{ document.getElementById("incoming-call").classList.remove("active"); }catch(e){}
+      try{ document.getElementById("call-peer-modal")&&document.getElementById("call-peer-modal").classList.remove("active"); }catch(e){}
+      try{ if(typeof closeProfileSheet==="function") closeProfileSheet(); }catch(e){}
+      try{ if(typeof closeCallPeerModal==="function") closeCallPeerModal(); }catch(e){}
+      // Jangan buka kontak/profil lawan bicara setelah putus
+      try{
+        var cs=document.getElementById("call-screen");
+        if(cs){ cs.classList.remove("active"); cs.style.display=""; }
+        var ac=document.getElementById("audio-call-ui");
+        if(ac) ac.classList.remove("active");
+      }catch(e){}
       currentCallId=null; isCaller=false; isMuted=false; isCamOff=false; isSwapped=false;
       callStartTime=null; callConnected=false; callRoomId=null;
       isGroupCall=false; isCallHost=false; groupCallParticipants={}; speakerOn=false; callMsgKey=null;
       callBusy=false;
+      selectedCallPeerId=null;
     }
     function openLightboxImg(img){
       document.getElementById("lightbox-content").innerHTML='<img src="'+img.src+'" alt="">';
@@ -12438,6 +12662,223 @@ function openStatusViewer(uid,list,index){
       }catch(e){}
     }
 
+    
+    /* ===== AI Assistant (Nexa API) ===== */
+    var aiModel = "grok";
+    var aiBusy = false;
+    var NEXA_BASE = "https://api.nexadev.my.id";
+    // Opsional: window.NEXA_API_KEY = "..." jika endpoint butuh key
+
+    function openAiAssistant(){
+      var el = document.getElementById("ai-assistant");
+      if(el) el.classList.add("open");
+    }
+    function closeAiAssistant(){
+      var el = document.getElementById("ai-assistant");
+      if(el) el.classList.remove("open");
+    }
+    function clearAiChat(){
+      var box = document.getElementById("ai-msgs");
+      if(box) box.innerHTML = '<div class="ai-bubble bot">Chat dikosongkan. Silakan tanya lagi.</div>';
+    }
+    function selectAiModel(m){
+      aiModel = m || "grok";
+      ["grok","gpt4","deepseek"].forEach(function(id){
+        var b = document.getElementById("ai-btn-"+id);
+        if(b) b.classList.toggle("active", id === aiModel);
+      });
+      var g = document.getElementById("ai-btn-grok");
+      if(g) g.classList.toggle("active", aiModel === "grok");
+    }
+    function toggleAiModelSub(){
+      var s = document.getElementById("ai-model-sub");
+      if(s) s.classList.toggle("show");
+    }
+    function toggleAiAttach(){
+      var m = document.getElementById("ai-attach-menu");
+      var p = document.getElementById("ai-plus-btn");
+      if(!m) return;
+      var open = m.classList.toggle("show");
+      if(p) p.classList.toggle("open", open);
+    }
+    function aiPickFile(kind){
+      var inp = document.getElementById("ai-file-input");
+      if(!inp) return;
+      if(kind==="media") inp.accept = "image/*,video/*";
+      else inp.accept = "*/*";
+      inp.click();
+    }
+    function aiTakePhoto(){
+      var inp = document.getElementById("ai-cam-input");
+      if(inp) inp.click();
+    }
+    async function aiOnFilePicked(input){
+      var file = input.files && input.files[0];
+      input.value = "";
+      if(!file) return;
+      appendAiBubble("user", "📎 " + (file.name || "file") + " (" + Math.round(file.size/1024) + " KB)");
+      try{
+        if(file.type && file.type.indexOf("image/")===0){
+          var url = await new Promise(function(res,rej){ var r=new FileReader(); r.onload=function(){res(r.result)}; r.onerror=rej; r.readAsDataURL(file); });
+          appendAiBubble("bot", "Gambar diterima.", { image: url });
+        } else if(file.type && file.type.indexOf("text/")===0 || /\.(txt|md|js|html|css|json|py)$/i.test(file.name||"")){
+          var text = await file.text();
+          appendAiBubble("bot", "Isi file (cuplikan):\n" + String(text).slice(0,2000));
+        } else {
+          appendAiBubble("bot", "File diterima. Untuk analisis teks, kirim file teks/kode. Untuk gambar, pakai foto.");
+        }
+      }catch(e){
+        appendAiBubble("bot", "Gagal membaca file: " + (e.message||e));
+      }
+    }
+    async function aiGenerateImage(){
+      var q = (document.getElementById("ai-input").value||"").trim();
+      if(!q){ toast("Tulis deskripsi gambar dulu","info"); return; }
+      document.getElementById("ai-input").value = "";
+      appendAiBubble("user", "🎨 Generate: " + q);
+      appendAiBubble("bot", "Membuat gambar...", { id: "ai-loading" });
+      try{
+        var url = NEXA_BASE + "/ai/cai?q=" + encodeURIComponent(q);
+        if(window.NEXA_API_KEY) url += "&apikey=" + encodeURIComponent(window.NEXA_API_KEY);
+        var res = await fetch(url);
+        var data = await res.json().catch(function(){ return {}; });
+        removeAiLoading();
+        var img = data.url || data.image || data.result || data.data || (data.result && data.result.url);
+        if(typeof data === "string" && data.indexOf("http")===0) img = data;
+        if(img) appendAiBubble("bot", "Hasil generate:", { image: img });
+        else appendAiBubble("bot", "Respons: " + JSON.stringify(data).slice(0,500));
+      }catch(e){
+        removeAiLoading();
+        appendAiBubble("bot", "Gagal generate: " + (e.message||e));
+      }
+    }
+    function appendAiBubble(role, text, extra){
+      extra = extra || {};
+      var box = document.getElementById("ai-msgs");
+      if(!box) return null;
+      var el = document.createElement("div");
+      el.className = "ai-bubble " + (role==="user"?"user":"bot");
+      if(extra.id) el.id = extra.id;
+      var html = "";
+      if(text) html += formatAiText(text);
+      if(extra.image) html += '<img class="ai-gen" src="'+String(extra.image).replace(/"/g,"&quot;")+'" alt="img">';
+      el.innerHTML = html;
+      box.appendChild(el);
+      box.scrollTop = box.scrollHeight;
+      return el;
+    }
+    function removeAiLoading(){
+      var el = document.getElementById("ai-loading");
+      if(el) el.remove();
+    }
+    function formatAiText(text){
+      text = String(text||"");
+      // extract fenced code blocks
+      var parts = [];
+      var re = /```([\w-]*)\n([\s\S]*?)```/g;
+      var last = 0, m;
+      while((m = re.exec(text))){
+        if(m.index > last) parts.push({ t:"text", v: text.slice(last, m.index) });
+        parts.push({ t:"code", lang: (m[1]||"").toLowerCase(), v: m[2] });
+        last = m.index + m[0].length;
+      }
+      if(last < text.length) parts.push({ t:"text", v: text.slice(last) });
+      if(!parts.length) parts = [{ t:"text", v: text }];
+      return parts.map(function(p){
+        if(p.t==="text") return escapeHtmlAi(p.v).replace(/\n/g,"<br>");
+        var id = "code_"+Math.random().toString(36).slice(2,9);
+        var isHtml = p.lang==="html" || /^\s*</.test(p.v);
+        var tools = '<div class="ai-code-tools">'+
+          '<button type="button" onclick="aiCopyCode(\''+id+'\')">Salin</button>'+
+          '<button type="button" onclick="aiDownloadCode(\''+id+'\',\''+(p.lang||"txt")+'\')">Download</button>'+
+          (isHtml?'<button type="button" onclick="aiOpenHtml(\''+id+'\')">Buka</button>':'')+
+          '</div>';
+        return '<div class="ai-code-wrap">'+tools+'<pre id="'+id+'">'+escapeHtmlAi(p.v)+'</pre></div>';
+      }).join("");
+    }
+    function escapeHtmlAi(s){
+      return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+    }
+    function aiCopyCode(id){
+      var el = document.getElementById(id);
+      if(!el) return;
+      var t = el.innerText || el.textContent || "";
+      if(navigator.clipboard) navigator.clipboard.writeText(t).then(function(){ toast("Kode disalin","ok"); });
+      else toast("Salin manual","info");
+    }
+    function aiDownloadCode(id, lang){
+      var el = document.getElementById(id);
+      if(!el) return;
+      var t = el.innerText || el.textContent || "";
+      var ext = lang==="html"?"html":(lang==="js"||lang==="javascript"?"js":(lang==="css"?"css":(lang==="py"||lang==="python"?"py":"txt")));
+      var blob = new Blob([t], {type:"text/plain"});
+      var a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "code."+ext;
+      a.click();
+      setTimeout(function(){ URL.revokeObjectURL(a.href); }, 1000);
+    }
+    function aiOpenHtml(id){
+      var el = document.getElementById(id);
+      if(!el) return;
+      var t = el.innerText || el.textContent || "";
+      var w = window.open("", "_blank");
+      if(w){ w.document.open(); w.document.write(t); w.document.close(); }
+    }
+    async function callNexaAi(model, prompt){
+      var keyQ = window.NEXA_API_KEY ? ("&apikey="+encodeURIComponent(window.NEXA_API_KEY)) : "";
+      var url;
+      if(model==="gpt4"){
+        url = NEXA_BASE + "/ai/gpt4?q=" + encodeURIComponent(prompt) + keyQ;
+      } else if(model==="deepseek"){
+        url = NEXA_BASE + "/ai/deepsek?text=" + encodeURIComponent(prompt) + keyQ;
+      } else {
+        // Grok — coba beberapa path umum Nexa
+        url = NEXA_BASE + "/ai/grok?q=" + encodeURIComponent(prompt) + keyQ;
+      }
+      var res = await fetch(url);
+      if(!res.ok && model==="grok"){
+        // fallback paths
+        var alts = [
+          NEXA_BASE + "/ai/grok?text=" + encodeURIComponent(prompt) + keyQ,
+          NEXA_BASE + "/ai/gpt4?q=" + encodeURIComponent(prompt) + keyQ
+        ];
+        for(var i=0;i<alts.length;i++){
+          try{
+            res = await fetch(alts[i]);
+            if(res.ok) break;
+          }catch(e){}
+        }
+      }
+      var data = await res.json().catch(function(){ return { raw: true }; });
+      if(typeof data === "string") return data;
+      return data.result || data.response || data.text || data.message || data.answer || data.data || JSON.stringify(data);
+    }
+    async function sendAiMessage(){
+      if(aiBusy) return;
+      var inp = document.getElementById("ai-input");
+      var text = (inp && inp.value || "").trim();
+      if(!text) return;
+      inp.value = "";
+      appendAiBubble("user", text);
+      aiBusy = true;
+      appendAiBubble("bot", "Menulis...", { id: "ai-loading" });
+      try{
+        // coding hint: ask model to use markdown fences
+        var prompt = text;
+        if(/kode|code|html|javascript|python|program/i.test(text)){
+          prompt = text + "\n\nJika ada kode, bungkus dengan markdown code fence (```bahasa).";
+        }
+        var out = await callNexaAi(aiModel, prompt);
+        removeAiLoading();
+        appendAiBubble("bot", String(out));
+      }catch(e){
+        removeAiLoading();
+        appendAiBubble("bot", "Gagal: " + (e.message||e));
+      }
+      aiBusy = false;
+    }
+
     function handleDeepLinks(){
       try{
         // path-based season links
@@ -12536,5 +12977,42 @@ function openStatusViewer(uid,list,index){
     })();
 
   </script>
+
+  <!-- AI Assistant -->
+  <button type="button" id="ai-fab" onclick="openAiAssistant()" title="Asisten AI"><i class="fas fa-robot"></i></button>
+  <div id="ai-assistant">
+    <div class="ai-top">
+      <button type="button" onclick="closeAiAssistant()"><i class="fas fa-arrow-left"></i></button>
+      <h2>Asisten AI</h2>
+      <button type="button" onclick="clearAiChat()"><i class="fas fa-trash"></i></button>
+    </div>
+    <div class="ai-models">
+      <button type="button" class="ai-model-btn active" id="ai-btn-grok" onclick="selectAiModel('grok')">Grok</button>
+      <button type="button" class="ai-model-btn" id="ai-btn-more" onclick="toggleAiModelSub()">Model lain ▾</button>
+    </div>
+    <div class="ai-model-sub" id="ai-model-sub">
+      <button type="button" class="ai-model-btn" id="ai-btn-gpt4" onclick="selectAiModel('gpt4')">GPT-4</button>
+      <button type="button" class="ai-model-btn" id="ai-btn-deepseek" onclick="selectAiModel('deepseek')">DeepSeek</button>
+    </div>
+    <div class="ai-msgs" id="ai-msgs">
+      <div class="ai-bubble bot">Halo! Saya asisten AI. Pilih model (Grok / GPT-4 / DeepSeek), lalu ketik pertanyaan. Pakai + untuk foto, file, generate gambar, atau kamera.</div>
+    </div>
+    <div class="ai-composer">
+      <div class="ai-attach-menu" id="ai-attach-menu">
+        <button type="button" onclick="aiPickFile('file')"><i class="fas fa-file"></i>File / Dokumen</button>
+        <button type="button" onclick="aiPickFile('media')"><i class="fas fa-photo-video"></i>Foto / Video</button>
+        <button type="button" onclick="aiGenerateImage()"><i class="fas fa-wand-magic-sparkles"></i>Generate gambar</button>
+        <button type="button" onclick="aiTakePhoto()"><i class="fas fa-camera"></i>Ambil foto</button>
+      </div>
+      <div class="ai-row">
+        <button type="button" class="ai-plus" id="ai-plus-btn" onclick="toggleAiAttach()"><i class="fas fa-plus"></i></button>
+        <textarea class="ai-input" id="ai-input" rows="1" placeholder="Tanya apa saja..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendAiMessage();}"></textarea>
+        <button type="button" class="ai-send" onclick="sendAiMessage()"><i class="fas fa-paper-plane"></i></button>
+      </div>
+      <input type="file" id="ai-file-input" style="display:none" onchange="aiOnFilePicked(this)">
+      <input type="file" id="ai-cam-input" accept="image/*" capture="environment" style="display:none" onchange="aiOnFilePicked(this)">
+    </div>
+  </div>
+
 </body>
 </html>

@@ -3,18 +3,37 @@
  * Ganti SUPABASE_URL dan SUPABASE_ANON_KEY dari Project Settings → API
  */
 (function (global) {
-  var SUPABASE_URL = "https://wjmxiedkyklmmoxcxjlw.supabase.co";
-  var SUPABASE_ANON_KEY = "sb_publishable_TMNireG8PZENCgtHdh-HQA_BkAlGAle";
+  // Isi default di sini, atau set window.WHYA_SUPABASE = { url, anonKey } sebelum script ini
+  var SUPABASE_URL = "https://YOUR_PROJECT_REF.supabase.co";
+  var SUPABASE_ANON_KEY = "YOUR_ANON_PUBLIC_KEY";
+
+  function resolveConfig() {
+    try {
+      if (global.WHYA_SUPABASE && global.WHYA_SUPABASE.url) {
+        return {
+          url: global.WHYA_SUPABASE.url,
+          anonKey: global.WHYA_SUPABASE.anonKey || SUPABASE_ANON_KEY
+        };
+      }
+      var saved = localStorage.getItem("whya_supabase_cfg");
+      if (saved) {
+        var p = JSON.parse(saved);
+        if (p && p.url) return { url: p.url, anonKey: p.anonKey || SUPABASE_ANON_KEY };
+      }
+    } catch (e) {}
+    return { url: SUPABASE_URL, anonKey: SUPABASE_ANON_KEY };
+  }
 
   function createClient() {
     if (!global.supabase || !global.supabase.createClient) {
       console.error("Supabase SDK belum dimuat. Tambahkan script CDN @supabase/supabase-js");
       return null;
     }
-    if (SUPABASE_URL.indexOf("YOUR_PROJECT") >= 0) {
-      console.warn("Isi SUPABASE_URL dan SUPABASE_ANON_KEY di js/supabase-client.js");
+    var cfg = resolveConfig();
+    if (!cfg.url || cfg.url.indexOf("YOUR_PROJECT") >= 0) {
+      console.warn("Isi SUPABASE_URL di js/supabase-client.js atau window.WHYA_SUPABASE");
     }
-    return global.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    return global.supabase.createClient(cfg.url, cfg.anonKey, {
       auth: { persistSession: true, autoRefreshToken: true }
     });
   }
@@ -214,6 +233,31 @@
       var { data, error } = await sb.from("messages").insert([row]).select().single();
       if (error) throw new Error(error.message);
       return data;
+    },
+
+    
+    async uploadMedia(file, folder) {
+      var sb = getSb();
+      if (!sb) throw new Error("Supabase belum dikonfigurasi");
+      if (!file) throw new Error("File kosong");
+      folder = folder || "chat";
+      var ext = (file.name && file.name.split(".").pop()) || (file.type && file.type.split("/")[1]) || "bin";
+      ext = String(ext).replace(/[^a-z0-9]/gi, "").slice(0, 8) || "bin";
+      var path = folder + "/" + Date.now() + "_" + Math.random().toString(36).slice(2, 8) + "." + ext;
+      var { data, error } = await sb.storage.from("media").upload(path, file, {
+        contentType: file.type || "application/octet-stream",
+        upsert: false
+      });
+      if (error) throw new Error(error.message || String(error));
+      var pub = sb.storage.from("media").getPublicUrl(data.path);
+      var url = pub && pub.data ? pub.data.publicUrl : null;
+      if (!url) throw new Error("Gagal mendapat URL publik");
+      return url;
+    },
+
+    isConfigured() {
+      var cfg = resolveConfig();
+      return !!(cfg.url && cfg.url.indexOf("YOUR_PROJECT") < 0 && cfg.anonKey && cfg.anonKey.indexOf("YOUR_ANON") < 0);
     },
 
     subscribeMessages(roomId, onInsert) {
