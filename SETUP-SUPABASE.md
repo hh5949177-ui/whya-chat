@@ -94,3 +94,19 @@ on storage.objects for insert
 to authenticated
 with check (bucket_id = 'media');
 ```
+
+
+## Storage media (wajib untuk video > ~6MB)
+
+App **hanya memakai Supabase Storage** (bukan Firebase Storage).
+
+1. Storage → New bucket → nama **`media`** → centang **Public**
+2. Run `supabase/storage.sql`
+3. Isi di `js/supabase-client.js`:
+
+```js
+var SUPABASE_URL = "https://xxxx.supabase.co";
+var SUPABASE_ANON_KEY = "eyJ...";
+```
+
+Tanpa ini, video besar tidak bisa diunggah ke Supabase (ada host sementara darurat saja).

@@ -3742,7 +3742,110 @@
     }
 
 
+  
+    body.in-chat #ai-fab { display: none !important; }
+    .ai-pop { animation: aiBubbleIn .32s cubic-bezier(.2,.8,.2,1); }
+    @keyframes aiBubbleIn {
+      from { opacity:0; transform: translateY(12px) scale(.96); }
+      to { opacity:1; transform: none; }
+    }
+    .ai-thinking { opacity: .95; }
+    .ai-think-row { display:flex; align-items:center; gap:8px; }
+    .ai-dot {
+      width:7px; height:7px; border-radius:50%; background:#e2e8f0;
+      animation: aiDot 1.2s ease-in-out infinite;
+    }
+    .ai-dot:nth-child(2){ animation-delay:.15s; }
+    .ai-dot:nth-child(3){ animation-delay:.3s; }
+    @keyframes aiDot {
+      0%,80%,100% { transform: translateY(0); opacity:.35; }
+      40% { transform: translateY(-5px); opacity:1; }
+    }
+    .ai-think-label { font-size:12.5px; color:rgba(255,255,255,.45); }
+    .ai-more-wrap { position: relative; }
+    .ai-history-menu {
+      display:none; position:absolute; right:0; top:110%;
+      min-width:180px; padding:6px;
+      background:#1a1a22; border:1px solid rgba(255,255,255,.12);
+      border-radius:14px; box-shadow:0 12px 32px rgba(0,0,0,.45); z-index:6;
+    }
+    .ai-history-menu.show { display:block; }
+    .ai-history-menu button {
+      display:flex; align-items:center; gap:8px; width:100%;
+      border:none; background:transparent; color:#fff; text-align:left;
+      padding:10px 12px; border-radius:10px; cursor:pointer; font-size:13px;
+    }
+    .ai-history-menu button:hover { background:rgba(255,255,255,.08); }
+    .ai-hist-item {
+      display:block; width:100%; text-align:left; margin:6px 0; padding:8px;
+      border:none; border-radius:10px; background:rgba(255,255,255,.06); color:#fff;
+      cursor:pointer; font-size:12.5px;
+    }
+    .ai-code-wrap {
+      position: relative; margin-top:10px; border-radius:14px; overflow:hidden;
+      background: #0c0c12; border: 1px solid rgba(255,255,255,.1);
+    }
+    .ai-code-bar {
+      display:flex; align-items:center; justify-content:space-between; gap:8px;
+      padding:8px 10px; background:rgba(255,255,255,.05);
+      border-bottom:1px solid rgba(255,255,255,.06);
+    }
+    .ai-code-lang {
+      font-size:11px; font-weight:700; color:rgba(255,255,255,.45);
+      text-transform:uppercase; letter-spacing:.04em;
+    }
+    .ai-code-tools { display:flex; gap:6px; flex-wrap:wrap; }
+    .ai-ct {
+      border:none; cursor:pointer; font-size:11px; font-weight:700;
+      padding:6px 10px; border-radius:9px;
+      background: rgba(255,255,255,.1); color:#fff;
+      display:inline-flex; align-items:center; gap:5px;
+    }
+    .ai-ct:hover { background: rgba(255,255,255,.16); }
+    .ai-ct-open { background: rgba(56,189,248,.2); color:#7dd3fc; }
+    .ai-code-wrap pre {
+      margin:0; padding:12px; overflow:auto; font-size:12.5px;
+      color:#e2e8f0; max-height:320px; line-height:1.45;
+    }
+    .ai-mic.listening {
+      transform: scale(1.35);
+      background: rgba(239,68,68,.25) !important;
+      color: #fecaca !important;
+      box-shadow: 0 0 0 6px rgba(239,68,68,.15);
+    }
+    .ai-speak {
+      width: 40px; height: 40px; border-radius: 50% !important;
+      padding: 0 !important; justify-content: center;
+    }
+    /* FAB mono */
+    #ai-fab .ai-bot-head {
+      background: radial-gradient(circle at 50% 35%, #f4f4f5, #a1a1aa 55%, #27272a) !important;
+      box-shadow: 0 0 0 2px rgba(255,255,255,.25), 0 4px 14px rgba(0,0,0,.35) !important;
+      animation: aiHeadIdle 4s ease-in-out infinite !important;
+    }
+    #ai-fab .ai-bot-head::before {
+      background: linear-gradient(135deg, #fff, #52525b, #fff) !important;
+      opacity: .5 !important;
+      animation: none !important;
+    }
+    #ai-fab .ai-bot-face { background: #0a0a0e !important; }
+    #ai-fab .ai-eye {
+      background: #f8fafc !important;
+      animation: aiEyeAuto 3.5s ease-in-out infinite !important;
+    }
+    #ai-fab .ai-eye.r { animation-delay: .2s !important; }
+    @keyframes aiHeadIdle {
+      0%,100% { transform: translateY(0) rotate(-3deg); }
+      50% { transform: translateY(-3px) rotate(3deg); }
+    }
+    @keyframes aiEyeAuto {
+      0%,40%,100% { transform: translate(0,0); }
+      20% { transform: translate(2px,-1px); }
+      60% { transform: translate(-2px,1px); }
+      75% { transform: scaleY(.15); }
+    }
   </style>
+
 </head>
 <body>
 
@@ -4975,6 +5078,9 @@
     var RTDB_SAFE_BYTES = 6.5 * 1024 * 1024;
 
     async function uploadMediaToStorage(file, folder){
+      if(!storage){
+        try { storage = firebase.storage(); } catch(e) {}
+      }
       if(!storage) throw new Error("Firebase Storage belum siap. Aktifkan Storage di Firebase Console.");
       if(!file) throw new Error("File kosong");
       folder = folder || "media";
@@ -4989,41 +5095,65 @@
       return url;
     }
 
+    async function uploadToCatbox(file){
+      var fd = new FormData();
+      fd.append("reqtype", "fileupload");
+      fd.append("fileToUpload", file, file.name || ("upload." + ((file.type||"").split("/")[1] || "bin")));
+      var res = await fetch("https://catbox.moe/user/api.php", { method: "POST", body: fd });
+      if(!res.ok) throw new Error("Host sementara HTTP "+res.status);
+      var url = (await res.text()).trim();
+      if(!url || url.indexOf("http") !== 0) throw new Error(url || "Upload host gagal");
+      return url;
+    }
     async function mediaUrlFromFile(file, folder){
       if(!file) return null;
       folder = folder || "chat";
       var isVideo = file.type && file.type.indexOf("video/") === 0;
       var needCloud = isVideo || file.size > RTDB_SAFE_BYTES;
+      var lastErr = null;
 
-      // 1) Prefer Supabase Storage (bisa > 10MB)
-      if(needCloud && window.WhyaDB && typeof WhyaDB.uploadMedia === "function" && WhyaDB.isConfigured && WhyaDB.isConfigured()){
-        try{
-          toast("Mengunggah ke Supabase...","info");
-          return await WhyaDB.uploadMedia(file, folder);
-        }catch(e){
-          console.warn("Supabase upload failed, fallback", e);
-          toast("Supabase gagal, coba Storage lain...","warn");
+      // File kecil: tetap dataURL / compress (hemat Storage)
+      if(!needCloud){
+        if(file.type && file.type.indexOf("image/") === 0){
+          try { return await compressImage(file, 1280, 1280, 0.72); } catch(e) {}
         }
+        return await fileToDataURL(file);
       }
 
-      // 2) Firebase Storage fallback
-      if(needCloud){
-        try{
-          return await uploadMediaToStorage(file, folder || (isVideo ? "videos" : "images"));
-        }catch(e){
-          var msg = (e && e.message) ? e.message : String(e);
-          if(/storage|unauthorized|permission|404|bucket/i.test(msg)){
-            throw new Error("Upload gagal. Set Supabase (js/supabase-client.js) atau aktifkan Firebase Storage. ("+msg+")");
+      toast("Mengunggah ke Supabase…", "info");
+
+      // 1) Supabase Storage saja (utama)
+      if(window.WhyaDB && typeof WhyaDB.uploadMedia === "function"){
+        if(WhyaDB.isConfigured && WhyaDB.isConfigured()){
+          try{
+            return await WhyaDB.uploadMedia(file, folder);
+          }catch(e){
+            lastErr = e;
+            console.warn("Supabase upload failed", e);
           }
-          throw e;
+        } else {
+          lastErr = new Error("Supabase belum dikonfigurasi (isi URL & anon key di js/supabase-client.js)");
         }
+      } else {
+        lastErr = new Error("Modul Supabase belum dimuat");
       }
 
-      // 3) File kecil: embed dataURL / compress
-      if(file.type && file.type.indexOf("image/") === 0){
-        try { return await compressImage(file, 1280, 1280, 0.72); } catch(e) {}
+      // 2) Fallback darurat host publik (bukan Firebase)
+      try{
+        toast("Supabase belum siap, pakai host sementara…", "warn");
+        return await uploadToCatbox(file);
+      }catch(e){
+        lastErr = e;
+        console.warn("Temp host failed", e);
       }
-      return await fileToDataURL(file);
+
+      // 3) DataURL hanya jika masih aman untuk RTDB
+      if(file.size <= RTDB_SAFE_BYTES){
+        try { return await fileToDataURL(file); } catch(e){ lastErr = e; }
+      }
+
+      var msg = (lastErr && lastErr.message) ? lastErr.message : "unknown";
+      throw new Error("Upload gagal via Supabase. Cek bucket media + API key. ("+msg+")");
     }
 
     function extractLinks(text){return (text||"").match(/https?:\/\/[^\s<>"']+/gi)||[]}
@@ -7041,6 +7171,7 @@ function saveAccountLocal(user){
         currentChatPhone = phone || null;
         currentChatPeerId = peerId || null;
         currentChatType = type || (roomId==="general" ? "general" : (String(roomId).indexOf("channel_")==0 ? "channel" : (phone ? "private" : "group")));
+        try{ document.body.classList.add("in-chat"); }catch(e){}
         try{
           var sid = randSessionId();
           var t = currentChatType;
@@ -9774,7 +9905,7 @@ function saveAccountLocal(user){
         if(statusMediaFile){
           if(statusMediaFile.type.startsWith("video/")){
             type="video";
-            toast("Mengunggah video...","info");
+            /* upload progress via mediaUrlFromFile */
             mediaUrl=await mediaUrlFromFile(statusMediaFile, "status");
           } else {
             type="image";
@@ -12803,7 +12934,7 @@ function openStatusViewer(uid,list,index){
 
     
     /* ===== AI Assistant (Nexa API) ===== */
-    var aiModel = "grok";
+    var aiModel = "free";
     var aiBusy = false;
     var NEXA_BASE = "https://api.nexadev.my.id";
     // Opsional: window.NEXA_API_KEY = "..." jika endpoint butuh key
@@ -12873,13 +13004,49 @@ function openStatusViewer(uid,list,index){
         if(location.pathname.indexOf("/aiwhya")===0) history.pushState({ whya: "dashboard" }, "", "/dashboard");
       }catch(e){}
     }
-    function clearAiChat(){
+    
+    var aiHistoryList = [];
+    try { aiHistoryList = JSON.parse(localStorage.getItem("whya_ai_history")||"[]"); } catch(e){ aiHistoryList=[]; }
+    function toggleAiHistoryMenu(){
+      var m = document.getElementById("ai-history-menu");
+      if(m) m.classList.toggle("show");
+    }
+    function aiSaveHistorySnapshot(){
+      try{
+        var box = document.getElementById("ai-msgs");
+        if(!box || !box.innerText.trim()) return;
+        aiHistoryList.unshift({ at: Date.now(), preview: box.innerText.trim().slice(0,120), html: box.innerHTML.slice(0,50000) });
+        aiHistoryList = aiHistoryList.slice(0,20);
+        localStorage.setItem("whya_ai_history", JSON.stringify(aiHistoryList));
+      }catch(e){}
+    }
+    function aiShowHistory(){
+      var box = document.getElementById("ai-msgs");
+      if(!box) return;
+      if(!aiHistoryList.length){ toast("Belum ada riwayat","info"); return; }
+      var html = '<div class="ai-bubble bot"><strong>Riwayat chat</strong><br>';
+      aiHistoryList.forEach(function(h,i){
+        var t = new Date(h.at).toLocaleString("id-ID");
+        html += '<button type="button" class="ai-hist-item" onclick="aiLoadHistory('+i+')">'+(i+1)+'. '+escapeHtmlAi(h.preview||"")+' <small>'+t+'</small></button>';
+      });
+      html += '</div>';
+      box.innerHTML = html;
+    }
+    function aiLoadHistory(i){
+      var h = aiHistoryList[i];
+      var box = document.getElementById("ai-msgs");
+      if(h && box) box.innerHTML = h.html || "";
+    }
+    var _clearAiChat = null;
+
+    function clearAiChat(){ aiSaveHistorySnapshot();
+      
       var box = document.getElementById("ai-msgs");
       if(box) box.innerHTML = "";
     }
     function selectAiModel(m){
       aiModel = m || "grok";
-      var label = { grok:"Grok", gpt4:"GPT-4", deepseek:"DeepSeek" }[aiModel] || "Grok";
+      var label = { free:"Free", grok:"Free", gpt4:"GPT-4", deepseek:"DeepSeek" }[aiModel] || "Free";
       var lab = document.getElementById("ai-model-label");
       if(lab) lab.textContent = label;
       var menu = document.getElementById("ai-model-menu");
@@ -12895,19 +13062,28 @@ function openStatusViewer(uid,list,index){
       if(menu) menu.classList.toggle("show");
     }
     function aiVoiceInput(){
+      var btn = document.querySelector(".ai-mic");
       try{
         var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-        if(!SR){ toast("Speech recognition tidak didukung","err"); return; }
+        if(!SR){ toast("Speech recognition tidak didukung di browser ini","err"); return; }
+        if(btn) btn.classList.add("listening");
         var r = new SR();
         r.lang = "id-ID";
+        r.interimResults = false;
         r.onresult = function(ev){
           var t = (ev.results[0]&&ev.results[0][0]&&ev.results[0][0].transcript)||"";
           var inp = document.getElementById("ai-input");
-          if(inp){ inp.value = (inp.value?inp.value+" ":"")+t; }
+          if(inp){ inp.value = (inp.value?inp.value+" ":"")+t; inp.focus(); }
+          toast("Teks dari mikrofon ditambahkan","ok");
         };
+        r.onerror = function(){ toast("Mikrofon error / izin ditolak","err"); if(btn) btn.classList.remove("listening"); };
+        r.onend = function(){ if(btn) btn.classList.remove("listening"); };
         r.start();
-        toast("Mendengarkan...","info");
-      }catch(e){ toast("Mikrofon gagal","err"); }
+        toast("Mendengarkan…","info");
+      }catch(e){
+        if(btn) btn.classList.remove("listening");
+        toast("Mikrofon gagal: "+(e.message||e),"err");
+      }
     }
     function toggleAiAttach(){
       var m = document.getElementById("ai-attach-menu");
@@ -12975,7 +13151,7 @@ function openStatusViewer(uid,list,index){
       var box = document.getElementById("ai-msgs");
       if(!box) return null;
       var el = document.createElement("div");
-      el.className = "ai-bubble " + (role==="user"?"user":"bot");
+      el.className = "ai-bubble " + (role==="user"?"user":"bot") + " ai-pop";
       if(extra.id) el.id = extra.id;
       var html = "";
       if(text) html += formatAiText(text);
@@ -12991,9 +13167,9 @@ function openStatusViewer(uid,list,index){
     }
     function formatAiText(text){
       text = String(text||"");
-      // extract fenced code blocks
+      // bold ** **
       var parts = [];
-      var re = /```([\w-]*)\n([\s\S]*?)```/g;
+      var re = /```([\w-]*)\n?([\s\S]*?)```/g;
       var last = 0, m;
       while((m = re.exec(text))){
         if(m.index > last) parts.push({ t:"text", v: text.slice(last, m.index) });
@@ -13003,14 +13179,19 @@ function openStatusViewer(uid,list,index){
       if(last < text.length) parts.push({ t:"text", v: text.slice(last) });
       if(!parts.length) parts = [{ t:"text", v: text }];
       return parts.map(function(p){
-        if(p.t==="text") return escapeHtmlAi(p.v).replace(/\n/g,"<br>");
+        if(p.t==="text"){
+          return escapeHtmlAi(p.v)
+            .replace(/\*\*([^*]+)\*\*/g,"<strong>$1</strong>")
+            .replace(/\n/g,"<br>");
+        }
         var id = "code_"+Math.random().toString(36).slice(2,9);
-        var isHtml = p.lang==="html" || /^\s*</.test(p.v);
-        var tools = '<div class="ai-code-tools">'+
-          '<button type="button" onclick="aiCopyCode(\''+id+'\')">Salin</button>'+
-          '<button type="button" onclick="aiDownloadCode(\''+id+'\',\''+(p.lang||"txt")+'\')">Download</button>'+
-          (isHtml?'<button type="button" onclick="aiOpenHtml(\''+id+'\')">Buka</button>':'')+
-          '</div>';
+        var isHtml = p.lang==="html" || /^\s*<(!doctype|html|div|body|head)/i.test(p.v);
+        var langLabel = p.lang || "code";
+        var tools = '<div class="ai-code-bar"><span class="ai-code-lang">'+escapeHtmlAi(langLabel)+'</span><div class="ai-code-tools">'+
+          '<button type="button" class="ai-ct" onclick="aiCopyCode(\''+id+'\')"><i class="fas fa-copy"></i> Salin</button>'+
+          '<button type="button" class="ai-ct" onclick="aiDownloadCode(\''+id+'\',\''+(p.lang||"txt")+'\')"><i class="fas fa-download"></i> Download</button>'+
+          (isHtml?'<button type="button" class="ai-ct ai-ct-open" onclick="aiOpenHtml(\''+id+'\')"><i class="fas fa-up-right-from-square"></i> Buka</button>':'')+
+          '</div></div>';
         return '<div class="ai-code-wrap">'+tools+'<pre id="'+id+'">'+escapeHtmlAi(p.v)+'</pre></div>';
       }).join("");
     }
@@ -13043,45 +13224,85 @@ function openStatusViewer(uid,list,index){
       var w = window.open("", "_blank");
       if(w){ w.document.open(); w.document.write(t); w.document.close(); }
     }
+    function extractAiText(data, depth){
+      depth = depth || 0;
+      if(data == null) return "";
+      if(typeof data === "string") return data;
+      if(typeof data === "number" || typeof data === "boolean") return String(data);
+      if(depth > 6) return "";
+      if(Array.isArray(data)){
+        return data.map(function(x){ return extractAiText(x, depth+1); }).filter(Boolean).join("\n");
+      }
+      if(typeof data === "object"){
+        var keys = ["result","response","text","message","answer","content","output","data","reply","generated_text","completion","choices","description"];
+        for(var i=0;i<keys.length;i++){
+          if(data[keys[i]] != null){
+            var v = extractAiText(data[keys[i]], depth+1);
+            if(v && v !== "[object Object]") return v;
+          }
+        }
+        // OpenAI-style choices
+        if(data.choices && data.choices[0]){
+          var c = data.choices[0];
+          var v2 = extractAiText(c.message || c.text || c.delta || c, depth+1);
+          if(v2) return v2;
+        }
+        // last resort: join string values
+        var parts = [];
+        Object.keys(data).forEach(function(k){
+          if(typeof data[k] === "string" && data[k].length > 2) parts.push(data[k]);
+        });
+        if(parts.length) return parts.join("\n");
+        try { return JSON.stringify(data, null, 2); } catch(e){ return String(data); }
+      }
+      return String(data);
+    }
     async function callNexaAi(model, prompt){
       var PROXY = "https://imghd.hh5949177.workers.dev/?url=";
       var NEXA = "https://api.nexadev.my.id";
       var keyQ = window.NEXA_API_KEY ? ("&apikey="+encodeURIComponent(window.NEXA_API_KEY)) : "";
-      var target;
-      if(model==="gpt4"){
-        target = NEXA + "/ai/gpt4?q=" + encodeURIComponent(prompt) + keyQ;
-      } else if(model==="deepseek"){
-        target = NEXA + "/ai/deepsek?text=" + encodeURIComponent(prompt) + keyQ;
-      } else {
-        target = NEXA + "/ai/grok?q=" + encodeURIComponent(prompt) + keyQ;
-      }
+
       async function tryFetch(u){
         var res = await fetch(u, { method: "GET", mode: "cors" });
         if(!res.ok) throw new Error("HTTP "+res.status);
+        var clone = res.clone();
         var data = await res.json().catch(function(){ return null; });
-        if(data==null){
-          var t = await res.text();
-          return t;
+        if(data == null){
+          var t = await clone.text();
+          try { data = JSON.parse(t); } catch(e){ return t; }
         }
-        if(typeof data === "string") return data;
-        return data.result || data.response || data.text || data.message || data.answer || data.data || data.output || JSON.stringify(data);
+        var text = extractAiText(data);
+        if(!text || text === "[object Object]") throw new Error("empty");
+        return text;
       }
-      // 1) direct
+
+      // coding system boost
+      var isCode = /kode|code|html|css|javascript|python|program|function|class |```/i.test(prompt);
+
+      if(model === "free" || model === "grok"){
+        // Free: Pollinations text (no key)
+        var pollUrl = "https://text.pollinations.ai/" + encodeURIComponent(prompt);
+        try { return await tryFetch(pollUrl); } catch(e){}
+        try { return await tryFetch(PROXY + encodeURIComponent(pollUrl)); } catch(e){}
+        // fallback deepseek via nexa
+        try { return await tryFetch(PROXY + encodeURIComponent(NEXA + "/ai/deepsek?text=" + encodeURIComponent(prompt) + keyQ)); } catch(e){}
+        try { return await tryFetch(NEXA + "/ai/deepsek?text=" + encodeURIComponent(prompt) + keyQ); } catch(e){}
+      }
+
+      var target;
+      if(model === "gpt4"){
+        target = NEXA + "/ai/gpt4?q=" + encodeURIComponent(prompt) + keyQ;
+      } else if(model === "deepseek"){
+        target = NEXA + "/ai/deepsek?text=" + encodeURIComponent(prompt) + keyQ;
+      } else {
+        target = NEXA + "/ai/deepsek?text=" + encodeURIComponent(prompt) + keyQ;
+      }
+
       try { return await tryFetch(target); } catch(e1) {}
-      // 2) cloudflare proxy
       try { return await tryFetch(PROXY + encodeURIComponent(target)); } catch(e2) {}
-      // 3) grok fallbacks via proxy
-      if(model==="grok"){
-        var alts = [
-          NEXA + "/ai/grok?text=" + encodeURIComponent(prompt) + keyQ,
-          NEXA + "/ai/gpt4?q=" + encodeURIComponent(prompt) + keyQ
-        ];
-        for(var i=0;i<alts.length;i++){
-          try { return await tryFetch(PROXY + encodeURIComponent(alts[i])); } catch(e) {}
-          try { return await tryFetch(alts[i]); } catch(e) {}
-        }
-      }
-      throw new Error("Gagal menghubungi AI (proxy & direct gagal)");
+      // last free fallback
+      try { return await tryFetch("https://text.pollinations.ai/" + encodeURIComponent(prompt)); } catch(e3) {}
+      throw new Error("Gagal menghubungi AI. Coba model lain atau ulangi.");
     }
     async function sendAiMessage(){
       if(aiBusy) return;
@@ -13090,28 +13311,42 @@ function openStatusViewer(uid,list,index){
       if(!text) return;
       inp.value = "";
       appendAiBubble("user", text);
-      // identitas whya
       var low = text.toLowerCase().replace(/[?!.]/g," ").trim();
       if(/^(siapa kamu|kamu siapa|who are you|nama kamu|namamu siapa|perkenalkan dirimu)/i.test(low)){
-        appendAiBubble("bot", "Halo! Aku **whya**, asisten AI resmi di aplikasi whya.\\n\\nAku dirancang untuk membantu kamu sehari-hari: menjawab pertanyaan, menjelaskan konsep, membantu menulis, membuat kode (HTML, JavaScript, Python, dan lainnya), menganalisis teks, hingga menghasilkan ide kreatif.\\n\\nKamu bisa ganti model di bawah (Grok, GPT-4, atau DeepSeek), kirim file/foto lewat tombol +, generate gambar, atau pakai mikrofon.\\n\\nTanya apa saja — aku siap bantu dengan gaya yang jelas dan ramah. Yuk mulai!");
+        appendAiBubble("bot", "Halo! Aku **whya**, asisten AI resmi di aplikasi whya.\n\nAku dirancang untuk membantu kamu sehari-hari: menjawab pertanyaan, menjelaskan konsep, membantu menulis, membuat kode (HTML, JavaScript, Python, CSS, dan lainnya), menganalisis teks, hingga menghasilkan ide kreatif.\n\nKamu bisa ganti model di bawah, kirim file/foto lewat tombol +, generate gambar, atau pakai mikrofon.\n\nTanya apa saja — aku siap bantu.");
         return;
       }
       aiBusy = true;
-      appendAiBubble("bot", "Menulis...", { id: "ai-loading" });
+      showAiThinking();
       try{
         var prompt = text;
-        if(/kode|code|html|javascript|python|program/i.test(text)){
-          prompt = text + "\\n\\nJika ada kode, bungkus dengan markdown code fence (```bahasa).";
-        }
-        prompt = "Kamu adalah whya, asisten AI di aplikasi whya. Jawab dalam bahasa pengguna. Tetap ramah dan jelas.\\n\\nPengguna: " + prompt;
+        var codeBoost = "\n\nJika jawaban berisi kode, SELALU bungkus dengan markdown code fence lengkap (```bahasa lalu kode lalu ```). Berikan kode yang lengkap, bersih, siap pakai, dan beri penjelasan singkat. Ahli di HTML, CSS, JavaScript, TypeScript, Python, React, Node.js, SQL, dan bahasa pemrograman umum.";
+        prompt = "Kamu adalah whya, asisten AI ahli coding dan pengetahuan umum di aplikasi whya. Jawab dalam bahasa pengguna. Ramah, jelas, akurat." + codeBoost + "\n\nPengguna: " + prompt;
         var out = await callNexaAi(aiModel, prompt);
-        removeAiLoading();
+        removeAiThinking();
+        out = extractAiText(out);
+        if(!out || out === "[object Object]") out = "Maaf, respons tidak bisa dibaca. Coba lagi atau ganti model.";
         appendAiBubble("bot", String(out));
       }catch(e){
-        removeAiLoading();
+        removeAiThinking();
         appendAiBubble("bot", "Gagal: " + (e.message||e));
       }
       aiBusy = false;
+    }
+    function showAiThinking(){
+      removeAiThinking();
+      var box = document.getElementById("ai-msgs");
+      if(!box) return;
+      var el = document.createElement("div");
+      el.className = "ai-bubble bot ai-thinking";
+      el.id = "ai-loading";
+      el.innerHTML = '<div class="ai-think-row"><span class="ai-dot"></span><span class="ai-dot"></span><span class="ai-dot"></span><span class="ai-think-label">whya sedang berpikir…</span></div>';
+      box.appendChild(el);
+      box.scrollTop = box.scrollHeight;
+    }
+    function removeAiThinking(){
+      var el = document.getElementById("ai-loading");
+      if(el) el.remove();
     }
 
     
@@ -13270,7 +13505,13 @@ function openStatusViewer(uid,list,index){
       <button type="button" onclick="closeAiAssistant()" aria-label="Kembali"><i class="fas fa-arrow-left"></i></button>
       <div class="ai-avatar-mini"><span></span></div>
       <h2>whya<small>Asisten AI</small></h2>
-      <button type="button" onclick="clearAiChat()" aria-label="Hapus"><i class="fas fa-trash"></i></button>
+      <div class="ai-more-wrap">
+        <button type="button" onclick="toggleAiHistoryMenu()" aria-label="Menu"><i class="fas fa-ellipsis-vertical"></i></button>
+        <div class="ai-history-menu" id="ai-history-menu">
+          <button type="button" onclick="clearAiChat();toggleAiHistoryMenu()"><i class="fas fa-broom"></i> Hapus chat ini</button>
+          <button type="button" onclick="aiShowHistory();toggleAiHistoryMenu()"><i class="fas fa-clock-rotate-left"></i> Riwayat</button>
+        </div>
+      </div>
     </div>
     <div class="ai-msgs" id="ai-msgs"></div>
     <div class="ai-composer">
@@ -13287,18 +13528,18 @@ function openStatusViewer(uid,list,index){
           <div class="ai-model-dd">
             <button type="button" class="ai-model-btn-main" onclick="toggleAiModelMenu()">
               <i class="fas fa-bolt bolt"></i>
-              <span id="ai-model-label">Grok</span>
+              <span id="ai-model-label">Free</span>
               <i class="fas fa-chevron-down" style="font-size:10px;opacity:.7"></i>
             </button>
             <div class="ai-model-menu" id="ai-model-menu">
-              <button type="button" data-m="grok" onclick="selectAiModel('grok')">Grok</button>
+              <button type="button" data-m="free" onclick="selectAiModel('free')">Free</button>
               <button type="button" data-m="gpt4" onclick="selectAiModel('gpt4')">GPT-4</button>
               <button type="button" data-m="deepseek" onclick="selectAiModel('deepseek')">DeepSeek</button>
             </div>
           </div>
           <div class="ai-toolbar-right">
             <button type="button" class="ai-mic" onclick="aiVoiceInput()" title="Mikrofon"><i class="fas fa-microphone"></i></button>
-            <button type="button" class="ai-speak" onclick="sendAiMessage()"><i class="fas fa-waveform-lines"></i> Speak</button>
+            <button type="button" class="ai-speak" onclick="sendAiMessage()" title="Kirim"><i class="fas fa-paper-plane"></i></button>
           </div>
         </div>
       </div>
