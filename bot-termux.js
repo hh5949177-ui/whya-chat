@@ -195,9 +195,25 @@ function handleCommand(text) {
   if (low === "/ai") return "Buka asisten AI di app: /aiwhya";
   if (low === "/broadcast") return "Broadcast hanya dari panel admin.";
   if (low === "/stop") return "Matikan: Pengaturan → Jadi Bot → nonaktif. Stop Termux: Ctrl+C.";
-  if (low.indexOf("/iqc ") === 0 || low === "/iqc") return { canvas: "/api/canvas/iqc?text=" + encodeURIComponent(arg || "whya"), label: "IQC" };
+  if (low.indexOf("/iqc ") === 0 || low === "/iqc") return {
+    canvas: "/api/canvas/iqc?text=" + encodeURIComponent(arg || "whya"),
+    label: "IQC",
+    alts: [
+      "/api/canvas/iqc?text=" + encodeURIComponent(arg || "whya"),
+      "/api/canvas/iqc?q=" + encodeURIComponent(arg || "whya"),
+      "/canvas/iqc?text=" + encodeURIComponent(arg || "whya")
+    ]
+  };
   if (low.indexOf("/brat ") === 0 || low === "/brat") return { canvas: "/api/canvas/brat?text=" + encodeURIComponent(arg || "whya"), label: "Brat" };
-  if (low.indexOf("/nokia ") === 0 || low === "/nokia") return { canvas: "/api/canvas/nokia?text=" + encodeURIComponent(arg || "whya"), label: "Nokia" };
+  if (low.indexOf("/nokia ") === 0 || low === "/nokia") return {
+    canvas: "/api/canvas/nokia?text=" + encodeURIComponent(arg || "whya"),
+    label: "Nokia",
+    alts: [
+      "/api/canvas/nokia?text=" + encodeURIComponent(arg || "whya"),
+      "/api/canvas/nokia?q=" + encodeURIComponent(arg || "whya"),
+      "/canvas/nokia?text=" + encodeURIComponent(arg || "whya")
+    ]
+  };
   if (low.indexOf("/quoteimg ") === 0) return { canvas: "/api/canvas/quote?text=" + encodeURIComponent(arg || "whya"), label: "Quote" };
   if (low.indexOf("/ytcomment ") === 0) return { canvas: "/api/canvas/ytcomment?text=" + encodeURIComponent(arg || "whya"), label: "YT" };
   if (low.indexOf("/tweet ") === 0) return { canvas: "/api/canvas/tweet?text=" + encodeURIComponent(arg || "whya"), label: "Tweet" };
@@ -213,64 +229,212 @@ function handleCommand(text) {
   return null;
 }
 
-async function fetchCanvasBuffer(pathQuery) {
-  const target = "https://api.nexadev.my.id" + pathQuery;
-  const proxy = "https://imghd.hh5949177.workers.dev/?url=" + encodeURIComponent(target);
-  for (const u of [target, proxy]) {
-    try {
-      const res = await fetch(u);
-      if (!res.ok) continue;
-      const ct = (res.headers.get("content-type") || "").toLowerCase();
-      if (ct.includes("json") || ct.includes("text/")) {
-        const j = await res.json().catch(() => null);
-        const url = j && (j.url || j.image || j.result);
-        if (url) return { url };
-        continue;
-      }
-      const buf = Buffer.from(await res.arrayBuffer());
-      if (buf.length < 100) continue;
-      return { buffer: buf };
-    } catch (e) {}
-  }
-  return null;
-}
 
-async function uploadBufferCatbox(buf, filename) {
-  // Termux may not have form-data; use raw multipart
-  const boundary = "----Whya" + Date.now();
-  const head = Buffer.from(
-    `--${boundary}\r\nContent-Disposition: form-data; name="reqtype"\r\n\r\nfileupload\r\n` +
-    `--${boundary}\r\nContent-Disposition: form-data; name="fileToUpload"; filename="${filename}"\r\nContent-Type: image/png\r\n\r\n`
-  );
-  const tail = Buffer.from(`\r\n--${boundary}--\r\n`);
-  const body = Buffer.concat([head, buf, tail]);
-  return new Promise((resolve, reject) => {
-    const url = new URL("https://catbox.moe/user/api.php");
-    const req = https.request(
+function httpsGetBuffer(urlStr, redirects) {
+  redirects = redirects == null ? 3 : redirects;
+  return new Promise(function (resolve, reject) {
+    var u;
+    try { u = new URL(urlStr); } catch (e) { return reject(e); }
+    var lib = u.protocol === "http:" ? require("http") : https;
+    var req = lib.request(
       {
-        hostname: url.hostname,
-        path: url.pathname,
-        method: "POST",
+        protocol: u.protocol,
+        hostname: u.hostname,
+        path: u.pathname + u.search,
+        method: "GET",
         headers: {
-          "Content-Type": "multipart/form-data; boundary=" + boundary,
-          "Content-Length": body.length
-        }
+          "User-Agent": "Mozilla/5.0 (Linux; Android 13) WhyaBot/1.2",
+          "Accept": "image/*,application/json,*/*",
+          "Connection": "close"
+        },
+        timeout: 90000
       },
-      (res) => {
-        let d = "";
-        res.on("data", (c) => (d += c));
-        res.on("end", () => {
-          const t = (d || "").trim();
-          if (t.indexOf("http") === 0) resolve(t);
-          else reject(new Error(t || "upload fail"));
+      function (res) {
+        if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location && redirects > 0) {
+          var next = res.headers.location;
+          if (next.indexOf("http") !== 0) {
+            next = u.protocol + "//" + u.host + next;
+          }
+          res.resume();
+          return resolve(httpsGetBuffer(next, redirects - 1));
+        }
+        var chunks = [];
+        res.on("data", function (c) { chunks.push(c); });
+        res.on("end", function () {
+          var buf = Buffer.concat(chunks);
+          resolve({
+            status: res.statusCode,
+            contentType: (res.headers["content-type"] || "").toLowerCase(),
+            buffer: buf
+          });
         });
       }
     );
+    req.on("timeout", function () {
+      req.destroy();
+      reject(new Error("timeout"));
+    });
+    req.on("error", reject);
+    req.end();
+  });
+}
+
+async function sleep(ms) {
+  return new Promise(function (r) { setTimeout(r, ms); });
+}
+
+async function fetchCanvasBuffer(pathQuery) {
+  var target = "https://api.nexadev.my.id" + pathQuery;
+  // 2 format proxy Cloudflare user
+  var CF = "https://imghd.hh5949177.workers.dev";
+  var candidates = [
+    CF + "/?url=" + encodeURIComponent(target),
+    CF + "?url=" + encodeURIComponent(target),
+    CF + "/" + target.replace(/^https?:\/\//, ""),
+    CF + "/proxy?url=" + encodeURIComponent(target),
+    target
+  ];
+  var lastErr = null;
+  for (var i = 0; i < candidates.length; i++) {
+    for (var attempt = 0; attempt < 3; attempt++) {
+      try {
+        if (attempt > 0) await sleep(1000 * attempt);
+        console.log("canvas try", i, "attempt", attempt, candidates[i].slice(0, 90));
+        var r = await httpsGetBuffer(candidates[i]);
+        if (!r || r.status >= 400) {
+          lastErr = new Error("HTTP " + (r && r.status));
+          // 408/520 → coba proxy berikutnya
+          if (r && (r.status === 408 || r.status === 520 || r.status === 502 || r.status === 503)) {
+            break; // next candidate
+          }
+          continue;
+        }
+        var ct = r.contentType || "";
+        var buf = r.buffer || Buffer.alloc(0);
+        if (ct.indexOf("json") >= 0 || (buf.length < 8000 && buf.slice(0, 1).toString() === "{")) {
+          try {
+            var j = JSON.parse(buf.toString("utf8"));
+            var url = j.url || j.image || j.result || j.data || (j.result && j.result.url);
+            if (typeof url === "string" && url.indexOf("http") === 0) {
+              // unduh via CF proxy juga
+              var imgUrls = [
+                CF + "/?url=" + encodeURIComponent(url),
+                CF + "?url=" + encodeURIComponent(url),
+                url
+              ];
+              for (var k = 0; k < imgUrls.length; k++) {
+                try {
+                  var img = await httpsGetBuffer(imgUrls[k]);
+                  if (img && img.status < 400 && img.buffer && img.buffer.length > 200) {
+                    return { buffer: img.buffer, url: url };
+                  }
+                } catch (e) {}
+              }
+              return { url: url };
+            }
+          } catch (e) {
+            lastErr = e;
+          }
+          continue;
+        }
+        if (buf.length > 200) {
+          var isImg =
+            (buf[0] === 0x89 && buf[1] === 0x50) ||
+            (buf[0] === 0xff && buf[1] === 0xd8) ||
+            (buf[0] === 0x47 && buf[1] === 0x49) ||
+            (buf.toString("utf8", 0, 4) === "RIFF") ||
+            ct.indexOf("image/") >= 0 ||
+            ct.indexOf("octet-stream") >= 0;
+          if (isImg) return { buffer: buf };
+        }
+        lastErr = new Error("bukan gambar (" + ct + ", " + buf.length + "b)");
+      } catch (e) {
+        lastErr = e;
+        // ECONNRESET → next attempt / candidate
+      }
+    }
+  }
+  if (lastErr) throw lastErr;
+  return null;
+}
+
+function httpsPostMultipart(urlStr, fields, fileField, filename, fileBuf, contentType) {
+  return new Promise(function (resolve, reject) {
+    var boundary = "----Whya" + Date.now() + Math.random().toString(16).slice(2);
+    var parts = [];
+    Object.keys(fields || {}).forEach(function (k) {
+      parts.push(
+        Buffer.from(
+          "--" + boundary + "\r\nContent-Disposition: form-data; name=\"" + k + "\"\r\n\r\n" +
+          fields[k] + "\r\n"
+        )
+      );
+    });
+    parts.push(
+      Buffer.from(
+        "--" + boundary + "\r\nContent-Disposition: form-data; name=\"" + fileField +
+        "\"; filename=\"" + filename + "\"\r\nContent-Type: " + (contentType || "image/png") + "\r\n\r\n"
+      )
+    );
+    parts.push(fileBuf);
+    parts.push(Buffer.from("\r\n--" + boundary + "--\r\n"));
+    var body = Buffer.concat(parts);
+    var u = new URL(urlStr);
+    var req = https.request(
+      {
+        hostname: u.hostname,
+        path: u.pathname + u.search,
+        method: "POST",
+        headers: {
+          "Content-Type": "multipart/form-data; boundary=" + boundary,
+          "Content-Length": body.length,
+          "User-Agent": "WhyaBot/1.2"
+        },
+        timeout: 60000
+      },
+      function (res) {
+        var d = "";
+        res.on("data", function (c) { d += c; });
+        res.on("end", function () {
+          resolve({ status: res.statusCode, text: (d || "").trim() });
+        });
+      }
+    );
+    req.on("timeout", function () { req.destroy(); reject(new Error("upload timeout")); });
     req.on("error", reject);
     req.write(body);
     req.end();
   });
 }
+
+async function uploadBufferCatbox(buf, filename) {
+  // catbox
+  try {
+    var r = await httpsPostMultipart(
+      "https://catbox.moe/user/api.php",
+      { reqtype: "fileupload" },
+      "fileToUpload",
+      filename || "canvas.png",
+      buf,
+      "image/png"
+    );
+    if (r.text && r.text.indexOf("http") === 0) return r.text;
+  } catch (e) {}
+  // litterbox 1h
+  try {
+    var r2 = await httpsPostMultipart(
+      "https://litterbox.catbox.moe/resources/internals/api.php",
+      { reqtype: "fileupload", time: "24h" },
+      "fileToUpload",
+      filename || "canvas.png",
+      buf,
+      "image/png"
+    );
+    if (r2.text && r2.text.indexOf("http") === 0) return r2.text;
+  } catch (e) {}
+  throw new Error("upload host gagal");
+}
+
 
 
 var seen = new Set();
@@ -334,10 +498,10 @@ async function pollOnce() {
                 timestamp: Date.now(), isBot: true
               });
             } else {
-              await sendText(roomId, "Gagal membuat gambar canvas.");
+              await sendText(roomId, "Gagal membuat gambar canvas. Coba lagi / cek jaringan Termux.");
             }
           } catch (e) {
-            await sendText(roomId, "Gagal canvas: " + (e.message || e));
+            await sendText(roomId, "Gagal canvas: " + (e && e.message ? e.message : e) + " — coba lagi.");
           }
         } else {
           await sendText(roomId, ans);

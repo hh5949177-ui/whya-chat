@@ -13762,42 +13762,54 @@ function openStatusViewer(uid,list,index){
 
     
     var NEXA_PROXY = "https://imghd.hh5949177.workers.dev/?url=";
+    var NEXA_CF = "https://imghd.hh5949177.workers.dev";
     var NEXA_API = "https://api.nexadev.my.id";
     async function fetchNexaCanvas(pathAndQuery){
       var target = NEXA_API + pathAndQuery;
-      var urls = [target, NEXA_PROXY + encodeURIComponent(target)];
+      var CF = "https://imghd.hh5949177.workers.dev";
+      var urls = [
+        CF + "/?url=" + encodeURIComponent(target),
+        CF + "?url=" + encodeURIComponent(target),
+        CF + "/proxy?url=" + encodeURIComponent(target),
+        target
+      ];
       var lastErr = null;
       for(var i=0;i<urls.length;i++){
-        try{
-          var res = await fetch(urls[i], { method:"GET", mode:"cors" });
-          if(!res.ok) throw new Error("HTTP "+res.status);
-          var ct = (res.headers.get("content-type")||"").toLowerCase();
-          if(ct.indexOf("application/json")>=0 || ct.indexOf("text/")>=0){
-            var t = await res.text();
-            try{
-              var j = JSON.parse(t);
-              var u = j.url || j.image || j.result || j.data || (j.result && j.result.url);
-              if(u && String(u).indexOf("http")===0) return { url: u };
-              if(u && String(u).indexOf("data:")===0) return { dataUrl: u };
-            }catch(e){}
-            throw new Error("Respons bukan gambar");
-          }
-          var blob = await res.blob();
-          if(!blob || blob.size < 100) throw new Error("Gambar kosong");
-          var dataUrl = await new Promise(function(resolve, reject){
-            var fr = new FileReader();
-            fr.onload = function(){ resolve(fr.result); };
-            fr.onerror = reject;
-            fr.readAsDataURL(blob);
-          });
-          // coba upload host agar URL pendek
+        for(var attempt=0;attempt<2;attempt++){
           try{
-            var file = new File([blob], "canvas.png", { type: blob.type || "image/png" });
-            var up = await uploadToCatbox(file);
-            if(up) return { url: up };
-          }catch(e){}
-          return { dataUrl: dataUrl };
-        }catch(e){ lastErr = e; }
+            var res = await fetch(urls[i], { method:"GET", mode:"cors", cache:"no-store" });
+            if(!res.ok){
+              lastErr = new Error("HTTP "+res.status);
+              if(res.status===408||res.status===520||res.status===502||res.status===503) break;
+              continue;
+            }
+            var ct = (res.headers.get("content-type")||"").toLowerCase();
+            if(ct.indexOf("application/json")>=0 || ct.indexOf("text/")>=0){
+              var t = await res.text();
+              try{
+                var j = JSON.parse(t);
+                var u = j.url || j.image || j.result || j.data || (j.result && j.result.url);
+                if(u && String(u).indexOf("http")===0) return { url: u };
+                if(u && String(u).indexOf("data:")===0) return { dataUrl: u };
+              }catch(e){}
+              throw new Error("Respons bukan gambar");
+            }
+            var blob = await res.blob();
+            if(!blob || blob.size < 100) throw new Error("Gambar kosong");
+            try{
+              var file = new File([blob], "canvas.png", { type: blob.type || "image/png" });
+              var up = await uploadToCatbox(file);
+              if(up) return { url: up };
+            }catch(e){}
+            var dataUrl = await new Promise(function(resolve, reject){
+              var fr = new FileReader();
+              fr.onload = function(){ resolve(fr.result); };
+              fr.onerror = reject;
+              fr.readAsDataURL(blob);
+            });
+            return { dataUrl: dataUrl };
+          }catch(e){ lastErr = e; }
+        }
       }
       throw lastErr || new Error("Gagal canvas");
     }
