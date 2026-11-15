@@ -8074,10 +8074,31 @@ function saveAccountLocal(user){
     
     /* Bot dihapus */
     var botEngineOn=false;
-    function openBotSettings(){}
+    function openBotSettings(){
+      try{ openFs("fs-bot-settings"); }catch(e){
+        var el=document.getElementById("fs-bot-settings");
+        if(el){ el.classList.add("open"); el.style.display="flex"; }
+      }
+      // langsung isi ID dari currentUser (jangan tunggu network)
+      try{
+        var idEl=document.getElementById("bot-user-id");
+        var accEl=document.getElementById("bot-account-id");
+        var st=document.getElementById("bot-status-label");
+        if(currentUser){
+          if(idEl) idEl.value = currentUser.id || currentUser.uid || "";
+          if(accEl) accEl.value = currentUser.publicId || currentUser.phone || currentUser.id || "";
+          if(st) st.textContent = "Memuat status bot…";
+        } else {
+          if(idEl) idEl.value = "";
+          if(accEl) accEl.value = "";
+          if(st) st.textContent = "Belum login";
+        }
+      }catch(e){}
+      loadBotSettingsUi();
+    }
     function startBotEngine(){}
     function stopBotEngine(){}
-    function refreshBotSettingsUI(){}
+    function refreshBotSettingsUI(){ loadBotSettingsUi(); }
 
     function toggleAttachMenu(){
       var menu=document.getElementById("attach-menu");
@@ -13542,20 +13563,32 @@ function openStatusViewer(uid,list,index){
 
     /* ===== Jadi Bot ===== */
     function loadBotSettingsUi(){
-      if(!currentUser) return;
-      db.ref("botAccounts/"+currentUser.id).once("value").then(function(snap){
+      var idEl = document.getElementById("bot-user-id");
+      var accEl = document.getElementById("bot-account-id");
+      var en = document.getElementById("bot-enabled");
+      var st = document.getElementById("bot-status-label");
+      if(!currentUser){
+        if(st) st.textContent = "Belum login";
+        return;
+      }
+      var uid = currentUser.id || currentUser.uid || "";
+      var pub = currentUser.publicId || currentUser.phone || uid;
+      if(idEl) idEl.value = uid;
+      if(accEl) accEl.value = pub;
+      if(st) st.textContent = "Memuat status bot…";
+      db.ref("botAccounts/"+uid).once("value").then(function(snap){
         var v = snap.val() || {};
-        var en = document.getElementById("bot-enabled");
-        var idEl = document.getElementById("bot-user-id");
-        var accEl = document.getElementById("bot-account-id");
-        var st = document.getElementById("bot-status-label");
-        if(idEl) idEl.value = currentUser.id || "";
-        if(accEl) accEl.value = currentUser.publicId || v.accountId || "";
+        if(idEl) idEl.value = uid;
+        if(accEl) accEl.value = currentUser.publicId || v.accountId || pub;
         if(en) en.checked = !!v.enabled;
         if(st){
-          st.textContent = v.enabled ? "Bot aktif — orang lain bisa /menu di chat denganmu" : "Bot nonaktif";
+          st.textContent = v.enabled
+            ? "Bot aktif — orang lain bisa ketik /menu di chat denganmu"
+            : "Bot nonaktif";
           st.style.color = v.enabled ? "#4ade80" : "rgba(255,255,255,.45)";
         }
+      }).catch(function(){
+        if(st) st.textContent = "Status tidak terbaca (ID tetap ditampilkan)";
       });
     }
     async function saveBotSettings(){
