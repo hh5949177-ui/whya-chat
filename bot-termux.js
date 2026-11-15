@@ -27,46 +27,15 @@ const POLL_MS = 2500;
 // ==============================================================
 
 const MENU_LINES = [
-  "1. /ping — cek bot aktif",
-  "2. /info — info akun bot",
-  "3. /waktu — waktu sekarang (WIB)",
-  "4. /help — bantuan singkat",
-  "5. /quote — kutipan random",
-  "6. /fakta — fakta singkat",
-  "7. /tebak — tebak angka 1-10",
-  "8. /echo <teks> — ulangi pesan",
-  "9. /caps <teks> — huruf besar",
-  "10. /reverse <teks> — balik teks",
-  "11. /hitung <a+b> — kalkulator",
-  "12. /doa — doa singkat",
-  "13. /motivasi — motivasi harian",
-  "14. /cuaca — tips cuaca umum",
-  "15. /translate <teks> — tips terjemah",
-  "16. /kode — contoh kode hello",
-  "17. /html — snippet HTML",
-  "18. /js — snippet JavaScript",
-  "19. /python — snippet Python",
-  "20. /json — contoh JSON",
-  "21. /password — generate password",
-  "22. /uuid — id acak",
-  "23. /base64 <teks> — encode base64",
-  "24. /waktuindo — zona WIB",
-  "25. /owner — info owner",
-  "26. /rules — aturan bot",
-  "27. /fitur — daftar fitur pendek",
-  "28. /status — status bot online",
-  "29. /versi — versi bot",
-  "30. /random — angka acak 0-999",
-  "31. /koin — lempar koin",
-  "32. /dadu — lempar dadu 1-6",
-  "33. /warna — warna random",
-  "34. /nama — ide nama random",
-  "35. /menu — tampilkan menu ini",
-  "36. /clear — info hapus chat",
-  "37. /link — link app whya",
-  "38. /ai — arahkan ke asisten AI",
-  "39. /broadcast — info broadcast",
-  "40. /stop — cara matikan bot di app"
+  "Menu Bot WhyA Chat",
+  "------------------------------",
+  "1 /menu  2 /ping  3 /info  4 /waktu  5 /help",
+  "6 /iqc <teks>  7 /brat <teks>  8 /nokia <teks>",
+  "9 /fakeff <nama>  10 /toqr <url>  11 /hd <url>",
+  "12 /stc <url gambar>  13 /ttdown <url tiktok>",
+  "14 /ytserc <kata kunci>  15 /status  16 /versi",
+  "------------------------------",
+  "Contoh: /nokia semangat pagi"
 ];
 
 const QUOTES = [
@@ -196,34 +165,54 @@ function handleCommand(text) {
   if (low === "/broadcast") return "Broadcast hanya dari panel admin.";
   if (low === "/stop") return "Matikan: Pengaturan → Jadi Bot → nonaktif. Stop Termux: Ctrl+C.";
   if (low.indexOf("/iqc ") === 0 || low === "/iqc") return {
-    canvas: "/api/canvas/iqc?text=" + encodeURIComponent(arg || "whya"),
-    label: "IQC",
-    alts: [
-      "/api/canvas/iqc?text=" + encodeURIComponent(arg || "whya"),
-      "/api/canvas/iqc?q=" + encodeURIComponent(arg || "whya"),
-      "/canvas/iqc?text=" + encodeURIComponent(arg || "whya")
-    ]
+    fullUrl: "https://api.nexadev.my.id/api/canvas/iqc?text=" + encodeURIComponent(arg || "whya"),
+    label: "IQC"
   };
-  if (low.indexOf("/brat ") === 0 || low === "/brat") return { canvas: "/api/canvas/brat?text=" + encodeURIComponent(arg || "whya"), label: "Brat" };
-  if (low.indexOf("/nokia ") === 0 || low === "/nokia") return {
-    canvas: "/api/canvas/nokia?text=" + encodeURIComponent(arg || "whya"),
-    label: "Nokia",
-    alts: [
-      "/api/canvas/nokia?text=" + encodeURIComponent(arg || "whya"),
-      "/api/canvas/nokia?q=" + encodeURIComponent(arg || "whya"),
-      "/canvas/nokia?text=" + encodeURIComponent(arg || "whya")
-    ]
+  if (low.indexOf("/brat ") === 0 || low === "/brat") return {
+    fullUrl: "https://api.nexadev.my.id/api/canvas/brat?text=" + encodeURIComponent(arg || "hai"),
+    label: "Brat"
   };
-  if (low.indexOf("/quoteimg ") === 0) return { canvas: "/api/canvas/quote?text=" + encodeURIComponent(arg || "whya"), label: "Quote" };
-  if (low.indexOf("/ytcomment ") === 0) return { canvas: "/api/canvas/ytcomment?text=" + encodeURIComponent(arg || "whya"), label: "YT" };
-  if (low.indexOf("/tweet ") === 0) return { canvas: "/api/canvas/tweet?text=" + encodeURIComponent(arg || "whya"), label: "Tweet" };
+  if (low.indexOf("/nokia ") === 0 || low === "/nokia") {
+    var n = new Date();
+    var dd = String(n.getDate()).padStart(2,"0");
+    var mm = String(n.getMonth()+1).padStart(2,"0");
+    var yyyy = n.getFullYear();
+    var hh = String(n.getHours()).padStart(2,"0");
+    var mi = String(n.getMinutes()).padStart(2,"0");
+    return {
+      fullUrl: "https://apii.nexadev.my.id/nokia?text=" + encodeURIComponent(arg || "kata-kata hari ini") +
+        "&from=" + encodeURIComponent(BOT_NAME || "whya") +
+        "&date=" + encodeURIComponent(dd + "/" + mm + "/" + yyyy) +
+        "&time=" + encodeURIComponent(hh + ":" + mi) +
+        "&title=" + encodeURIComponent("whya"),
+      label: "Nokia"
+    };
+  }
   if (low.indexOf("/fakeff ") === 0 || low === "/fakeff" || low.indexOf("/ff ") === 0 || low === "/ff") {
-    return { canvas: "/api/canvas/fakeff?name=" + encodeURIComponent(arg || "Player"), label: "Fake FF", alts: [
-      "/api/canvas/fakeff?name=" + encodeURIComponent(arg || "Player"),
-      "/api/canvas/ff?name=" + encodeURIComponent(arg || "Player"),
-      "/api/canvas/fakeface?name=" + encodeURIComponent(arg || "Player"),
-      "/api/canvas/freefire?name=" + encodeURIComponent(arg || "Player")
-    ]};
+    return {
+      fullUrl: "https://apii.nexadev.my.id/fakeff?usn=" + encodeURIComponent(arg || "whya"),
+      label: "Fake FF"
+    };
+  }
+  if (low.indexOf("/toqr ") === 0 || low === "/toqr") {
+    if (!arg) return "Format: /toqr <url>";
+    return { fullUrl: "https://api.nexadev.my.id/tools/toqr?url=" + encodeURIComponent(arg), label: "QR" };
+  }
+  if (low.indexOf("/hd ") === 0 || low === "/hd") {
+    if (!arg) return "Format: /hd <url gambar>";
+    return { fullUrl: "https://api.nexadev.my.id/api/upscale?url=" + encodeURIComponent(arg), label: "HD" };
+  }
+  if (low.indexOf("/stc ") === 0 || low === "/stc" || low.indexOf("/sticker ") === 0) {
+    if (!arg) return "Format: /stc <url gambar>";
+    return { fullUrl: arg, label: "Stiker", asSticker: true };
+  }
+  if (low.indexOf("/ttdown ") === 0 || low === "/ttdown" || low.indexOf("/tiktok ") === 0) {
+    if (!arg) return "Format: /ttdown <url tiktok>";
+    return { jsonUrl: "https://api.nexadev.my.id/api/snaptik/?url=" + encodeURIComponent(arg), label: "TikTok", kind: "tiktok" };
+  }
+  if (low.indexOf("/ytserc ") === 0 || low === "/ytserc" || low.indexOf("/ytsearch ") === 0) {
+    if (!arg) return "Format: /ytserc <kata kunci>";
+    return { jsonUrl: "https://api.nexadev.my.id/tools/ytsearch?q=" + encodeURIComponent(arg), label: "YT Search", kind: "ytsearch", query: arg };
   }
   if (low.charAt(0) === "/") return "Perintah tidak dikenal. Ketik /menu";
   return null;
@@ -279,12 +268,26 @@ function httpsGetBuffer(urlStr, redirects) {
   });
 }
 
+async function fetchJsonUrl(url) {
+  const CF = "https://imghd.hh5949177.workers.dev";
+  const list = [CF + "/?url=" + encodeURIComponent(url), CF + "?url=" + encodeURIComponent(url), url];
+  let last = null;
+  for (const u of list) {
+    try {
+      const r = await httpsGetBuffer(u);
+      if (!r || r.status >= 400) { last = new Error("HTTP " + (r && r.status)); continue; }
+      return JSON.parse(r.buffer.toString("utf8"));
+    } catch (e) { last = e; }
+  }
+  throw last || new Error("json fail");
+}
+
 async function sleep(ms) {
   return new Promise(function (r) { setTimeout(r, ms); });
 }
 
 async function fetchCanvasBuffer(pathQuery) {
-  var target = "https://api.nexadev.my.id" + pathQuery;
+  var target = (pathQuery && pathQuery.indexOf("http") === 0) ? pathQuery : ("https://api.nexadev.my.id" + pathQuery);
   // 2 format proxy Cloudflare user
   var CF = "https://imghd.hh5949177.workers.dev";
   var candidates = [
@@ -474,27 +477,53 @@ async function pollOnce() {
       var ans = handleCommand(m.text || "");
       if (ans) {
         console.log("[" + roomId + "] <=", String(m.text || "").slice(0, 60));
-        if (typeof ans === "object" && ans.canvas) {
-          await sendText(roomId, "🎨 Membuat " + (ans.label || "canvas") + "…");
+        if (typeof ans === "object" && ans.jsonUrl) {
+          await sendText(roomId, (ans.label || "Proses") + "…");
           try {
-            let img = await fetchCanvasBuffer(ans.canvas);
+            const j = await fetchJsonUrl(ans.jsonUrl);
+            if (ans.kind === "tiktok") {
+              const video = j && (j.url || j.download || (j.data && (j.data.hdplay || j.data.play || j.data.wmplay || j.data.url)));
+              const title = (j && (j.title || (j.data && j.data.title))) || "TikTok";
+              if (video) {
+                await dbPost("chats/" + roomId, { type: "video", mediaUrl: video, url: video, text: String(title).slice(0,120), senderId: BOT_USER_ID, senderName: BOT_NAME, timestamp: Date.now(), isBot: true });
+              } else await sendText(roomId, "Gagal ambil video TikTok.");
+            } else if (ans.kind === "ytsearch") {
+              const list = (j && (j.result || j.results || j.data || j.items)) || [];
+              let lines = ["Hasil YouTube: " + (ans.query || ""), ""];
+              (Array.isArray(list) ? list : []).slice(0, 8).forEach((it, idx) => {
+                const title = it.title || it.name || "Video";
+                const url = it.url || it.link || (it.id ? ("https://youtu.be/" + it.id) : "");
+                lines.push((idx + 1) + ". " + title + (url ? ("\n" + url) : ""));
+              });
+              await sendText(roomId, lines.join("\n") || "Tidak ada hasil.");
+            } else {
+              await sendText(roomId, JSON.stringify(j).slice(0, 1500));
+            }
+          } catch (e) {
+            await sendText(roomId, "Gagal: " + (e.message || e));
+          }
+        } else if (typeof ans === "object" && (ans.canvas || ans.fullUrl)) {
+          await sendText(roomId, "Membuat " + (ans.label || "canvas") + "…");
+          try {
+            let img = await fetchCanvasBuffer(ans.fullUrl || ans.canvas);
             if (!img && ans.alts) {
               for (const p of ans.alts) {
                 img = await fetchCanvasBuffer(p);
                 if (img) break;
               }
             }
+            const msgType = ans.asSticker ? "sticker" : "image";
             if (img && img.url) {
               await dbPost("chats/" + roomId, {
-                type: "image", mediaUrl: img.url, imageUrl: img.url, url: img.url,
-                text: ans.label || "", senderId: BOT_USER_ID, senderName: BOT_NAME,
+                type: msgType, mediaUrl: img.url, imageUrl: img.url, url: img.url,
+                text: ans.asSticker ? "" : (ans.label || ""), senderId: BOT_USER_ID, senderName: BOT_NAME,
                 timestamp: Date.now(), isBot: true
               });
             } else if (img && img.buffer) {
               const up = await uploadBufferCatbox(img.buffer, "canvas.png");
               await dbPost("chats/" + roomId, {
-                type: "image", mediaUrl: up, imageUrl: up, url: up,
-                text: ans.label || "", senderId: BOT_USER_ID, senderName: BOT_NAME,
+                type: msgType, mediaUrl: up, imageUrl: up, url: up,
+                text: ans.asSticker ? "" : (ans.label || ""), senderId: BOT_USER_ID, senderName: BOT_NAME,
                 timestamp: Date.now(), isBot: true
               });
             } else {

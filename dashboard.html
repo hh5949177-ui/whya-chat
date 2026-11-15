@@ -3924,7 +3924,33 @@
       box-shadow: 0 5px 0 #27272a, inset 0 1px 0 #fff;
     }
 
+  
+    .bot-feature-banner {
+      position: relative;
+      width: 100%;
+      max-height: 120px;
+      overflow: hidden;
+      border-bottom: 1px solid rgba(255,255,255,.08);
+      background: #000;
+      flex-shrink: 0;
+    }
+    .bot-feature-banner img {
+      width: 100%;
+      height: 120px;
+      object-fit: cover;
+      object-position: center top;
+      display: block;
+    }
+    .bot-feature-banner .bot-banner-x {
+      position: absolute; top: 8px; right: 8px;
+      width: 28px; height: 28px; border-radius: 50%;
+      border: none; background: rgba(0,0,0,.55); color: #fff;
+      font-size: 18px; line-height: 1; cursor: pointer;
+      z-index: 2;
+    }
+    body.in-chat .bot-feature-banner.show { display: block !important; }
   </style>
+
 
 </head>
 <body>
@@ -4271,6 +4297,10 @@
 
     <!-- ACTIVE CHAT OVERLAY -->
     <div id="active-chat">
+      <div id="bot-feature-banner" class="bot-feature-banner" style="display:none">
+        <img src="/bot-banner.png" alt="WhyA Chat" />
+        <button type="button" class="bot-banner-x" onclick="hideBotFeatureBanner()" aria-label="Tutup">&times;</button>
+      </div>
       <div class="chat-header">
         <button class="icon-btn" onclick="closeActiveChat()"><i class="fas fa-arrow-left"></i></button>
         <div class="avatar" id="chat-avatar" style="width:40px;height:40px;font-size:15px;cursor:pointer" onclick="openChatProfileSheet()">G</div>
@@ -7400,6 +7430,7 @@ function saveAccountLocal(user){
       }
     }
     function closeActiveChat(){
+      try{ hideBotFeatureBanner(); }catch(e){}
       var chatEl = document.getElementById("active-chat");
       if(chatEl){
         chatEl.classList.add("closing");
@@ -13707,60 +13738,40 @@ function openStatusViewer(uid,list,index){
     
     
     var BOT_MENU_TEXT =
-      "🤖 *Menu Bot whya*\n" +
-      "────────────────\n" +
-      "1. /ping — cek bot aktif\n" +
-      "2. /info — info akun bot\n" +
-      "3. /waktu — waktu sekarang\n" +
-      "4. /help — bantuan\n" +
-      "5. /quote — kutipan\n" +
-      "6. /fakta — fakta singkat\n" +
-      "7. /tebak — tebak angka\n" +
-      "8. /echo <teks> — ulangi\n" +
-      "9. /caps <teks> — huruf besar\n" +
-      "10. /reverse <teks> — balik teks\n" +
-      "11. /hitung <a+b> — kalkulator\n" +
-      "12. /doa — doa singkat\n" +
-      "13. /motivasi — motivasi\n" +
-      "14. /cuaca — tips cuaca\n" +
-      "15. /translate <teks>\n" +
-      "16. /kode — contoh kode\n" +
-      "17. /html — snippet HTML\n" +
-      "18. /js — snippet JS\n" +
-      "19. /python — snippet Python\n" +
-      "20. /json — contoh JSON\n" +
-      "21. /password — buat password\n" +
-      "22. /uuid — id acak\n" +
-      "23. /base64 <teks>\n" +
-      "24. /waktuindo — zona WIB\n" +
-      "25. /owner — info owner\n" +
-      "26. /rules — aturan\n" +
-      "27. /fitur — fitur utama\n" +
-      "28. /status — status bot\n" +
-      "29. /versi — versi bot\n" +
-      "30. /random — angka acak\n" +
-      "31. /koin — lempar koin\n" +
-      "32. /dadu — lempar dadu\n" +
-      "33. /warna — warna random\n" +
-      "34. /nama — ide nama\n" +
-      "35. /menu — tampilkan menu ini\n" +
-      "36. /clear — info hapus chat\n" +
-      "37. /link — link app\n" +
-      "38. /ai — asisten AI\n" +
-      "39. /broadcast — info admin\n" +
-      "40. /stop — matikan bot\n" +
-      "41. /iqc <teks> — gambar IQC\n" +
-      "42. /brat <teks> — canvas brat\n" +
-      "43. /nokia <teks> — canvas nokia\n" +
-      "44. /quoteimg <teks> — quote image\n" +
-      "45. /ytcomment <teks> — YT comment\n" +
-      "46. /tweet <teks> — tweet canvas\n" +
-      "47. /fakeff <nama> — Fake Free Fire\n" +
-      "48. /ff <nama> — Fake FF (alias)\n" +
-      "────────────────\n" +
-      "Ketik perintah, contoh: /ping";
+      "Menu Bot WhyA Chat\n" +
+      "------------------------------\n" +
+      "Umum\n" +
+      "1. /menu — daftar fitur\n" +
+      "2. /ping — cek bot\n" +
+      "3. /info — info bot\n" +
+      "4. /waktu — waktu sekarang\n" +
+      "5. /help — bantuan\n" +
+      "6. /status — status bot\n" +
+      "7. /versi — versi\n" +
+      "------------------------------\n" +
+      "Canvas / Gambar\n" +
+      "8. /iqc <teks>\n" +
+      "9. /brat <teks>\n" +
+      "10. /nokia <teks>\n" +
+      "11. /fakeff <nama>  (alias /ff)\n" +
+      "12. /toqr <url>\n" +
+      "13. /hd <url gambar>\n" +
+      "14. /stc <url gambar> — jadi stiker\n" +
+      "------------------------------\n" +
+      "Downloader / Tools\n" +
+      "15. /ttdown <url tiktok>\n" +
+      "16. /ytserc <kata kunci>\n" +
+      "------------------------------\n" +
+      "Hiburan\n" +
+      "17. /quote\n" +
+      "18. /koin\n" +
+      "19. /dadu\n" +
+      "20. /password\n" +
+      "21. /hitung <1+2>\n" +
+      "22. /echo <teks>\n" +
+      "------------------------------\n" +
+      "Contoh: /nokia semangat pagi";
 
-    
     var NEXA_PROXY = "https://imghd.hh5949177.workers.dev/?url=";
     var NEXA_CF = "https://imghd.hh5949177.workers.dev";
     var NEXA_API = "https://api.nexadev.my.id";
@@ -13831,46 +13842,105 @@ function openStatusViewer(uid,list,index){
       var t = String(cmd||"").trim();
       var low = t.toLowerCase();
       var arg = t.split(/\s+/).slice(1).join(" ").trim();
+      var botId = bot.userId || bot.accountId || currentChatPeerId;
+      var botName = bot.name || "Bot";
+      function nowParts(){
+        var n = new Date();
+        var dd = String(n.getDate()).padStart(2,"0");
+        var mm = String(n.getMonth()+1).padStart(2,"0");
+        var yyyy = n.getFullYear();
+        var hh = String(n.getHours()).padStart(2,"0");
+        var mi = String(n.getMinutes()).padStart(2,"0");
+        return { date: dd+"/"+mm+"/"+yyyy, time: hh+":"+mi };
+      }
       var map = [
-        { re: /^\/iqc\b/i, path: function(a){ return "/api/canvas/iqc?text="+encodeURIComponent(a||"whya"); }, need: true, name: "IQC" },
-        { re: /^\/brat\b/i, path: function(a){ return "/api/canvas/brat?text="+encodeURIComponent(a||"whya"); }, need: true, name: "Brat" },
-        { re: /^\/nokia\b/i, path: function(a){ return "/api/canvas/nokia?text="+encodeURIComponent(a||"whya"); }, need: true, name: "Nokia" },
-        { re: /^\/quoteimg\b/i, path: function(a){ return "/api/canvas/quote?text="+encodeURIComponent(a||"whya"); }, need: true, name: "Quote" },
-        { re: /^\/ytcomment\b/i, path: function(a){ return "/api/canvas/ytcomment?text="+encodeURIComponent(a||"whya"); }, need: true, name: "YT Comment" },
-        { re: /^\/tweet\b/i, path: function(a){ return "/api/canvas/tweet?text="+encodeURIComponent(a||"whya"); }, need: true, name: "Tweet" },
-        { re: /^\/blur\b/i, path: function(a){ return "/api/canvas/blur?text="+encodeURIComponent(a||"whya"); }, need: false, name: "Blur" },
-        { re: /^\/fakeff\b/i, path: function(a){ return "/api/canvas/fakeff?name="+encodeURIComponent(a||"Player")+"&text="+encodeURIComponent(a||"Player"); }, need: true, name: "Fake FF" },
-        { re: /^\/ff\b/i, path: function(a){ return "/api/canvas/fakeff?name="+encodeURIComponent(a||"Player")+"&text="+encodeURIComponent(a||"Player"); }, need: true, name: "Fake FF" }
+        { re: /^\/iqc\b/i, abs: false, path: function(a){ return "/api/canvas/iqc?text="+encodeURIComponent(a||"whya"); }, host: "https://api.nexadev.my.id", need: true, name: "IQC", binary: true },
+        { re: /^\/brat\b/i, abs: false, path: function(a){ return "/api/canvas/brat?text="+encodeURIComponent(a||"hai"); }, host: "https://api.nexadev.my.id", need: true, name: "Brat", binary: true },
+        { re: /^\/nokia\b/i, abs: true, path: function(a){
+            var p = nowParts();
+            return "https://apii.nexadev.my.id/nokia?text="+encodeURIComponent(a||"kata-kata hari ini")+"&from="+encodeURIComponent(botName||"whya")+"&date="+encodeURIComponent(p.date)+"&time="+encodeURIComponent(p.time)+"&title="+encodeURIComponent("whya");
+          }, need: true, name: "Nokia", binary: true },
+        { re: /^\/fakeff\b/i, abs: true, path: function(a){ return "https://apii.nexadev.my.id/fakeff?usn="+encodeURIComponent(a||"whya"); }, need: true, name: "Fake FF", binary: true },
+        { re: /^\/ff\b/i, abs: true, path: function(a){ return "https://apii.nexadev.my.id/fakeff?usn="+encodeURIComponent(a||"whya"); }, need: true, name: "Fake FF", binary: true },
+        { re: /^\/toqr\b/i, abs: true, path: function(a){ return "https://api.nexadev.my.id/tools/toqr?url="+encodeURIComponent(a||""); }, need: true, name: "QR", binary: true },
+        { re: /^\/hd\b/i, abs: true, path: function(a){ return "https://api.nexadev.my.id/api/upscale?url="+encodeURIComponent(a||""); }, need: true, name: "HD", binary: true },
+        { re: /^\/quoteimg\b/i, abs: false, path: function(a){ return "/api/canvas/quote?text="+encodeURIComponent(a||"whya"); }, host: "https://api.nexadev.my.id", need: true, name: "Quote", binary: true },
+        { re: /^\/ytcomment\b/i, abs: false, path: function(a){ return "/api/canvas/ytcomment?text="+encodeURIComponent(a||"whya"); }, host: "https://api.nexadev.my.id", need: true, name: "YT Comment", binary: true },
+        { re: /^\/tweet\b/i, abs: false, path: function(a){ return "/api/canvas/tweet?text="+encodeURIComponent(a||"whya"); }, host: "https://api.nexadev.my.id", need: true, name: "Tweet", binary: true }
       ];
+      // JSON tools
+      if(/^\/ttdown\b/i.test(low) || /^\/tiktok\b/i.test(low)){
+        if(!arg) return { text: "Format: /ttdown <url tiktok>" };
+        try{
+          showBotFeatureBanner();
+          await db.ref("chats/"+roomId).push({ type:"text", text: "Mengunduh TikTok…", senderId: botId, senderName: botName, timestamp: Date.now(), isBot:true });
+          var data = await fetchNexaJson("https://api.nexadev.my.id/api/snaptik/?url="+encodeURIComponent(arg));
+          var video = (data && (data.url || data.download || data.video || (data.data && (data.data.url||data.data.play||data.data.video))));
+          if(!video && data && data.data){
+            video = data.data.hdplay || data.data.play || data.data.wmplay;
+          }
+          var title = (data && (data.title || (data.data && data.data.title))) || "TikTok";
+          if(video){
+            await db.ref("chats/"+roomId).push({
+              type: "video", mediaUrl: video, url: video, text: String(title).slice(0,120),
+              senderId: botId, senderName: botName, timestamp: Date.now(), isBot: true
+            });
+            return { ok:true };
+          }
+          return { text: "Gagal ambil video TikTok." };
+        }catch(e){ return { text: "Gagal TikTok: "+(e.message||e) }; }
+      }
+      if(/^\/ytserc\b/i.test(low) || /^\/ytsearch\b/i.test(low)){
+        if(!arg) return { text: "Format: /ytserc <kata kunci>" };
+        try{
+          showBotFeatureBanner();
+          await db.ref("chats/"+roomId).push({ type:"text", text: "Mencari YouTube…", senderId: botId, senderName: botName, timestamp: Date.now(), isBot:true });
+          var data = await fetchNexaJson("https://api.nexadev.my.id/tools/ytsearch?q="+encodeURIComponent(arg));
+          var list = (data && (data.result || data.results || data.data || data.items)) || [];
+          if(!Array.isArray(list)) list = [];
+          if(!list.length) return { text: "Tidak ada hasil untuk: "+arg };
+          var lines = ["Hasil YouTube untuk: "+arg, ""];
+          list.slice(0,8).forEach(function(it, idx){
+            var title = it.title || it.name || "Video";
+            var url = it.url || it.link || (it.id ? ("https://youtu.be/"+it.id) : "");
+            var ch = it.channel || it.author || "";
+            lines.push((idx+1)+". "+title+(ch?(" — "+ch):"")+(url?("\n"+url):""));
+          });
+          return { text: lines.join("\n") };
+        }catch(e){ return { text: "Gagal ytsearch: "+(e.message||e) }; }
+      }
+      if(/^\/stc\b/i.test(low) || /^\/sticker\b/i.test(low)){
+        if(!arg) return { text: "Format: /stc <url gambar>\nContoh: /stc https://..." };
+        try{
+          showBotFeatureBanner();
+          await db.ref("chats/"+roomId).push({ type:"text", text: "Membuat stiker…", senderId: botId, senderName: botName, timestamp: Date.now(), isBot:true });
+          // unduh gambar lalu kirim sebagai stiker
+          var img = await fetchNexaCanvasAbs(arg.indexOf("http")===0 ? arg : ("https://"+arg));
+          var src = img.url || img.dataUrl;
+          if(!src) return { text: "Gagal ambil gambar untuk stiker." };
+          await db.ref("chats/"+roomId).push({
+            type: "sticker", mediaUrl: src, imageUrl: src, url: src,
+            senderId: botId, senderName: botName, timestamp: Date.now(), isBot: true
+          });
+          return { ok:true };
+        }catch(e){ return { text: "Gagal stiker: "+(e.message||e) }; }
+      }
       for(var i=0;i<map.length;i++){
         if(map[i].re.test(low)){
-          if(map[i].need && !arg) return { text: "Format: "+low.split(" ")[0]+" <teks>" };
+          if(map[i].need && !arg && map[i].name!=="IQC"){
+            // iqc boleh default
+          }
+          if(map[i].need && !arg) return { text: "Format: "+low.split(/\s+/)[0]+" <teks/url>" };
           try{
-            // kirim status dulu
+            showBotFeatureBanner();
             await db.ref("chats/"+roomId).push({
-              type:"text", text: "🎨 Membuat "+map[i].name+"…", senderId: bot.userId||bot.accountId, senderName: bot.name||"Bot", timestamp: Date.now(), isBot:true
+              type:"text", text: "Membuat "+map[i].name+"…", senderId: botId, senderName: botName, timestamp: Date.now(), isBot:true
             });
-            var path = map[i].path(arg);
-            var img = null;
-            try { img = await fetchNexaCanvas(path); } catch(e1) {
-              // fallback endpoint names untuk Fake FF
-              if(/fakeff|\/ff\b/i.test(map[i].re)){
-                var alts = [
-                  "/api/canvas/fakeff?name="+encodeURIComponent(arg||"Player"),
-                  "/api/canvas/fakeface?name="+encodeURIComponent(arg||"Player"),
-                  "/api/canvas/ff?name="+encodeURIComponent(arg||"Player"),
-                  "/api/canvas/fake-ff?text="+encodeURIComponent(arg||"Player"),
-                  "/api/canvas/freefire?name="+encodeURIComponent(arg||"Player")
-                ];
-                for(var ai=0;ai<alts.length && !img;ai++){
-                  try { img = await fetchNexaCanvas(alts[ai]); } catch(e2) {}
-                }
-              }
-              if(!img) throw e1;
-            }
+            var fullUrl = map[i].abs ? map[i].path(arg) : ((map[i].host||NEXA_API)+map[i].path(arg));
+            var img = await fetchNexaCanvasAbs(fullUrl);
             var src = img && (img.url || img.dataUrl);
-            if(!src) return { text: "Gagal membuat gambar." };
-            await botSendImage(roomId, bot.userId||currentChatPeerId, bot.name||"Bot", src, map[i].name+": "+arg);
+            if(!src) return { text: "Gagal membuat gambar "+map[i].name+"." };
+            await botSendImage(roomId, botId, botName, src, map[i].name+(arg?(": "+arg):""));
             return { ok: true };
           }catch(e){
             return { text: "Gagal "+map[i].name+": "+(e.message||e) };
@@ -13878,6 +13948,76 @@ function openStatusViewer(uid,list,index){
         }
       }
       return null;
+    }
+    function showBotFeatureBanner(){
+      try{
+        var b = document.getElementById("bot-feature-banner");
+        if(b){ b.classList.add("show"); b.style.display = "block"; }
+      }catch(e){}
+    }
+    function hideBotFeatureBanner(){
+      try{
+        var b = document.getElementById("bot-feature-banner");
+        if(b){ b.classList.remove("show"); b.style.display = "none"; }
+      }catch(e){}
+    }
+    async function fetchNexaJson(url){
+      var CF = "https://imghd.hh5949177.workers.dev";
+      var urls = [CF+"/?url="+encodeURIComponent(url), CF+"?url="+encodeURIComponent(url), url];
+      var lastErr=null;
+      for(var i=0;i<urls.length;i++){
+        try{
+          var res = await fetch(urls[i], { cache:"no-store" });
+          if(!res.ok) throw new Error("HTTP "+res.status);
+          return await res.json();
+        }catch(e){ lastErr=e; }
+      }
+      throw lastErr||new Error("JSON gagal");
+    }
+    async function fetchNexaCanvasAbs(fullUrl){
+      var CF = "https://imghd.hh5949177.workers.dev";
+      var urls = [
+        CF + "/?url=" + encodeURIComponent(fullUrl),
+        CF + "?url=" + encodeURIComponent(fullUrl),
+        fullUrl
+      ];
+      var lastErr = null;
+      for(var i=0;i<urls.length;i++){
+        for(var attempt=0;attempt<2;attempt++){
+          try{
+            var res = await fetch(urls[i], { method:"GET", mode:"cors", cache:"no-store" });
+            if(!res.ok){ lastErr = new Error("HTTP "+res.status); continue; }
+            var ct = (res.headers.get("content-type")||"").toLowerCase();
+            if(ct.indexOf("json")>=0 || ct.indexOf("text/")>=0){
+              var t = await res.text();
+              try{
+                var j = JSON.parse(t);
+                var u = j.url || j.image || j.result || j.data || (j.result && j.result.url);
+                if(u && String(u).indexOf("http")===0) return { url: u };
+                if(u && String(u).indexOf("data:")===0) return { dataUrl: u };
+              }catch(e){}
+              throw new Error("Respons bukan gambar");
+            }
+            var blob = await res.blob();
+            if(!blob || blob.size < 100) throw new Error("Gambar kosong");
+            try{
+              if(typeof uploadToCatbox==="function"){
+                var file = new File([blob], "canvas.png", { type: blob.type || "image/png" });
+                var up = await uploadToCatbox(file);
+                if(up) return { url: up };
+              }
+            }catch(e){}
+            var dataUrl = await new Promise(function(resolve, reject){
+              var fr = new FileReader();
+              fr.onload = function(){ resolve(fr.result); };
+              fr.onerror = reject;
+              fr.readAsDataURL(blob);
+            });
+            return { dataUrl: dataUrl };
+          }catch(e){ lastErr = e; }
+        }
+      }
+      throw lastErr || new Error("Gagal canvas");
     }
 
     function botUnescape(s){

@@ -4,8 +4,8 @@
  */
 (function (global) {
   // Isi default di sini, atau set window.WHYA_SUPABASE = { url, anonKey } sebelum script ini
-  var SUPABASE_URL = "https://wjmxiedkyklmmoxcxjlw.supabase.co";
-  var SUPABASE_ANON_KEY = "sb_publishable_TMNireG8PZENCgtHdh-HQA_BkAlGAle";
+  var SUPABASE_URL = "https://YOUR_PROJECT_REF.supabase.co";
+  var SUPABASE_ANON_KEY = "YOUR_ANON_PUBLIC_KEY";
 
   function resolveConfig() {
     try {
