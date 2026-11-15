@@ -8,6 +8,14 @@
       "destination": "/notif.html"
     },
     {
+      "source": "/admin",
+      "destination": "/admin.html"
+    },
+    {
+      "source": "/login",
+      "destination": "/login.html"
+    },
+    {
       "source": "/dashboard",
       "destination": "/dashboard.html"
     },
@@ -20,12 +28,8 @@
       "destination": "/dashboard.html"
     },
     {
-      "source": "/admin",
-      "destination": "/admin.html"
-    },
-    {
-      "source": "/login",
-      "destination": "/login.html"
+      "source": "/season/:path*",
+      "destination": "/dashboard.html"
     }
   ],
   "headers": [

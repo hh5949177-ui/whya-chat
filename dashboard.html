@@ -3847,6 +3847,8 @@
   
     /* Global app notification banner */
     #app-notif-banner {
+      position: relative;
+      z-index: 50;
       display: none;
       align-items: center;
       gap: 10px;
@@ -3921,12 +3923,11 @@
 
 </head>
 <body>
+</div>
+          <button type="button" class="x" onclick="dismissAppNotifBanner()" aria-label="Tutup"><i class="fas fa-xmark"></i></button>
+        </div>
+        
 
-  <div id="app-notif-banner">
-    <span class="bell"><i class="fas fa-bell"></i></span>
-    <div class="marquee-wrap"><div class="marquee" id="app-notif-marquee"></div></div>
-    <button type="button" class="x" onclick="dismissAppNotifBanner()" aria-label="Tutup"><i class="fas fa-xmark"></i></button>
-  </div>
   <div id="app-notif-modal">
     <div class="sheet">
       <img id="app-notif-modal-img" alt="" />
@@ -4081,7 +4082,13 @@
         <button class="icon-btn" onclick="openCreateGroup()" title="Buat grup"><i class="fas fa-users"></i></button>
         <button class="icon-btn" onclick="openAddFriend()" title="Tambah teman"><i class="fas fa-user-plus"></i></button>
       </div>
-      <div class="search-box"><div class="search-wrapper"><i class="fas fa-search"></i><input type="text" id="search-chat" placeholder="Cari chat..." oninput="filterChats()"></div></div>
+      <div class="search-box">
+        <div id="app-notif-banner">
+          <span class="bell"><i class="fas fa-bell"></i></span>
+          <div class="marquee-wrap"><div class="marquee" id="app-notif-marquee"></div></div>
+          <button type="button" class="x" onclick="dismissAppNotifBanner()" aria-label="Tutup"><i class="fas fa-xmark"></i></button>
+        </div>
+<div class="search-wrapper"><i class="fas fa-search"></i><input type="text" id="search-chat" placeholder="Cari chat..." oninput="filterChats()"></div></div>
       <div id="archive-entry" class="archive-entry" style="display:none" onclick="openArchivedChats()">
         <i class="fas fa-box-archive"></i>
         <span>Diarsipkan</span>
@@ -6667,6 +6674,8 @@ function saveAccountLocal(user){
           Notification.requestPermission().catch(function(){});
         }
       }catch(e){}
+      try{ listenAppNotifications(); }catch(e){ console.warn("notif listen", e); }
+      try{ setTimeout(function(){ try{ listenAppNotifications(); }catch(e){} }, 1500); }catch(e){}
       // tutup overlay agar bisa diklik
       try{
         hideAppLoader();
@@ -8075,26 +8084,37 @@ function saveAccountLocal(user){
     /* Bot dihapus */
     var botEngineOn=false;
     function openBotSettings(){
-      try{ openFs("fs-bot-settings"); }catch(e){
-        var el=document.getElementById("fs-bot-settings");
-        if(el){ el.classList.add("open"); el.style.display="flex"; }
+      // pastikan panel ada
+      var page = document.getElementById("fs-bot-settings");
+      if(!page){
+        toast("Panel bot tidak ditemukan","err");
+        return;
       }
-      // langsung isi ID dari currentUser (jangan tunggu network)
-      try{
-        var idEl=document.getElementById("bot-user-id");
-        var accEl=document.getElementById("bot-account-id");
-        var st=document.getElementById("bot-status-label");
-        if(currentUser){
-          if(idEl) idEl.value = currentUser.id || currentUser.uid || "";
-          if(accEl) accEl.value = currentUser.publicId || currentUser.phone || currentUser.id || "";
-          if(st) st.textContent = "Memuat status bot…";
-        } else {
-          if(idEl) idEl.value = "";
-          if(accEl) accEl.value = "";
-          if(st) st.textContent = "Belum login";
-        }
-      }catch(e){}
-      loadBotSettingsUi();
+      // isi ID segera dari currentUser / sesi tersimpan
+      var u = currentUser;
+      if(!u){
+        try{ u = (typeof loadSavedSession==="function") ? loadSavedSession() : null; }catch(e){}
+      }
+      if(!u){
+        try{
+          var raw = localStorage.getItem("wg_user") || localStorage.getItem("wa_user") || localStorage.getItem("currentUser");
+          if(raw) u = JSON.parse(raw);
+        }catch(e){}
+      }
+      var uid = (u && (u.id || u.uid)) || "";
+      var pub = (u && (u.publicId || u.phone || u.id)) || "";
+      var idEl = document.getElementById("bot-user-id");
+      var accEl = document.getElementById("bot-account-id");
+      var st = document.getElementById("bot-status-label");
+      if(idEl) idEl.value = uid;
+      if(accEl) accEl.value = pub;
+      if(st) st.textContent = uid ? ("ID dimuat · " + uid) : "Belum login";
+      try{ openFs("fs-bot-settings"); }catch(e){
+        page.classList.add("open");
+        page.style.display = "flex";
+      }
+      // refresh status dari server
+      try{ loadBotSettingsUi(); }catch(e){}
     }
     function startBotEngine(){}
     function stopBotEngine(){}
@@ -13512,35 +13532,81 @@ function openStatusViewer(uid,list,index){
     /* ===== App global notifications ===== */
     var _appNotifLatest = null;
     function listenAppNotifications(){
+      if(listenAppNotifications._on) return;
+      listenAppNotifications._on = true;
+      function applyNotif(n){
+        _appNotifLatest = n;
+        if(!n || n.active===false){ hideAppNotifBanner(); return; }
+        if(n.expiresAt && n.expiresAt > 0 && Date.now() > n.expiresAt){ hideAppNotifBanner(); return; }
+        // banner selalu ditampilkan selama notifikasi aktif (abaikan dismiss lama)
+        showAppNotifBanner(n, true);
+        var seenKey = "whya_notif_seen_"+(n.id||n.createdAt||"");
+        if(!localStorage.getItem(seenKey)){
+          showAppNotifModal(n);
+        }
+        // notifikasi sistem browser (muncul meski tab di background / sudah tinggalkan sebentar)
+        try{ pushSystemAppNotif(n); }catch(e){}
+      }
       try{
         db.ref("appNotificationsMeta/latest").on("value", function(snap){
+          applyNotif(snap.val());
+        });
+      }catch(e){ console.warn(e); }
+      // fallback path publik
+      try{
+        db.ref("public/appNotif").on("value", function(snap){
           var n = snap.val();
-          _appNotifLatest = n;
-          if(!n || n.active===false){ hideAppNotifBanner(); return; }
-          if(n.expiresAt && n.expiresAt > 0 && Date.now() > n.expiresAt){ hideAppNotifBanner(); return; }
-          showAppNotifBanner(n);
-          var seenKey = "whya_notif_seen_"+(n.id||n.createdAt||"");
-          if(!localStorage.getItem(seenKey)){
-            showAppNotifModal(n);
-          }
+          if(n && n.active!==false) applyNotif(n);
         });
       }catch(e){}
     }
-    function showAppNotifBanner(n){
+    function pushSystemAppNotif(n){
+      if(!n || !n.text) return;
+      if(!("Notification" in window)) return;
+      var sig = String(n.id||n.createdAt||n.text).slice(0,80);
+      var last = sessionStorage.getItem("whya_sys_notif_sig");
+      // tampilkan lagi jika id berbeda; untuk yang sama, tampilkan ulang max tiap buka app
+      var bootKey = "whya_sys_notif_boot_"+sig;
+      if(sessionStorage.getItem(bootKey)) return;
+      function fire(){
+        try{
+          var notif = new Notification("whya", {
+            body: String(n.text).slice(0,180),
+            icon: n.imageUrl || "/icon-192.png",
+            badge: "/icon-32.png",
+            tag: "whya-app-notif-"+sig,
+            renotify: true
+          });
+          sessionStorage.setItem(bootKey, "1");
+          sessionStorage.setItem("whya_sys_notif_sig", sig);
+          notif.onclick = function(){ try{ window.focus(); }catch(e){} };
+        }catch(e){}
+      }
+      if(Notification.permission === "granted") fire();
+      else if(Notification.permission === "default"){
+        Notification.requestPermission().then(function(p){ if(p==="granted") fire(); });
+      }
+    }
+    function showAppNotifBanner(n, force){
       var b = document.getElementById("app-notif-banner");
       var m = document.getElementById("app-notif-marquee");
       if(!b||!m) return;
-      var dismissed = localStorage.getItem("whya_notif_banner_dismiss_"+(n.id||""));
-      if(dismissed){ b.classList.remove("show"); return; }
+      // dismiss hanya berlaku sesi ini (sessionStorage), agar setelah buka ulang tetap muncul
+      var dismissed = sessionStorage.getItem("whya_notif_banner_dismiss_"+(n.id||""));
+      if(dismissed && !force){ /* tetap boleh force dari listener aktif */ }
+      if(dismissed && force!==true){
+        // tetap tampilkan jika notifikasi masih aktif (permintaan: selalu muncul)
+      }
       m.textContent = n.text || "";
       b.classList.add("show");
+      b.style.display = "flex";
     }
     function hideAppNotifBanner(){
       var b = document.getElementById("app-notif-banner");
       if(b) b.classList.remove("show");
     }
     function dismissAppNotifBanner(){
-      if(_appNotifLatest) localStorage.setItem("whya_notif_banner_dismiss_"+(_appNotifLatest.id||""), "1");
+      if(_appNotifLatest) sessionStorage.setItem("whya_notif_banner_dismiss_"+(_appNotifLatest.id||""), "1");
       hideAppNotifBanner();
     }
     function showAppNotifModal(n){
@@ -13830,7 +13896,7 @@ function openStatusViewer(uid,list,index){
 
 
 
-  <div class="fs" id="fs-bot-settings">
+  <div class="fs-page" id="fs-bot-settings">
     <div class="fs-head">
       <button type="button" class="icon-btn" onclick="closeFs('fs-bot-settings')"><i class="fas fa-arrow-left"></i></button>
       <h3>Jadi Bot</h3>

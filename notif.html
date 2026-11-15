@@ -172,6 +172,7 @@
       await ref.set(payload);
       if(active){
         await db.ref("appNotificationsMeta/latest").set(payload);
+        await db.ref("public/appNotif").set(payload);
       }
       toast("Notifikasi dipublikasikan");
       document.getElementById("n-text").value="";
@@ -179,6 +180,7 @@
     }
     async function clearActiveNotif(){
       await db.ref("appNotificationsMeta/latest").update({ active:false, clearedAt:Date.now() });
+      await db.ref("public/appNotif").update({ active:false, clearedAt:Date.now() });
       toast("Notifikasi aktif dimatikan");
       loadList();
     }
