@@ -359,6 +359,7 @@
 
     .bottom-nav {
       position:absolute; bottom:0; left:0; right:0; height:var(--nav-h);
+      padding-bottom: env(safe-area-inset-bottom, 0px);
       background:var(--nav-bg); backdrop-filter:blur(var(--glass-blur));
       border-top:1px solid var(--border);
       transition: background .35s ease, border-color .35s ease, background .35s, border .35s, padding .3s, height .3s;
@@ -376,8 +377,8 @@
       backdrop-filter: none !important;
       -webkit-backdrop-filter: none !important;
       box-shadow: none !important;
-      height: calc(var(--nav-h) + 24px);
-      padding: 0 14px calc(14px + env(safe-area-inset-bottom, 0px));
+      height: calc(var(--nav-h) + 12px);
+      padding: 0 14px calc(6px + env(safe-area-inset-bottom, 0px));
       pointer-events: none;
       display: flex;
       align-items: flex-end;
@@ -3847,44 +3848,48 @@
   
     /* Global app notification banner */
     #app-notif-banner {
-      position: relative;
-      z-index: 50;
       display: none;
       align-items: center;
-      gap: 10px;
-      margin: 8px 12px 0;
-      padding: 10px 12px;
+      gap: 8px;
+      margin: 0 12px 8px;
+      padding: 8px 10px;
       border-radius: 14px;
       background: linear-gradient(180deg, rgba(255,255,255,.1), rgba(255,255,255,.04));
       border: 1px solid rgba(255,255,255,.12);
-      box-shadow: 0 8px 20px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.12);
-      overflow: hidden;
+      box-shadow: 0 6px 16px rgba(0,0,0,.3), inset 0 1px 0 rgba(255,255,255,.1);
+      position: relative;
+      z-index: 20;
+      min-height: 40px;
+      box-sizing: border-box;
     }
-    #app-notif-banner.show { display: flex; }
+    #app-notif-banner.show { display: flex !important; }
     #app-notif-banner .bell {
       flex-shrink: 0;
-      width: 28px; height: 28px; border-radius: 50%;
+      width: 26px; height: 26px; border-radius: 50%;
       display: flex; align-items: center; justify-content: center;
       background: rgba(255,255,255,.1); color: #fde68a;
+      font-size: 12px;
     }
     #app-notif-banner .marquee-wrap {
-      flex: 1; overflow: hidden; mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+      flex: 1; overflow: hidden; min-width: 0;
+      mask-image: linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent);
     }
     #app-notif-banner .marquee {
       display: inline-block; white-space: nowrap;
       padding-left: 100%;
       animation: notifMarquee 14s linear infinite;
-      font-size: 13px; font-weight: 650;
-    }
-    @keyframes notifMarquee {
-      0% { transform: translateX(0); }
-      100% { transform: translateX(-100%); }
+      font-size: 12.5px; font-weight: 650;
     }
     #app-notif-banner .x {
-      flex-shrink: 0; border: none; cursor: pointer;
-      width: 28px; height: 28px; border-radius: 50%;
-      background: rgba(255,255,255,.08); color: #fff;
+      flex-shrink: 0;
+      border: none; cursor: pointer;
+      width: 30px; height: 30px; border-radius: 50%;
+      background: rgba(255,255,255,.12); color: #fff;
+      display: flex; align-items: center; justify-content: center;
+      position: relative; z-index: 5;
+      pointer-events: auto;
     }
+    #app-notif-banner .x:active { background: rgba(255,255,255,.22); }
     #app-notif-modal {
       display: none; position: fixed; inset: 0; z-index: 100200;
       background: rgba(0,0,0,.72); backdrop-filter: blur(10px);
@@ -3923,12 +3928,8 @@
 
 </head>
 <body>
-</div>
-          <button type="button" class="x" onclick="dismissAppNotifBanner()" aria-label="Tutup"><i class="fas fa-xmark"></i></button>
-        </div>
-        
 
-  <div id="app-notif-modal">
+<div id="app-notif-modal">
     <div class="sheet">
       <img id="app-notif-modal-img" alt="" />
       <h3>Pemberitahuan</h3>
@@ -4082,13 +4083,12 @@
         <button class="icon-btn" onclick="openCreateGroup()" title="Buat grup"><i class="fas fa-users"></i></button>
         <button class="icon-btn" onclick="openAddFriend()" title="Tambah teman"><i class="fas fa-user-plus"></i></button>
       </div>
-      <div class="search-box">
-        <div id="app-notif-banner">
+      <div id="app-notif-banner">
           <span class="bell"><i class="fas fa-bell"></i></span>
           <div class="marquee-wrap"><div class="marquee" id="app-notif-marquee"></div></div>
-          <button type="button" class="x" onclick="dismissAppNotifBanner()" aria-label="Tutup"><i class="fas fa-xmark"></i></button>
+          <button type="button" class="x" onclick="event.stopPropagation();dismissAppNotifBanner();" aria-label="Tutup"><i class="fas fa-xmark"></i></button>
         </div>
-<div class="search-wrapper"><i class="fas fa-search"></i><input type="text" id="search-chat" placeholder="Cari chat..." oninput="filterChats()"></div></div>
+      <div class="search-box"><div class="search-wrapper"><i class="fas fa-search"></i><input type="text" id="search-chat" placeholder="Cari chat..." oninput="filterChats()"></div></div>
       <div id="archive-entry" class="archive-entry" style="display:none" onclick="openArchivedChats()">
         <i class="fas fa-box-archive"></i>
         <span>Diarsipkan</span>
@@ -13591,11 +13591,11 @@ function openStatusViewer(uid,list,index){
       var b = document.getElementById("app-notif-banner");
       var m = document.getElementById("app-notif-marquee");
       if(!b||!m) return;
-      // dismiss hanya berlaku sesi ini (sessionStorage), agar setelah buka ulang tetap muncul
       var dismissed = sessionStorage.getItem("whya_notif_banner_dismiss_"+(n.id||""));
-      if(dismissed && !force){ /* tetap boleh force dari listener aktif */ }
       if(dismissed && force!==true){
-        // tetap tampilkan jika notifikasi masih aktif (permintaan: selalu muncul)
+        b.classList.remove("show");
+        b.style.display = "none";
+        return;
       }
       m.textContent = n.text || "";
       b.classList.add("show");
@@ -13603,9 +13603,9 @@ function openStatusViewer(uid,list,index){
     }
     function hideAppNotifBanner(){
       var b = document.getElementById("app-notif-banner");
-      if(b) b.classList.remove("show");
+      if(b){ b.classList.remove("show"); b.style.display = "none"; }
     }
-    function dismissAppNotifBanner(){
+    window.dismissAppNotifBanner = function dismissAppNotifBanner(){
       if(_appNotifLatest) sessionStorage.setItem("whya_notif_banner_dismiss_"+(_appNotifLatest.id||""), "1");
       hideAppNotifBanner();
     }
@@ -13704,36 +13704,237 @@ function openStatusViewer(uid,list,index){
     }
 
     
+    
+    var BOT_MENU_TEXT =
+      "🤖 *Menu Bot whya*\n" +
+      "────────────────\n" +
+      "1. /ping — cek bot aktif\n" +
+      "2. /info — info akun bot\n" +
+      "3. /waktu — waktu sekarang\n" +
+      "4. /help — bantuan\n" +
+      "5. /quote — kutipan\n" +
+      "6. /fakta — fakta singkat\n" +
+      "7. /tebak — tebak angka\n" +
+      "8. /echo <teks> — ulangi\n" +
+      "9. /caps <teks> — huruf besar\n" +
+      "10. /reverse <teks> — balik teks\n" +
+      "11. /hitung <a+b> — kalkulator\n" +
+      "12. /doa — doa singkat\n" +
+      "13. /motivasi — motivasi\n" +
+      "14. /cuaca — tips cuaca\n" +
+      "15. /translate <teks>\n" +
+      "16. /kode — contoh kode\n" +
+      "17. /html — snippet HTML\n" +
+      "18. /js — snippet JS\n" +
+      "19. /python — snippet Python\n" +
+      "20. /json — contoh JSON\n" +
+      "21. /password — buat password\n" +
+      "22. /uuid — id acak\n" +
+      "23. /base64 <teks>\n" +
+      "24. /waktuindo — zona WIB\n" +
+      "25. /owner — info owner\n" +
+      "26. /rules — aturan\n" +
+      "27. /fitur — fitur utama\n" +
+      "28. /status — status bot\n" +
+      "29. /versi — versi bot\n" +
+      "30. /random — angka acak\n" +
+      "31. /koin — lempar koin\n" +
+      "32. /dadu — lempar dadu\n" +
+      "33. /warna — warna random\n" +
+      "34. /nama — ide nama\n" +
+      "35. /menu — tampilkan menu ini\n" +
+      "36. /clear — info hapus chat\n" +
+      "37. /link — link app\n" +
+      "38. /ai — asisten AI\n" +
+      "39. /broadcast — info admin\n" +
+      "40. /stop — matikan bot\n" +
+      "────────────────\n" +
+      "Ketik perintah, contoh: /ping";
+
+    function botUnescape(s){
+      return String(s||"").replace(/\\n/g, "\n");
+    }
+    function resolveBotPeerId(){
+      var peer = currentChatPeerId || null;
+      if(peer) return peer;
+      try{
+        if(currentRoom && lastUserChats && lastUserChats[currentRoom]){
+          peer = lastUserChats[currentRoom].peerId || lastUserChats[currentRoom].userId || null;
+          if(peer) return peer;
+        }
+      }catch(e){}
+      // private room pattern: id1_id2
+      try{
+        if(currentRoom && currentUser && currentUser.id && currentRoom.indexOf("_")>0){
+          var parts = String(currentRoom).split("_");
+          if(parts.length >= 2){
+            // find part that is not me
+            for(var i=0;i<parts.length;i++){
+              if(parts[i] && parts[i] !== currentUser.id && parts[i].length > 4) return parts[i];
+            }
+          }
+        }
+      }catch(e){}
+      return null;
+    }
+    function handleBotCommand(cmd, botMeta){
+      var t = String(cmd||"").trim();
+      if(!t) return null;
+      var low = t.toLowerCase();
+      var arg = t.split(/\s+/).slice(1).join(" ").trim();
+      var quotes = ["Konsisten lebih penting daripada sempurna.","Bug hari ini, pelajaran besok.","Sedikit kemajuan setiap hari tetap kemajuan."];
+      if(low==="/menu"||low==="menu") return botUnescape(BOT_MENU_TEXT);
+      if(low==="/ping") return "pong ✅ Bot aktif";
+      if(low==="/info") return "Bot: "+((botMeta&&botMeta.name)||"whya-bot")+"\nID: "+((botMeta&&botMeta.userId)||currentChatPeerId||"-")+"\nPublic: "+((botMeta&&botMeta.accountId)||"-");
+      if(low==="/waktu"||low==="/waktuindo") return "🕒 "+new Date().toLocaleString("id-ID",{timeZone:"Asia/Jakarta"})+" WIB";
+      if(low==="/help") return "Ketik /menu untuk melihat semua fitur.";
+      if(low==="/quote") return "💬 "+quotes[Math.floor(Math.random()*quotes.length)];
+      if(low==="/fakta") return "📌 Bot whya bisa jalan di app & Termux.";
+      if(low==="/tebak") return "Tebak 1–10: "+(1+Math.floor(Math.random()*10));
+      if(low.indexOf("/echo ")===0) return arg||"(kosong)";
+      if(low.indexOf("/caps ")===0) return (arg||"").toUpperCase();
+      if(low.indexOf("/reverse ")===0) return (arg||"").split("").reverse().join("");
+      if(low.indexOf("/hitung ")===0){
+        try{
+          var expr=arg.replace(/[^0-9+\-*/().\\s]/g,"");
+          if(!expr) return "Format: /hitung 1+2*3";
+          return "Hasil: "+Function('"use strict";return ('+expr+')')();
+        }catch(e){ return "Format: /hitung 1+2*3"; }
+      }
+      if(low==="/doa") return "Semoga diberi kemudahan dan kelancaran. Aamiin.";
+      if(low==="/motivasi") return "💪 "+quotes[Math.floor(Math.random()*quotes.length)];
+      if(low==="/cuaca") return "Cek cuaca lokalmu. Bawa payung jika mendung.";
+      if(low.indexOf("/translate ")===0) return "Tips: pakai /ai di app untuk terjemah.\nTeks: "+arg;
+      if(low==="/kode"||low==="/js") return "```js\nconsole.log('hello whya');\n```";
+      if(low==="/html") return "```html\n<h1>Hello whya</h1>\n```";
+      if(low==="/python") return "```python\nprint('hello whya')\n```";
+      if(low==="/json") return '{"ok":true,"app":"whya"}';
+      if(low==="/password") return "🔑 "+Math.random().toString(36).slice(2)+Math.random().toString(36).slice(2,8);
+      if(low==="/uuid") return Date.now().toString(36)+"-"+Math.random().toString(36).slice(2,10);
+      if(low.indexOf("/base64 ")===0) try{ return btoa(unescape(encodeURIComponent(arg))); }catch(e){ return arg; }
+      if(low==="/owner") return "Hubungi owner lewat kanal resmi app.";
+      if(low==="/rules") return "Aturan: jangan spam, hormati privasi.";
+      if(low==="/fitur") return "Utama: /menu /ping /hitung /password /status";
+      if(low==="/status") return "✅ Bot online";
+      if(low==="/versi") return "whya-bot v1.2 (app+termux)";
+      if(low==="/random") return String(Math.floor(Math.random()*1000));
+      if(low==="/koin") return Math.random()>0.5?"🪙 Angka":"🪙 Gambar";
+      if(low==="/dadu") return "🎲 "+(1+Math.floor(Math.random()*6));
+      if(low==="/warna") return "🎨 "+["Merah","Biru","Hijau","Kuning","Ungu","Hitam","Putih"][Math.floor(Math.random()*7)];
+      if(low==="/nama") return "👤 "+["Alya","Raka","Sinta","Dimas","Putri","Bima"][Math.floor(Math.random()*6)];
+      if(low==="/clear") return "Hapus chat dari menu chat di app.";
+      if(low==="/link") return "https://whyachtt.vercel.app/dashboard";
+      if(low==="/ai") return "Buka asisten AI: /aiwhya";
+      if(low==="/broadcast") return "Broadcast hanya dari admin.";
+      if(low==="/stop") return "Pemilik bot: Pengaturan → Jadi Bot → nonaktifkan.";
+      if(low.charAt(0)==="/") return "Perintah tidak dikenal. Ketik /menu";
+      return null;
+    }
+    async function lookupBotMeta(peerId){
+      if(!peerId) return null;
+      try{
+        var s = await db.ref("botAccounts/"+peerId).once("value");
+        if(s.exists() && s.val() && s.val().enabled) return s.val();
+      }catch(e){}
+      // scan by accountId/publicId
+      try{
+        var all = await db.ref("botAccounts").once("value");
+        var found=null;
+        if(all.exists()){
+          all.forEach(function(c){
+            var v=c.val()||{};
+            if(!v.enabled) return;
+            if(c.key===peerId || v.userId===peerId || v.accountId===peerId) found=Object.assign({userId:c.key},v);
+          });
+        }
+        return found;
+      }catch(e){}
+      return null;
+    }
     async function tryServeBotMenuIfPeer(text){
       try{
-        if(!currentChatPeerId || !currentRoom) return;
         var cmd = (text||"").trim();
         if(!cmd) return;
-        var botSnap = await db.ref("botAccounts/"+currentChatPeerId).once("value");
-        var bot = botSnap.val();
-        if(!bot || !bot.enabled) return;
-        // Only respond to commands starting with /
-        if(cmd.charAt(0) !== "/" && cmd.toLowerCase() !== "menu") return;
-        var low = cmd.toLowerCase();
-        var reply = null;
-        if(low === "/menu" || low === "menu"){
-          reply = "🤖 *Menu Bot whya*\\n\\n1 /ping\\n2 /info\\n3 /waktu\\n4 /help\\n5 /quote\\n6 /fakta\\n7 /echo <teks>\\n8 /caps <teks>\\n9 /reverse <teks>\\n10 /hitung <a+b>\\n11 /password\\n12 /uuid\\n13 /koin\\n14 /dadu\\n15 /random\\n16 /status\\n17 /versi\\n18 /kode\\n19 /html\\n20 /python\\n21 /js\\n22 /json\\n23 /base64 <teks>\\n24 /motivasi\\n25 /doa\\n26 /rules\\n27 /owner\\n28 /link\\n29 /ai\\n30 /fitur\\n31 /warna\\n32 /nama\\n33 /tebak\\n34 /cuaca\\n35 /translate\\n36 /clear\\n37 /broadcast\\n38 /stop\\n39 /menu\\n40 /help\\n\\nJalankan bot-termux.js untuk balasan penuh dari server.";
-        } else if(low === "/ping") reply = "pong ✅ Bot aktif";
-        else if(low === "/status") reply = "Bot online (mode app)";
-        else if(low === "/info") reply = "Bot account: "+(bot.accountId||currentChatPeerId);
-        else if(low === "/waktu") reply = new Date().toLocaleString("id-ID");
-        else if(low === "/help") reply = "Ketik /menu untuk daftar fitur.";
+        if(cmd.charAt(0)!=="/" && cmd.toLowerCase()!=="menu") return;
+        if(!currentRoom) return;
+        var peer = resolveBotPeerId();
+        var bot = await lookupBotMeta(peer);
+        // juga: jika kita sendiri bot dan sedang di room (jarang)
+        if(!bot && currentUser){
+          var selfBot = await lookupBotMeta(currentUser.id);
+          if(selfBot) bot = null; // jangan reply ke diri sendiri dari sisi pengirim
+        }
+        if(!bot) return;
+        var reply = handleBotCommand(cmd, bot);
         if(!reply) return;
+        var botId = bot.userId || peer;
         await db.ref("chats/"+currentRoom).push({
           type: "text",
           text: reply,
-          senderId: currentChatPeerId,
+          senderId: botId,
           senderName: bot.name || "Bot",
           timestamp: Date.now(),
           isBot: true
         });
-      }catch(e){ console.warn(e); }
+        try{
+          db.ref("userChats/"+currentUser.id+"/"+currentRoom).update({
+            lastMessage: reply.slice(0,80),
+            lastTime: Date.now()
+          });
+        }catch(e){}
+      }catch(e){ console.warn("bot reply", e); }
     }
+
+    /* Mesin bot in-app: akun bot yang login ikut membalas otomatis (mirip WA bot) */
+    var _botEngineOn = false;
+    var _botSeen = {};
+    function startInAppBotEngine(){
+      if(_botEngineOn || !currentUser || !currentUser.id) return;
+      _botEngineOn = true;
+      db.ref("botAccounts/"+currentUser.id).on("value", function(snap){
+        var v = snap.val()||{};
+        startInAppBotEngine.enabled = !!v.enabled;
+        startInAppBotEngine.meta = v;
+      });
+      db.ref("userChats/"+currentUser.id).on("child_added", attachBotRoomListen);
+      db.ref("userChats/"+currentUser.id).on("child_changed", attachBotRoomListen);
+      // attach existing
+      db.ref("userChats/"+currentUser.id).once("value").then(function(s){
+        if(!s.exists()) return;
+        s.forEach(function(c){ attachBotRoomListen(c); });
+      });
+    }
+    function attachBotRoomListen(chatSnap){
+      try{
+        var roomId = chatSnap.key;
+        if(!roomId || attachBotRoomListen["r_"+roomId]) return;
+        attachBotRoomListen["r_"+roomId] = true;
+        db.ref("chats/"+roomId).limitToLast(12).on("child_added", function(ms){
+          if(!startInAppBotEngine.enabled) return;
+          var m = ms.val()||{};
+          var mid = ms.key;
+          if(_botSeen[mid]) return;
+          _botSeen[mid] = true;
+          if(m.isBot) return;
+          if(m.senderId === currentUser.id) return;
+          if(m.type && m.type!=="text") return;
+          var cmd = (m.text||"").trim();
+          if(!cmd) return;
+          if(cmd.charAt(0)!=="/" && cmd.toLowerCase()!=="menu") return;
+          var reply = handleBotCommand(cmd, Object.assign({userId:currentUser.id,name:currentUser.name}, startInAppBotEngine.meta||{}));
+          if(!reply) return;
+          db.ref("chats/"+roomId).push({
+            type:"text",
+            text: reply,
+            senderId: currentUser.id,
+            senderName: currentUser.name || "Bot",
+            timestamp: Date.now(),
+            isBot: true
+          });
+        });
+      }catch(e){}
+    }
+
 
     function handleDeepLinks(){
       try{
