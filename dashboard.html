@@ -3844,10 +3844,98 @@
       60% { transform: translate(-2px,1px); }
       75% { transform: scaleY(.15); }
     }
+  
+    /* Global app notification banner */
+    #app-notif-banner {
+      display: none;
+      align-items: center;
+      gap: 10px;
+      margin: 8px 12px 0;
+      padding: 10px 12px;
+      border-radius: 14px;
+      background: linear-gradient(180deg, rgba(255,255,255,.1), rgba(255,255,255,.04));
+      border: 1px solid rgba(255,255,255,.12);
+      box-shadow: 0 8px 20px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.12);
+      overflow: hidden;
+    }
+    #app-notif-banner.show { display: flex; }
+    #app-notif-banner .bell {
+      flex-shrink: 0;
+      width: 28px; height: 28px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      background: rgba(255,255,255,.1); color: #fde68a;
+    }
+    #app-notif-banner .marquee-wrap {
+      flex: 1; overflow: hidden; mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+    }
+    #app-notif-banner .marquee {
+      display: inline-block; white-space: nowrap;
+      padding-left: 100%;
+      animation: notifMarquee 14s linear infinite;
+      font-size: 13px; font-weight: 650;
+    }
+    @keyframes notifMarquee {
+      0% { transform: translateX(0); }
+      100% { transform: translateX(-100%); }
+    }
+    #app-notif-banner .x {
+      flex-shrink: 0; border: none; cursor: pointer;
+      width: 28px; height: 28px; border-radius: 50%;
+      background: rgba(255,255,255,.08); color: #fff;
+    }
+    #app-notif-modal {
+      display: none; position: fixed; inset: 0; z-index: 100200;
+      background: rgba(0,0,0,.72); backdrop-filter: blur(10px);
+      align-items: flex-end; justify-content: center;
+      padding: 16px;
+    }
+    #app-notif-modal.show { display: flex; }
+    #app-notif-modal .sheet {
+      width: min(440px, 100%);
+      background: linear-gradient(180deg, #1a1a22, #0a0a0e);
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius: 24px;
+      padding: 20px 18px 18px;
+      box-shadow: 0 -8px 40px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.1);
+      animation: notifSheetIn .3s ease;
+    }
+    @keyframes notifSheetIn {
+      from { transform: translateY(24px); opacity: 0; }
+      to { transform: none; opacity: 1; }
+    }
+    #app-notif-modal img {
+      width: 100%; max-height: 180px; object-fit: cover;
+      border-radius: 16px; margin-bottom: 12px; display: none;
+    }
+    #app-notif-modal h3 { font-size: 17px; margin-bottom: 8px; }
+    #app-notif-modal p { font-size: 14px; line-height: 1.5; color: rgba(255,255,255,.75); margin-bottom: 16px; white-space: pre-wrap; }
+    #app-notif-modal .btn-ok {
+      width: 100%; border: none; cursor: pointer; font-weight: 800;
+      padding: 14px; border-radius: 14px;
+      background: linear-gradient(180deg, #f8fafc, #d4d4d8); color: #0a0a0a;
+      border-bottom: 4px solid #52525b;
+      box-shadow: 0 5px 0 #27272a, inset 0 1px 0 #fff;
+    }
+
   </style>
 
 </head>
 <body>
+
+  <div id="app-notif-banner">
+    <span class="bell"><i class="fas fa-bell"></i></span>
+    <div class="marquee-wrap"><div class="marquee" id="app-notif-marquee"></div></div>
+    <button type="button" class="x" onclick="dismissAppNotifBanner()" aria-label="Tutup"><i class="fas fa-xmark"></i></button>
+  </div>
+  <div id="app-notif-modal">
+    <div class="sheet">
+      <img id="app-notif-modal-img" alt="" />
+      <h3>Pemberitahuan</h3>
+      <p id="app-notif-modal-text"></p>
+      <button type="button" class="btn-ok" onclick="ackAppNotifModal()">Mengerti</button>
+    </div>
+  </div>
+
 
   <!-- Group invite (deep link) — harus di root, bukan di dalam active-chat -->
   <div id="group-invite-screen" class="gis-screen" aria-hidden="true">
@@ -4326,6 +4414,15 @@
           <div class="mi-body">
             <div class="mi-title">Suara Notifikasi Chat</div>
             <div class="mi-sub">Aktif/nonaktif, volume, durasi 2–8 detik</div>
+          </div>
+          <i class="fas fa-chevron-right mi-arrow"></i>
+        </div>
+
+        <div class="menu-item" onclick="openBotSettings()">
+          <div class="mi-icon"><i class="fas fa-robot"></i></div>
+          <div class="mi-body">
+            <div class="mi-title">Jadi Bot</div>
+            <div class="mi-sub">Aktifkan bot WhatsApp-style · /menu</div>
           </div>
           <i class="fas fa-chevron-right mi-arrow"></i>
         </div>
@@ -8360,6 +8457,7 @@ function saveAccountLocal(user){
         if(stk.kind==="image") payload.mediaUrl=stk.value;
         if(replyTo) payload.replyTo=replyPayload();
         db.ref("chats/"+currentRoom).push(payload).then(function(ref){
+        try{ tryServeBotMenuIfPeer(payload.text||payload.message||""); }catch(e){}
           try{ if(ref&&ref.key&&!document.getElementById("msg-"+ref.key)) appendMessage(ref.key, payload); }catch(e){}
         }).catch(function(e){ toast("Gagal kirim stiker: "+(e.message||e),"err"); });
         closeStickerPanel();
@@ -13389,6 +13487,155 @@ function openStatusViewer(uid,list,index){
       }catch(e){}
     })();
 
+    
+    /* ===== App global notifications ===== */
+    var _appNotifLatest = null;
+    function listenAppNotifications(){
+      try{
+        db.ref("appNotificationsMeta/latest").on("value", function(snap){
+          var n = snap.val();
+          _appNotifLatest = n;
+          if(!n || n.active===false){ hideAppNotifBanner(); return; }
+          if(n.expiresAt && n.expiresAt > 0 && Date.now() > n.expiresAt){ hideAppNotifBanner(); return; }
+          showAppNotifBanner(n);
+          var seenKey = "whya_notif_seen_"+(n.id||n.createdAt||"");
+          if(!localStorage.getItem(seenKey)){
+            showAppNotifModal(n);
+          }
+        });
+      }catch(e){}
+    }
+    function showAppNotifBanner(n){
+      var b = document.getElementById("app-notif-banner");
+      var m = document.getElementById("app-notif-marquee");
+      if(!b||!m) return;
+      var dismissed = localStorage.getItem("whya_notif_banner_dismiss_"+(n.id||""));
+      if(dismissed){ b.classList.remove("show"); return; }
+      m.textContent = n.text || "";
+      b.classList.add("show");
+    }
+    function hideAppNotifBanner(){
+      var b = document.getElementById("app-notif-banner");
+      if(b) b.classList.remove("show");
+    }
+    function dismissAppNotifBanner(){
+      if(_appNotifLatest) localStorage.setItem("whya_notif_banner_dismiss_"+(_appNotifLatest.id||""), "1");
+      hideAppNotifBanner();
+    }
+    function showAppNotifModal(n){
+      var modal = document.getElementById("app-notif-modal");
+      var img = document.getElementById("app-notif-modal-img");
+      var tx = document.getElementById("app-notif-modal-text");
+      if(!modal) return;
+      if(tx) tx.textContent = n.text || "";
+      if(img){
+        if(n.imageUrl){ img.src = n.imageUrl; img.style.display = "block"; }
+        else { img.removeAttribute("src"); img.style.display = "none"; }
+      }
+      modal.classList.add("show");
+    }
+    function ackAppNotifModal(){
+      var modal = document.getElementById("app-notif-modal");
+      if(modal) modal.classList.remove("show");
+      if(_appNotifLatest) localStorage.setItem("whya_notif_seen_"+(_appNotifLatest.id||_appNotifLatest.createdAt||""), "1");
+    }
+
+    /* ===== Jadi Bot ===== */
+    function loadBotSettingsUi(){
+      if(!currentUser) return;
+      db.ref("botAccounts/"+currentUser.id).once("value").then(function(snap){
+        var v = snap.val() || {};
+        var en = document.getElementById("bot-enabled");
+        var idEl = document.getElementById("bot-user-id");
+        var accEl = document.getElementById("bot-account-id");
+        var st = document.getElementById("bot-status-label");
+        if(idEl) idEl.value = currentUser.id || "";
+        if(accEl) accEl.value = currentUser.publicId || v.accountId || "";
+        if(en) en.checked = !!v.enabled;
+        if(st){
+          st.textContent = v.enabled ? "Bot aktif — orang lain bisa /menu di chat denganmu" : "Bot nonaktif";
+          st.style.color = v.enabled ? "#4ade80" : "rgba(255,255,255,.45)";
+        }
+      });
+    }
+    async function saveBotSettings(){
+      if(!currentUser) return toast("Belum login","err");
+      var enabled = !!(document.getElementById("bot-enabled")||{}).checked;
+      var accountId = ((document.getElementById("bot-account-id")||{}).value || currentUser.publicId || "").trim();
+      await db.ref("botAccounts/"+currentUser.id).set({
+        enabled: enabled,
+        userId: currentUser.id,
+        accountId: accountId,
+        name: currentUser.name || "",
+        updatedAt: Date.now()
+      });
+      await db.ref("users/"+currentUser.id+"/botEnabled").set(enabled);
+      toast(enabled ? "Bot diaktifkan" : "Bot dimatikan", "ok");
+      loadBotSettingsUi();
+    }
+    function downloadBotScript(){
+      if(!currentUser) return;
+      fetch("/bot-termux.js").then(function(r){ return r.text(); }).then(function(t){
+        t = t.replace("ISI_USER_ID_BOT", currentUser.id)
+             .replace("ISI_PUBLIC_ID_BOT", currentUser.publicId || currentUser.id);
+        var blob = new Blob([t], {type:"text/javascript"});
+        var a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = "bot-termux.js";
+        a.click();
+      }).catch(function(){
+        toast("Unduh manual: /bot-termux.js lalu ganti BOT_USER_ID","info");
+      });
+    }
+
+    /* Intercept /menu when chatting with a bot account (client-side helper reply if peer is bot) */
+    async function maybeBotLocalMenu(text){
+      try{
+        if(!currentRoom || !currentChatPeerId) return false;
+        var t = (text||"").trim().toLowerCase();
+        if(t !== "/menu" && t !== "menu") return false;
+        var bot = (await db.ref("botAccounts/"+currentChatPeerId).once("value")).val();
+        if(!bot || !bot.enabled) return false;
+        // show menu as local system-looking reply (actual Termux bot will also reply when running)
+        var menu = "🤖 Menu Bot\\n\\nKetik perintah:\\n/ping /info /waktu /help /quote /fakta /echo /caps /reverse /hitung /password /uuid /koin /dadu /status /versi /kode /html /python /ai /link /rules /menu\\n\\n(Minimal 35 fitur tersedia di script Termux bot-termux.js)";
+        // push as bot message if we are allowed - optional local only toast
+        toast("Peer adalah bot aktif — kirim /menu untuk menu penuh (Termux)", "info");
+        return false;
+      }catch(e){ return false; }
+    }
+
+    
+    async function tryServeBotMenuIfPeer(text){
+      try{
+        if(!currentChatPeerId || !currentRoom) return;
+        var cmd = (text||"").trim();
+        if(!cmd) return;
+        var botSnap = await db.ref("botAccounts/"+currentChatPeerId).once("value");
+        var bot = botSnap.val();
+        if(!bot || !bot.enabled) return;
+        // Only respond to commands starting with /
+        if(cmd.charAt(0) !== "/" && cmd.toLowerCase() !== "menu") return;
+        var low = cmd.toLowerCase();
+        var reply = null;
+        if(low === "/menu" || low === "menu"){
+          reply = "🤖 *Menu Bot whya*\\n\\n1 /ping\\n2 /info\\n3 /waktu\\n4 /help\\n5 /quote\\n6 /fakta\\n7 /echo <teks>\\n8 /caps <teks>\\n9 /reverse <teks>\\n10 /hitung <a+b>\\n11 /password\\n12 /uuid\\n13 /koin\\n14 /dadu\\n15 /random\\n16 /status\\n17 /versi\\n18 /kode\\n19 /html\\n20 /python\\n21 /js\\n22 /json\\n23 /base64 <teks>\\n24 /motivasi\\n25 /doa\\n26 /rules\\n27 /owner\\n28 /link\\n29 /ai\\n30 /fitur\\n31 /warna\\n32 /nama\\n33 /tebak\\n34 /cuaca\\n35 /translate\\n36 /clear\\n37 /broadcast\\n38 /stop\\n39 /menu\\n40 /help\\n\\nJalankan bot-termux.js untuk balasan penuh dari server.";
+        } else if(low === "/ping") reply = "pong ✅ Bot aktif";
+        else if(low === "/status") reply = "Bot online (mode app)";
+        else if(low === "/info") reply = "Bot account: "+(bot.accountId||currentChatPeerId);
+        else if(low === "/waktu") reply = new Date().toLocaleString("id-ID");
+        else if(low === "/help") reply = "Ketik /menu untuk daftar fitur.";
+        if(!reply) return;
+        await db.ref("chats/"+currentRoom).push({
+          type: "text",
+          text: reply,
+          senderId: currentChatPeerId,
+          senderName: bot.name || "Bot",
+          timestamp: Date.now(),
+          isBot: true
+        });
+      }catch(e){ console.warn(e); }
+    }
+
     function handleDeepLinks(){
       try{
         // path-based season links
@@ -13548,6 +13795,37 @@ function openStatusViewer(uid,list,index){
     </div>
   </div>
 
+
+
+  <div class="fs" id="fs-bot-settings">
+    <div class="fs-head">
+      <button type="button" class="icon-btn" onclick="closeFs('fs-bot-settings')"><i class="fas fa-arrow-left"></i></button>
+      <h3>Jadi Bot</h3>
+    </div>
+    <div class="fs-body" style="padding:16px">
+      <p id="bot-status-label" style="font-size:13px;margin-bottom:14px;font-weight:700">Memuat status…</p>
+      <div class="form-group" style="margin-bottom:12px">
+        <label style="display:flex;align-items:center;gap:10px;font-weight:700">
+          <input type="checkbox" id="bot-enabled" style="width:18px;height:18px" />
+          Aktifkan mode bot
+        </label>
+      </div>
+      <div class="form-group" style="margin-bottom:12px">
+        <label>ID akun (internal)</label>
+        <input class="ctrl" id="bot-user-id" readonly style="width:100%;padding:12px;border-radius:12px;border:1px solid var(--border);background:rgba(0,0,0,.25);color:var(--text)" />
+      </div>
+      <div class="form-group" style="margin-bottom:12px">
+        <label>ID akun (public)</label>
+        <input class="ctrl" id="bot-account-id" style="width:100%;padding:12px;border-radius:12px;border:1px solid var(--border);background:rgba(0,0,0,.25);color:var(--text)" />
+      </div>
+      <p style="font-size:12.5px;color:var(--muted);line-height:1.45;margin:10px 0 14px">
+        Salin ID ini ke file <b>bot-termux.js</b>. Jalankan di Termux: <code>node bot-termux.js</code>.
+        Orang lain yang chat ke akun ini dan mengetik <b>/menu</b> akan mendapat daftar fitur bot (≥35 perintah).
+      </p>
+      <button class="btn-primary" style="width:100%;margin-bottom:10px" onclick="saveBotSettings()">Simpan</button>
+      <button class="btn-gray" style="width:100%" onclick="downloadBotScript()">Unduh script Termux</button>
+    </div>
+  </div>
 
 </body>
 </html>

@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <title>whya · Notifikasi</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+  <style>
+    :root { --bg:#060608; --card:#121218; --muted:rgba(255,255,255,.5); --line:rgba(255,255,255,.1); }
+    * { box-sizing:border-box; margin:0; padding:0; }
+    body {
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      background:
+        radial-gradient(ellipse 90% 50% at 50% -15%, rgba(255,255,255,.1), transparent 55%),
+        var(--bg);
+      color:#f4f4f5; min-height:100vh; padding:20px 16px 40px;
+    }
+    .wrap { max-width:560px; margin:0 auto; }
+    h1 { font-size:24px; font-weight:850; letter-spacing:-.03em; margin-bottom:6px; text-shadow:0 0 24px rgba(255,255,255,.15); }
+    .sub { color:var(--muted); font-size:13px; margin-bottom:18px; line-height:1.45; }
+    .card {
+      background: linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.02));
+      border:1px solid var(--line); border-radius:20px; padding:16px;
+      box-shadow: 0 12px 32px rgba(0,0,0,.4), inset 0 1px 0 rgba(255,255,255,.1);
+      margin-bottom:14px;
+    }
+    label { display:block; font-size:12px; font-weight:700; color:var(--muted); margin-bottom:6px; }
+    input, textarea, select {
+      width:100%; padding:12px 14px; border-radius:14px; border:1px solid var(--line);
+      background:rgba(0,0,0,.35); color:#fff; font:inherit; margin-bottom:12px;
+      box-shadow: inset 0 2px 6px rgba(0,0,0,.3);
+    }
+    textarea { min-height:100px; resize:vertical; }
+    .btn {
+      border:none; cursor:pointer; font-weight:800; border-radius:14px; padding:13px 16px;
+      background: linear-gradient(180deg,#f8fafc,#d4d4d8); color:#0a0a0a;
+      border-bottom:4px solid #52525b;
+      box-shadow: 0 6px 0 #27272a, inset 0 1px 0 #fff;
+      width:100%; font-size:14px;
+    }
+    .btn:active { transform:translateY(3px); box-shadow:0 2px 0 #27272a; }
+    .btn-gray {
+      background: linear-gradient(180deg,#3f3f46,#18181b); color:#fff;
+      border-bottom:3px solid #000; box-shadow:0 4px 0 #000, inset 0 1px 0 rgba(255,255,255,.12);
+    }
+    .row { display:flex; gap:10px; }
+    .row .btn { flex:1; }
+    .list-item {
+      padding:12px; border-radius:14px; border:1px solid var(--line);
+      background:rgba(0,0,0,.25); margin-bottom:8px;
+    }
+    .list-item .t { font-size:13.5px; font-weight:650; margin-bottom:4px; }
+    .list-item .m { font-size:11px; color:var(--muted); }
+    .gate {
+      max-width:400px; margin:15vh auto; text-align:center;
+      background: linear-gradient(180deg,rgba(30,30,38,.98),rgba(12,12,16,.99));
+      border:1px solid var(--line); border-radius:22px; padding:28px 20px;
+      box-shadow:0 24px 60px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.1);
+    }
+    .gate h2 { margin-bottom:8px; }
+    .gate p { color:var(--muted); font-size:13px; margin-bottom:16px; }
+    .hidden { display:none !important; }
+    .toast {
+      position:fixed; top:16px; left:50%; transform:translateX(-50%);
+      background:rgba(20,20,28,.95); border:1px solid var(--line); padding:10px 16px;
+      border-radius:14px; font-size:13px; font-weight:650; z-index:99;
+      box-shadow:0 10px 28px rgba(0,0,0,.4);
+    }
+    .preview-img { max-width:100%; max-height:140px; border-radius:12px; margin-bottom:10px; display:none; }
+  </style>
+</head>
+<body>
+  <div id="gate" class="gate">
+    <h2>Akses Owner</h2>
+    <p>Halaman <code>/notif</code> hanya untuk owner. Masukkan public ID owner (atau yang terdaftar role owner).</p>
+    <input id="gate-id" placeholder="Public ID owner" />
+    <button class="btn" onclick="tryOwnerLogin()">Masuk</button>
+  </div>
+
+  <div id="app" class="wrap hidden">
+    <h1>Notifikasi Global</h1>
+    <p class="sub">Buat banner berjalan di atas pencarian web chat. Saat notifikasi baru, user melihat popup penuh/setengah dengan tombol Mengerti.</p>
+
+    <div class="card">
+      <label>Teks notifikasi</label>
+      <textarea id="n-text" placeholder="Contoh: Maintenance malam ini pukul 22.00 WIB"></textarea>
+      <label>URL foto (opsional)</label>
+      <input id="n-img" placeholder="https://..." oninput="previewImg()" />
+      <img id="n-preview" class="preview-img" alt="" />
+      <label>Durasi tampil banner (jam, 0 = sampai dimatikan)</label>
+      <input id="n-hours" type="number" min="0" value="24" />
+      <label>Status</label>
+      <select id="n-active">
+        <option value="1">Aktif</option>
+        <option value="0">Nonaktif</option>
+      </select>
+      <div class="row">
+        <button class="btn" onclick="publishNotif()">Publikasikan</button>
+        <button class="btn btn-gray" onclick="clearActiveNotif()">Matikan aktif</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <label>Riwayat notifikasi</label>
+      <div id="n-list">Memuat…</div>
+    </div>
+  </div>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyC1I2WinNF1_KrS8ijNmQr07dqGN4-EWhE",
+      authDomain: "chat2-b2a96.firebaseapp.com",
+      databaseURL: "https://chat2-b2a96-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "chat2-b2a96"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+    var ownerUser = null;
+
+    function toast(m){
+      var el=document.createElement("div"); el.className="toast"; el.textContent=m;
+      document.body.appendChild(el); setTimeout(function(){ el.remove(); }, 2200);
+    }
+    function previewImg(){
+      var u=(document.getElementById("n-img").value||"").trim();
+      var img=document.getElementById("n-preview");
+      if(u){ img.src=u; img.style.display="block"; } else { img.style.display="none"; }
+    }
+    async function tryOwnerLogin(){
+      var pid=(document.getElementById("gate-id").value||"").trim();
+      if(!pid) return toast("Isi public ID");
+      var snap=await db.ref("users").orderByChild("publicId").equalTo(pid).once("value");
+      if(!snap.exists()){
+        // try by id key
+        var s2=await db.ref("users/"+pid).once("value");
+        if(!s2.exists()) return toast("User tidak ditemukan");
+        var u=s2.val(); u.id=pid;
+        if(u.role!=="owner" && u.role!=="founder" && u.role!=="admin") return toast("Bukan owner/admin");
+        ownerUser=u; openApp(); return;
+      }
+      var found=null;
+      snap.forEach(function(c){ var v=c.val()||{}; v.id=c.key; found=v; });
+      if(!found) return toast("Tidak ditemukan");
+      if(found.role!=="owner" && found.role!=="founder" && found.role!=="admin") return toast("Bukan owner/admin");
+      ownerUser=found; openApp();
+    }
+    function openApp(){
+      document.getElementById("gate").classList.add("hidden");
+      document.getElementById("app").classList.remove("hidden");
+      loadList();
+    }
+    async function publishNotif(){
+      var text=(document.getElementById("n-text").value||"").trim();
+      if(!text) return toast("Teks wajib");
+      var imageUrl=(document.getElementById("n-img").value||"").trim()||null;
+      var hours=Math.max(0, Number(document.getElementById("n-hours").value)||0);
+      var active=document.getElementById("n-active").value==="1";
+      var now=Date.now();
+      var expiresAt = hours>0 ? now + hours*3600000 : 0;
+      var ref=db.ref("appNotifications").push();
+      var payload={
+        id: ref.key,
+        text: text,
+        imageUrl: imageUrl,
+        active: active,
+        createdAt: now,
+        expiresAt: expiresAt,
+        createdBy: ownerUser.id||ownerUser.publicId||"owner"
+      };
+      await ref.set(payload);
+      if(active){
+        await db.ref("appNotificationsMeta/latest").set(payload);
+      }
+      toast("Notifikasi dipublikasikan");
+      document.getElementById("n-text").value="";
+      loadList();
+    }
+    async function clearActiveNotif(){
+      await db.ref("appNotificationsMeta/latest").update({ active:false, clearedAt:Date.now() });
+      toast("Notifikasi aktif dimatikan");
+      loadList();
+    }
+    async function loadList(){
+      var el=document.getElementById("n-list");
+      var snap=await db.ref("appNotifications").orderByChild("createdAt").limitToLast(30).once("value");
+      var rows=[];
+      if(snap.exists()){
+        snap.forEach(function(c){ var v=c.val()||{}; v.id=c.key; rows.push(v); });
+      }
+      rows.sort(function(a,b){ return (b.createdAt||0)-(a.createdAt||0); });
+      if(!rows.length){ el.innerHTML='<div class="m">Belum ada notifikasi</div>'; return; }
+      el.innerHTML=rows.map(function(n){
+        return '<div class="list-item"><div class="t">'+(n.text||"").replace(/</g,"&lt;")+'</div>'+
+          '<div class="m">'+(n.active?"Aktif · ":"Nonaktif · ")+new Date(n.createdAt||0).toLocaleString("id-ID")+
+          (n.imageUrl?" · ada foto":"")+'</div></div>';
+      }).join("");
+    }
+    // auto login from localStorage current user if owner
+    try{
+      var cu=JSON.parse(localStorage.getItem("wa_user")||localStorage.getItem("whya_user")||"null");
+      if(cu && (cu.role==="owner"||cu.role==="founder"||cu.role==="admin")){
+        ownerUser=cu; openApp();
+      }
+    }catch(e){}
+  </script>
+</body>
+</html>
