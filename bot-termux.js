@@ -195,9 +195,83 @@ function handleCommand(text) {
   if (low === "/ai") return "Buka asisten AI di app: /aiwhya";
   if (low === "/broadcast") return "Broadcast hanya dari panel admin.";
   if (low === "/stop") return "Matikan: Pengaturan → Jadi Bot → nonaktif. Stop Termux: Ctrl+C.";
+  if (low.indexOf("/iqc ") === 0 || low === "/iqc") return { canvas: "/api/canvas/iqc?text=" + encodeURIComponent(arg || "whya"), label: "IQC" };
+  if (low.indexOf("/brat ") === 0 || low === "/brat") return { canvas: "/api/canvas/brat?text=" + encodeURIComponent(arg || "whya"), label: "Brat" };
+  if (low.indexOf("/nokia ") === 0 || low === "/nokia") return { canvas: "/api/canvas/nokia?text=" + encodeURIComponent(arg || "whya"), label: "Nokia" };
+  if (low.indexOf("/quoteimg ") === 0) return { canvas: "/api/canvas/quote?text=" + encodeURIComponent(arg || "whya"), label: "Quote" };
+  if (low.indexOf("/ytcomment ") === 0) return { canvas: "/api/canvas/ytcomment?text=" + encodeURIComponent(arg || "whya"), label: "YT" };
+  if (low.indexOf("/tweet ") === 0) return { canvas: "/api/canvas/tweet?text=" + encodeURIComponent(arg || "whya"), label: "Tweet" };
+  if (low.indexOf("/fakeff ") === 0 || low === "/fakeff" || low.indexOf("/ff ") === 0 || low === "/ff") {
+    return { canvas: "/api/canvas/fakeff?name=" + encodeURIComponent(arg || "Player"), label: "Fake FF", alts: [
+      "/api/canvas/fakeff?name=" + encodeURIComponent(arg || "Player"),
+      "/api/canvas/ff?name=" + encodeURIComponent(arg || "Player"),
+      "/api/canvas/fakeface?name=" + encodeURIComponent(arg || "Player"),
+      "/api/canvas/freefire?name=" + encodeURIComponent(arg || "Player")
+    ]};
+  }
   if (low.charAt(0) === "/") return "Perintah tidak dikenal. Ketik /menu";
   return null;
 }
+
+async function fetchCanvasBuffer(pathQuery) {
+  const target = "https://api.nexadev.my.id" + pathQuery;
+  const proxy = "https://imghd.hh5949177.workers.dev/?url=" + encodeURIComponent(target);
+  for (const u of [target, proxy]) {
+    try {
+      const res = await fetch(u);
+      if (!res.ok) continue;
+      const ct = (res.headers.get("content-type") || "").toLowerCase();
+      if (ct.includes("json") || ct.includes("text/")) {
+        const j = await res.json().catch(() => null);
+        const url = j && (j.url || j.image || j.result);
+        if (url) return { url };
+        continue;
+      }
+      const buf = Buffer.from(await res.arrayBuffer());
+      if (buf.length < 100) continue;
+      return { buffer: buf };
+    } catch (e) {}
+  }
+  return null;
+}
+
+async function uploadBufferCatbox(buf, filename) {
+  // Termux may not have form-data; use raw multipart
+  const boundary = "----Whya" + Date.now();
+  const head = Buffer.from(
+    `--${boundary}\r\nContent-Disposition: form-data; name="reqtype"\r\n\r\nfileupload\r\n` +
+    `--${boundary}\r\nContent-Disposition: form-data; name="fileToUpload"; filename="${filename}"\r\nContent-Type: image/png\r\n\r\n`
+  );
+  const tail = Buffer.from(`\r\n--${boundary}--\r\n`);
+  const body = Buffer.concat([head, buf, tail]);
+  return new Promise((resolve, reject) => {
+    const url = new URL("https://catbox.moe/user/api.php");
+    const req = https.request(
+      {
+        hostname: url.hostname,
+        path: url.pathname,
+        method: "POST",
+        headers: {
+          "Content-Type": "multipart/form-data; boundary=" + boundary,
+          "Content-Length": body.length
+        }
+      },
+      (res) => {
+        let d = "";
+        res.on("data", (c) => (d += c));
+        res.on("end", () => {
+          const t = (d || "").trim();
+          if (t.indexOf("http") === 0) resolve(t);
+          else reject(new Error(t || "upload fail"));
+        });
+      }
+    );
+    req.on("error", reject);
+    req.write(body);
+    req.end();
+  });
+}
+
 
 var seen = new Set();
 var tick = 0;
@@ -236,8 +310,38 @@ async function pollOnce() {
       var ans = handleCommand(m.text || "");
       if (ans) {
         console.log("[" + roomId + "] <=", String(m.text || "").slice(0, 60));
-        await sendText(roomId, ans);
-        console.log("[" + roomId + "] =>", ans.slice(0, 60));
+        if (typeof ans === "object" && ans.canvas) {
+          await sendText(roomId, "🎨 Membuat " + (ans.label || "canvas") + "…");
+          try {
+            let img = await fetchCanvasBuffer(ans.canvas);
+            if (!img && ans.alts) {
+              for (const p of ans.alts) {
+                img = await fetchCanvasBuffer(p);
+                if (img) break;
+              }
+            }
+            if (img && img.url) {
+              await dbPost("chats/" + roomId, {
+                type: "image", mediaUrl: img.url, imageUrl: img.url, url: img.url,
+                text: ans.label || "", senderId: BOT_USER_ID, senderName: BOT_NAME,
+                timestamp: Date.now(), isBot: true
+              });
+            } else if (img && img.buffer) {
+              const up = await uploadBufferCatbox(img.buffer, "canvas.png");
+              await dbPost("chats/" + roomId, {
+                type: "image", mediaUrl: up, imageUrl: up, url: up,
+                text: ans.label || "", senderId: BOT_USER_ID, senderName: BOT_NAME,
+                timestamp: Date.now(), isBot: true
+              });
+            } else {
+              await sendText(roomId, "Gagal membuat gambar canvas.");
+            }
+          } catch (e) {
+            await sendText(roomId, "Gagal canvas: " + (e.message || e));
+          }
+        } else {
+          await sendText(roomId, ans);
+        }
       }
     }
   }

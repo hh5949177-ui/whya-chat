@@ -7404,11 +7404,12 @@ function saveAccountLocal(user){
       if(chatEl){
         chatEl.classList.add("closing");
         chatEl.classList.remove("open");
-        // setelah animasi selesai, lepas class closing agar tidak menutupi list chat
         setTimeout(function(){
           chatEl.classList.remove("closing");
         }, 280);
       }
+      try{ document.body.classList.remove("in-chat"); }catch(e){}
+      try{ setWhyaPath("/dashboard"); }catch(e){ try{ history.pushState({},"", "/dashboard"); }catch(e2){} }
       var nav = document.querySelector(".bottom-nav");
       if(nav) nav.classList.remove("hidden");
       if(messagesRef){ try{ messagesRef.off(); }catch(e){} messagesRef=null; }
@@ -13748,8 +13749,124 @@ function openStatusViewer(uid,list,index){
       "38. /ai — asisten AI\n" +
       "39. /broadcast — info admin\n" +
       "40. /stop — matikan bot\n" +
+      "41. /iqc <teks> — gambar IQC\n" +
+      "42. /brat <teks> — canvas brat\n" +
+      "43. /nokia <teks> — canvas nokia\n" +
+      "44. /quoteimg <teks> — quote image\n" +
+      "45. /ytcomment <teks> — YT comment\n" +
+      "46. /tweet <teks> — tweet canvas\n" +
+      "47. /fakeff <nama> — Fake Free Fire\n" +
+      "48. /ff <nama> — Fake FF (alias)\n" +
       "────────────────\n" +
       "Ketik perintah, contoh: /ping";
+
+    
+    var NEXA_PROXY = "https://imghd.hh5949177.workers.dev/?url=";
+    var NEXA_API = "https://api.nexadev.my.id";
+    async function fetchNexaCanvas(pathAndQuery){
+      var target = NEXA_API + pathAndQuery;
+      var urls = [target, NEXA_PROXY + encodeURIComponent(target)];
+      var lastErr = null;
+      for(var i=0;i<urls.length;i++){
+        try{
+          var res = await fetch(urls[i], { method:"GET", mode:"cors" });
+          if(!res.ok) throw new Error("HTTP "+res.status);
+          var ct = (res.headers.get("content-type")||"").toLowerCase();
+          if(ct.indexOf("application/json")>=0 || ct.indexOf("text/")>=0){
+            var t = await res.text();
+            try{
+              var j = JSON.parse(t);
+              var u = j.url || j.image || j.result || j.data || (j.result && j.result.url);
+              if(u && String(u).indexOf("http")===0) return { url: u };
+              if(u && String(u).indexOf("data:")===0) return { dataUrl: u };
+            }catch(e){}
+            throw new Error("Respons bukan gambar");
+          }
+          var blob = await res.blob();
+          if(!blob || blob.size < 100) throw new Error("Gambar kosong");
+          var dataUrl = await new Promise(function(resolve, reject){
+            var fr = new FileReader();
+            fr.onload = function(){ resolve(fr.result); };
+            fr.onerror = reject;
+            fr.readAsDataURL(blob);
+          });
+          // coba upload host agar URL pendek
+          try{
+            var file = new File([blob], "canvas.png", { type: blob.type || "image/png" });
+            var up = await uploadToCatbox(file);
+            if(up) return { url: up };
+          }catch(e){}
+          return { dataUrl: dataUrl };
+        }catch(e){ lastErr = e; }
+      }
+      throw lastErr || new Error("Gagal canvas");
+    }
+    async function botSendImage(roomId, botId, botName, imageUrl, caption){
+      var payload = {
+        type: "image",
+        mediaUrl: imageUrl,
+        imageUrl: imageUrl,
+        url: imageUrl,
+        text: caption || "",
+        senderId: botId,
+        senderName: botName || "Bot",
+        timestamp: Date.now(),
+        isBot: true
+      };
+      await db.ref("chats/"+roomId).push(payload);
+    }
+    async function botRunCanvasCommand(cmd, bot, roomId){
+      var t = String(cmd||"").trim();
+      var low = t.toLowerCase();
+      var arg = t.split(/\s+/).slice(1).join(" ").trim();
+      var map = [
+        { re: /^\/iqc\b/i, path: function(a){ return "/api/canvas/iqc?text="+encodeURIComponent(a||"whya"); }, need: true, name: "IQC" },
+        { re: /^\/brat\b/i, path: function(a){ return "/api/canvas/brat?text="+encodeURIComponent(a||"whya"); }, need: true, name: "Brat" },
+        { re: /^\/nokia\b/i, path: function(a){ return "/api/canvas/nokia?text="+encodeURIComponent(a||"whya"); }, need: true, name: "Nokia" },
+        { re: /^\/quoteimg\b/i, path: function(a){ return "/api/canvas/quote?text="+encodeURIComponent(a||"whya"); }, need: true, name: "Quote" },
+        { re: /^\/ytcomment\b/i, path: function(a){ return "/api/canvas/ytcomment?text="+encodeURIComponent(a||"whya"); }, need: true, name: "YT Comment" },
+        { re: /^\/tweet\b/i, path: function(a){ return "/api/canvas/tweet?text="+encodeURIComponent(a||"whya"); }, need: true, name: "Tweet" },
+        { re: /^\/blur\b/i, path: function(a){ return "/api/canvas/blur?text="+encodeURIComponent(a||"whya"); }, need: false, name: "Blur" },
+        { re: /^\/fakeff\b/i, path: function(a){ return "/api/canvas/fakeff?name="+encodeURIComponent(a||"Player")+"&text="+encodeURIComponent(a||"Player"); }, need: true, name: "Fake FF" },
+        { re: /^\/ff\b/i, path: function(a){ return "/api/canvas/fakeff?name="+encodeURIComponent(a||"Player")+"&text="+encodeURIComponent(a||"Player"); }, need: true, name: "Fake FF" }
+      ];
+      for(var i=0;i<map.length;i++){
+        if(map[i].re.test(low)){
+          if(map[i].need && !arg) return { text: "Format: "+low.split(" ")[0]+" <teks>" };
+          try{
+            // kirim status dulu
+            await db.ref("chats/"+roomId).push({
+              type:"text", text: "🎨 Membuat "+map[i].name+"…", senderId: bot.userId||bot.accountId, senderName: bot.name||"Bot", timestamp: Date.now(), isBot:true
+            });
+            var path = map[i].path(arg);
+            var img = null;
+            try { img = await fetchNexaCanvas(path); } catch(e1) {
+              // fallback endpoint names untuk Fake FF
+              if(/fakeff|\/ff\b/i.test(map[i].re)){
+                var alts = [
+                  "/api/canvas/fakeff?name="+encodeURIComponent(arg||"Player"),
+                  "/api/canvas/fakeface?name="+encodeURIComponent(arg||"Player"),
+                  "/api/canvas/ff?name="+encodeURIComponent(arg||"Player"),
+                  "/api/canvas/fake-ff?text="+encodeURIComponent(arg||"Player"),
+                  "/api/canvas/freefire?name="+encodeURIComponent(arg||"Player")
+                ];
+                for(var ai=0;ai<alts.length && !img;ai++){
+                  try { img = await fetchNexaCanvas(alts[ai]); } catch(e2) {}
+                }
+              }
+              if(!img) throw e1;
+            }
+            var src = img && (img.url || img.dataUrl);
+            if(!src) return { text: "Gagal membuat gambar." };
+            await botSendImage(roomId, bot.userId||currentChatPeerId, bot.name||"Bot", src, map[i].name+": "+arg);
+            return { ok: true };
+          }catch(e){
+            return { text: "Gagal "+map[i].name+": "+(e.message||e) };
+          }
+        }
+      }
+      return null;
+    }
 
     function botUnescape(s){
       return String(s||"").replace(/\\n/g, "\n");
@@ -13859,29 +13976,29 @@ function openStatusViewer(uid,list,index){
         if(!currentRoom) return;
         var peer = resolveBotPeerId();
         var bot = await lookupBotMeta(peer);
-        // juga: jika kita sendiri bot dan sedang di room (jarang)
-        if(!bot && currentUser){
-          var selfBot = await lookupBotMeta(currentUser.id);
-          if(selfBot) bot = null; // jangan reply ke diri sendiri dari sisi pengirim
-        }
         if(!bot) return;
-        var reply = handleBotCommand(cmd, bot);
-        if(!reply) return;
         var botId = bot.userId || peer;
+        var botName = bot.name || "Bot";
+        // canvas commands (gambar)
+        var canvas = await botRunCanvasCommand(cmd, Object.assign({userId:botId,name:botName}, bot), currentRoom);
+        if(canvas){
+          if(canvas.text){
+            await db.ref("chats/"+currentRoom).push({
+              type:"text", text: canvas.text, senderId: botId, senderName: botName, timestamp: Date.now(), isBot:true
+            });
+          }
+          return;
+        }
+        var reply = handleBotCommand(cmd, Object.assign({userId:botId,name:botName}, bot));
+        if(!reply) return;
         await db.ref("chats/"+currentRoom).push({
           type: "text",
           text: reply,
           senderId: botId,
-          senderName: bot.name || "Bot",
+          senderName: botName,
           timestamp: Date.now(),
           isBot: true
         });
-        try{
-          db.ref("userChats/"+currentUser.id+"/"+currentRoom).update({
-            lastMessage: reply.slice(0,80),
-            lastTime: Date.now()
-          });
-        }catch(e){}
       }catch(e){ console.warn("bot reply", e); }
     }
 
@@ -13921,16 +14038,27 @@ function openStatusViewer(uid,list,index){
           var cmd = (m.text||"").trim();
           if(!cmd) return;
           if(cmd.charAt(0)!=="/" && cmd.toLowerCase()!=="menu") return;
-          var reply = handleBotCommand(cmd, Object.assign({userId:currentUser.id,name:currentUser.name}, startInAppBotEngine.meta||{}));
-          if(!reply) return;
-          db.ref("chats/"+roomId).push({
-            type:"text",
-            text: reply,
-            senderId: currentUser.id,
-            senderName: currentUser.name || "Bot",
-            timestamp: Date.now(),
-            isBot: true
-          });
+          var meta = Object.assign({userId:currentUser.id,name:currentUser.name}, startInAppBotEngine.meta||{});
+          botRunCanvasCommand(cmd, meta, roomId).then(function(canvas){
+            if(canvas){
+              if(canvas.text){
+                db.ref("chats/"+roomId).push({
+                  type:"text", text: canvas.text, senderId: currentUser.id, senderName: currentUser.name||"Bot", timestamp: Date.now(), isBot:true
+                });
+              }
+              return;
+            }
+            var reply = handleBotCommand(cmd, meta);
+            if(!reply) return;
+            db.ref("chats/"+roomId).push({
+              type:"text",
+              text: reply,
+              senderId: currentUser.id,
+              senderName: currentUser.name || "Bot",
+              timestamp: Date.now(),
+              isBot: true
+            });
+          }).catch(function(){});
         });
       }catch(e){}
     }
