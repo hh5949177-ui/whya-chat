@@ -27,16 +27,22 @@ const POLL_MS = 2500;
 // ==============================================================
 
 const MENU_LINES = [
-  "Menu Bot WhyA Chat",
-  "------------------------------",
-  "1 /menu  2 /ping  3 /info  4 /waktu  5 /help",
-  "6 /iqc <teks>  7 /brat <teks>  8 /nokia <teks>",
-  "9 /fakeff <nama>  10 /toqr <url>  11 /hd <url>",
-  "12 /stc <url gambar>  13 /ttdown <url tiktok>",
-  "14 /ytserc <kata kunci>  15 /status  16 /versi",
-  "------------------------------",
-  "Contoh: /nokia semangat pagi"
+  "〔 WhyA Chat 〕",
+  "Plugin pack aktif",
+  "────────────────",
+  "",
+  "〔 UTAMA 〕 /menu /ping /info /waktu /status",
+  "〔 CANVAS 〕 /iqc /brat /nokia /fakeff /fakeffduo",
+  "  /fakecall /qcwa /ttqc /wmp1 /wmp2 /toqr /hd /remini",
+  "〔 DOWNLOADER 〕 /ttdown /ig /fb /ytmp4 /pin /aio /mediafire",
+  "〔 AI FOTO 〕 /tozombie /tohitam /tojepang /tochibi /toblonde /stc",
+  "〔 TOOLS 〕 /ytserc /lyrics /hitung /password",
+  "〔 HIBURAN 〕 /quote /koin /dadu /random",
+  "",
+  "Web: https://whyachtt.vercel.app"
 ];
+const BOT_BANNER_URL = "https://whyachtt.vercel.app/bot-banner.png";
+const BOT_WEB_URL = "https://whyachtt.vercel.app";
 
 const QUOTES = [
   "Konsisten lebih penting daripada sempurna.",
@@ -110,7 +116,7 @@ function handleCommand(text) {
   var arg = t.split(/\s+/).slice(1).join(" ").trim();
 
   if (low === "/menu" || low === "menu") {
-    return "🤖 *Menu Bot whya*\n\n" + MENU_LINES.join("\n") + "\n\nContoh: /ping atau /hitung 2+3";
+    return { kind: "menu", text: MENU_LINES.join("\n") };
   }
   if (low === "/ping") return "pong ✅ Bot aktif";
   if (low === "/info") {
@@ -477,11 +483,40 @@ async function pollOnce() {
       var ans = handleCommand(m.text || "");
       if (ans) {
         console.log("[" + roomId + "] <=", String(m.text || "").slice(0, 60));
-        if (typeof ans === "object" && ans.jsonUrl) {
+        if (typeof ans === "object" && ans.kind === "menu") {
+          try {
+            await dbPost("chats/" + roomId, {
+              type: "image",
+              mediaUrl: BOT_BANNER_URL,
+              imageUrl: BOT_BANNER_URL,
+              url: BOT_BANNER_URL,
+              text: "WhyA Chat — More Than Just Chat",
+              caption: "WhyA Chat — More Than Just Chat",
+              linkUrl: BOT_WEB_URL,
+              senderId: BOT_USER_ID,
+              senderName: BOT_NAME,
+              timestamp: Date.now(),
+              isBot: true
+            });
+            await sendText(roomId, ans.text || MENU_LINES.join("\n"));
+          } catch (e) {
+            await sendText(roomId, ans.text || MENU_LINES.join("\n"));
+          }
+        } else if (typeof ans === "object" && ans.jsonUrl) {
           await sendText(roomId, (ans.label || "Proses") + "…");
           try {
             const j = await fetchJsonUrl(ans.jsonUrl);
-            if (ans.kind === "tiktok") {
+            if (ans.kind === "media") {
+              const media = j && (j.url || j.download || (j.data && (j.data.url || j.data.hdplay || j.data.play || j.data.video || j.data.image || j.data.hd || j.data.sd)));
+              if (media) {
+                const isVid = /\.mp4|video/i.test(String(media));
+                await dbPost("chats/" + roomId, { type: isVid ? "video" : "image", mediaUrl: media, url: media, text: ans.label || "", senderId: BOT_USER_ID, senderName: BOT_NAME, timestamp: Date.now(), isBot: true });
+              } else await sendText(roomId, "Gagal ambil media.");
+            } else if (ans.kind === "lyrics") {
+              let lirik = j && (j.lyrics || j.result || j.data || j.lirik);
+              if (typeof lirik === "object") lirik = lirik.lyrics || lirik.text || JSON.stringify(lirik).slice(0,1500);
+              await sendText(roomId, lirik ? String(lirik).slice(0,3500) : "Lirik tidak ditemukan.");
+            } else if (ans.kind === "tiktok") {
               const video = j && (j.url || j.download || (j.data && (j.data.hdplay || j.data.play || j.data.wmplay || j.data.url)));
               const title = (j && (j.title || (j.data && j.data.title))) || "TikTok";
               if (video) {
