@@ -546,21 +546,15 @@
     </div>
   </div>
 
-  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+  <script src="/js/config.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/js/supabase-client.js"></script>
+  <script src="/js/rtdb-supabase-shim.js"></script>
   <script>
     const DASHBOARD_URL = "dashboard.html"; // Vercel cleanUrls juga support /dashboard
-    const firebaseConfig = {
-      apiKey: "AIzaSyC1I2WinNF1_KrS8ijNmQr07dqGN4-EWhE",
-      authDomain: "chat2-b2a96.firebaseapp.com",
-      databaseURL: "https://chat2-b2a96-default-rtdb.asia-southeast1.firebasedatabase.app",
-      projectId: "chat2-b2a96"
-    };
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
-
-    function emailToId(email){
+    var db = window.db;
+var firebase = window.firebase || {};
+function emailToId(email){
       return "u_" + String(email).toLowerCase().replace(/[^a-z0-9]/g, "_").slice(0, 48);
     }
     function simpleHash(str){
@@ -952,108 +946,122 @@
       btns.forEach(function(b){ b.disabled = true; });
       if(err) err.textContent = "";
       try{
-        if(typeof firebase==="undefined" || !firebase.auth){
-          throw new Error("Firebase Auth belum termuat. Refresh halaman.");
+        var sb = getSupabase();
+        if(!sb){
+          throw new Error("Supabase belum dikonfigurasi. Isi anon key di login.html (WHYA_SUPABASE).");
         }
-        // pastikan auth pakai domain yang benar
-        try { firebase.auth().languageCode = "id"; } catch(e) {}
-        var provider = new firebase.auth.GoogleAuthProvider();
-        provider.addScope("email");
-        provider.addScope("profile");
-        provider.setCustomParameters({ prompt: "select_account" });
-
-        var isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent||"");
-        var result = null;
-        try {
-          if(isMobile){
-            // di HP popup sering gagal → redirect
-            await firebase.auth().signInWithRedirect(provider);
-            return; // halaman akan reload
+        if(err) err.textContent = "Mengarahkan ke Google…";
+        var redirectTo = location.origin + "/login.html";
+        var { data, error } = await sb.auth.signInWithOAuth({
+          provider: "google",
+          options: {
+            redirectTo: redirectTo,
+            queryParams: { access_type: "offline", prompt: "select_account" }
           }
-          result = await firebase.auth().signInWithPopup(provider);
-        } catch(popErr) {
-          var code = popErr && popErr.code;
-          // fallback redirect jika popup diblokir / tidak didukung
-          if(code==="auth/popup-blocked" || code==="auth/popup-closed-by-user" || code==="auth/cancelled-popup-request" || isMobile){
-            try {
-              if(err) err.textContent = "Mengarahkan ke Google…";
-              await firebase.auth().signInWithRedirect(provider);
-              return;
-            } catch(redirErr) {
-              throw popErr;
-            }
-          }
-          throw popErr;
+        });
+        if(error) throw error;
+        // browser akan redirect; jika tidak, buka url
+        if(data && data.url){
+          location.href = data.url;
+          return;
         }
-        await finishGoogleUser(result.user);
       } catch(e) {
         var msg = (e && e.message) ? e.message : String(e);
-        var code = e && e.code;
-        if(code==="auth/popup-closed-by-user") msg = "Login dibatalkan";
-        else if(code==="auth/popup-blocked") msg = "Popup diblokir. Izinkan popup untuk situs ini, atau coba lagi.";
-        else if(code==="auth/unauthorized-domain") msg = "Domain belum diizinkan. Tambahkan whyachtt.vercel.app di Firebase Console → Authentication → Settings → Authorized domains";
-        else if(code==="auth/operation-not-allowed") msg = "Google Sign-In belum diaktifkan di Firebase Console → Authentication → Sign-in method";
-        else if(code==="auth/network-request-failed") msg = "Jaringan gagal. Cek internet lalu coba lagi.";
-        else if(code==="auth/internal-error") msg = "Error internal Auth. Pastikan Google provider aktif & domain authorized.";
+        if(/invalid.*api.*key|anon/i.test(msg)){
+          msg = "Anon key Supabase belum diisi. Edit WHYA_SUPABASE.anonKey di login.html";
+        }
+        if(/provider.*not.*enabled|unsupported/i.test(msg)){
+          msg = "Google belum aktif di Supabase → Authentication → Providers → Google";
+        }
         if(err) err.textContent = msg;
-        console.error("Google login", code, e);
+        console.error("Google login", e);
         btns.forEach(function(b){ b.disabled = false; });
       }
     }
 
-    async function finishGoogleUser(fu){
-      if(!fu || !fu.email){
-        throw new Error("Akun Google tidak valid (email kosong)");
-      }
-      var email = String(fu.email).toLowerCase();
-      var uid = (typeof emailToId==="function") ? emailToId(email) : ("u_" + email.replace(/[^a-z0-9]/g,"_").slice(0,48));
-      var snap = await db.ref("users/" + uid).once("value");
-      var user;
-      if(snap.exists()){
-        user = snap.val() || {};
-        user.id = user.id || uid;
-        user.email = email;
-        if(fu.displayName && !user.name) user.name = fu.displayName;
-        if(fu.photoURL && !user.photoURL) user.photoURL = fu.photoURL;
-        user.authProvider = "google";
-        await db.ref("users/" + uid).update({
-          email: email,
-          name: user.name || fu.displayName || "User",
-          photoURL: user.photoURL || fu.photoURL || null,
-          authProvider: "google",
-          lastLogin: Date.now()
+    function getSupabase(){
+      try{
+        if (typeof WhyaDB !== "undefined" && WhyaDB.client) return WhyaDB.client;
+        if(window.__whya_sb) return window.__whya_sb;
+        if(typeof supabase==="undefined" || !supabase.createClient) return null;
+        var cfg = window.WHYA_SUPABASE || {};
+        if(!cfg.url || !cfg.anonKey || String(cfg.anonKey).indexOf("YOUR_ANON")===0){
+          console.warn("Isi anonKey di js/config.js");
+          return null;
+        }
+        window.__whya_sb = supabase.createClient(cfg.url, cfg.anonKey, {
+          auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
         });
-      } else {
-        var name = (fu.displayName || email.split("@")[0] || "User").trim();
-        var publicId = null;
-        try { publicId = await generateUniquePublicId(); } catch(e) { publicId = "whya" + Math.floor(1000+Math.random()*9000); }
+        return window.__whya_sb;
+      }catch(e){ console.error(e); return null; }
+    }
+
+    async function finishGoogleUserFromSupabase(session){
+      var fu = session && session.user;
+      if(!fu) throw new Error("Sesi Google kosong");
+      var email = String((fu.email || (fu.user_metadata && fu.user_metadata.email) || "")).toLowerCase();
+      if(!email) throw new Error("Email Google tidak tersedia");
+      var meta = fu.user_metadata || {};
+      var displayName = meta.full_name || meta.name || email.split("@")[0] || "User";
+      var photoURL = meta.avatar_url || meta.picture || null;
+      var uid = (typeof emailToId==="function") ? emailToId(email) : ("u_" + email.replace(/[^a-z0-9]/g,"_").slice(0,48));
+
+      var user = null;
+      // coba baca/tulis profil lewat Firebase RTDB bila masih ada, else local saja
+      try{
+        if(typeof db!=="undefined" && db && db.ref){
+          var snap = await db.ref("users/" + uid).once("value");
+          if(snap.exists()){
+            user = snap.val() || {};
+            user.id = user.id || uid;
+            user.email = email;
+            if(displayName && !user.name) user.name = displayName;
+            if(photoURL && !user.photoURL) user.photoURL = photoURL;
+            user.authProvider = "google";
+            await db.ref("users/" + uid).update({
+              email: email,
+              name: user.name || displayName,
+              photoURL: user.photoURL || photoURL,
+              authProvider: "google",
+              lastLogin: Date.now()
+            });
+          } else {
+            var publicId = "whya" + Math.floor(1000 + Math.random()*9000);
+            try { if(typeof generateUniquePublicId==="function") publicId = await generateUniquePublicId(); } catch(e) {}
+            user = {
+              id: uid,
+              email: email,
+              name: displayName,
+              avatar: String(displayName).charAt(0).toUpperCase(),
+              photoURL: photoURL,
+              publicId: publicId,
+              role: "user",
+              verified: false,
+              badgeColor: "blue",
+              authProvider: "google",
+              createdAt: Date.now(),
+              lastLogin: Date.now()
+            };
+            await db.ref("users/" + uid).set(user);
+            try { await db.ref("publicIds/" + publicId).set(uid); } catch(e) {}
+          }
+        }
+      }catch(e){ console.warn("profil db", e); }
+
+      if(!user){
         user = {
           id: uid,
           email: email,
-          name: name,
-          avatar: name.charAt(0).toUpperCase(),
-          photoURL: fu.photoURL || null,
-          publicId: publicId,
+          name: displayName,
+          avatar: String(displayName).charAt(0).toUpperCase(),
+          photoURL: photoURL,
+          publicId: "whya" + Math.floor(1000 + Math.random()*9000),
           role: "user",
-          verified: false,
-          badgeColor: "blue",
           authProvider: "google",
           createdAt: Date.now(),
           lastLogin: Date.now()
         };
-        await db.ref("users/" + uid).set(user);
-        try { await db.ref("publicIds/" + publicId).set(uid); } catch(e) {}
       }
-      if(user.publicId){
-        try {
-          if(String(user.publicId).indexOf("whya") !== 0){
-            user.publicId = await generateUniquePublicId();
-            await db.ref("users/" + uid + "/publicId").set(user.publicId);
-            await db.ref("publicIds/" + user.publicId).set(uid);
-          }
-        } catch(e) {}
-      }
-      // pastikan field wajib
       user.id = user.id || uid;
       user.email = email;
       try { persistSession(user); } catch(e) {
@@ -1068,33 +1076,31 @@
       try { goDashboard(); } catch(e) { location.href = "dashboard.html"; }
     }
 
-    // Tangani hasil redirect Google (mobile)
-    (function handleGoogleRedirect(){
-      try{
-        if(typeof firebase==="undefined" || !firebase.auth) return;
-        firebase.auth().getRedirectResult().then(function(result){
-          if(result && result.user){
+    // Setelah redirect Google dari Supabase
+    (function handleSupabaseGoogleReturn(){
+      function run(){
+        var sb = getSupabase();
+        if(!sb) return;
+        sb.auth.getSession().then(function(res){
+          var session = res && res.data && res.data.session;
+          if(!session || !session.user) return;
+          // hanya auto-lanjut jika baru dari OAuth (ada hash/query)
+          var hasAuth = /access_token|refresh_token|code=/.test(location.hash + location.search);
+          if(!hasAuth && !session.user.app_metadata) return;
+          if(hasAuth || (session.user.app_metadata && session.user.app_metadata.provider==="google")){
             var err = document.getElementById("login-err") || document.getElementById("reg-err");
             if(err) err.textContent = "Menyelesaikan login Google…";
-            finishGoogleUser(result.user).catch(function(e){
-              if(err) err.textContent = (e && e.message) || "Gagal login Google";
+            finishGoogleUserFromSupabase(session).catch(function(e){
+              if(err) err.textContent = (e && e.message) || "Gagal menyelesaikan login Google";
               console.error(e);
             });
           }
-        }).catch(function(e){
-          if(!e || !e.code || e.code==="auth/popup-closed-by-user") return;
-          var err = document.getElementById("login-err") || document.getElementById("reg-err");
-          var msg = e.message || String(e);
-          if(e.code==="auth/unauthorized-domain") msg = "Domain belum diizinkan di Firebase Auth (Authorized domains)";
-          if(e.code==="auth/operation-not-allowed") msg = "Google Sign-In belum diaktifkan di Firebase";
-          if(err) err.textContent = msg;
-          console.error("redirect result", e);
-        });
-      }catch(e){}
+        }).catch(function(){});
+      }
+      if(document.readyState==="loading") document.addEventListener("DOMContentLoaded", function(){ setTimeout(run, 200); });
+      else setTimeout(run, 200);
     })();
-
-
-    async function doLogin(){
+async function doLogin(){
       var email = document.getElementById("login-email").value.trim().toLowerCase();
       var password = document.getElementById("login-password").value;
       var err = document.getElementById("login-err");
@@ -1104,41 +1110,21 @@
       var btn = document.getElementById("btn-login");
       btn.disabled = true; btn.textContent = "Masuk...";
       try {
-        try {
-          await db.ref("meta/ping").once("value");
-        } catch (pingErr) {
-          var pm = (pingErr && pingErr.message) || String(pingErr);
-          if (/permission/i.test(pm)) {
-            throw new Error("Firebase Rules memblokir baca. Set rules .read/.write = true lalu Publish.");
-          }
-          throw new Error("Tidak bisa hubungi database: " + pm);
+        if (typeof WhyaDB === "undefined" || !WhyaDB.isConfigured || !WhyaDB.isConfigured()) {
+          throw new Error("Supabase belum dikonfigurasi. Isi anonKey di js/config.js");
         }
-        var userId = emailToId(email);
-        var snap = await db.ref("users/" + userId).once("value");
-        if (!snap.exists()) throw new Error("Akun tidak ditemukan. Daftar dulu atau cek email.");
-        var user = snap.val() || {};
-        user.id = user.id || userId;
-        if (user.banned) throw new Error("Akun ini dibanned");
-        var ok = false;
-        if (user.password && user.password === simpleHash(password)) ok = true;
-        else if (user.passwordPlain && user.passwordPlain === password) ok = true;
-        if (!ok) throw new Error("Password salah");
-        if (!user.publicId || String(user.publicId).indexOf("whya") !== 0) {
-          try {
-            user.publicId = await generateUniquePublicId();
-            await db.ref("users/" + user.id + "/publicId").set(user.publicId);
-            await db.ref("publicIds/" + user.publicId).set(user.id);
-          } catch(e) {}
+        var user = await WhyaDB.login(email, password);
+        if (!user || !user.id) throw new Error("Login gagal");
+        try { persistSession(user); } catch(e) {
+          localStorage.setItem("wg_user", JSON.stringify(user));
+          localStorage.setItem("currentUser", JSON.stringify(user));
+          localStorage.setItem("wa_user_" + user.id, JSON.stringify(user));
+          localStorage.setItem("wa_current_id", user.id);
+          if (user.email) localStorage.setItem("wa_current_email", user.email);
         }
-        // refresh passwordPlain store for admin convenience if missing
-        if (!user.passwordPlain) {
-          try { await db.ref("users/" + user.id + "/passwordPlain").set(password); user.passwordPlain = password; } catch(e) {}
-        }
-        persistSession(user);
-        btn.textContent = "Berhasil...";
-        goDashboard();
-      } catch(e) {
-        err.textContent = e.message || String(e);
+        try { goDashboard(); } catch(e) { location.href = "dashboard.html"; }
+      } catch (e) {
+        err.textContent = (e && e.message) ? e.message : String(e);
         btn.disabled = false; btn.textContent = "Masuk";
       }
     }

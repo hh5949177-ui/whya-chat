@@ -161,30 +161,59 @@
   Ref.prototype.on = function (event, cb) {
     var self = this;
     var p = self.path;
+    event = event || "value";
     if (!listeners[p]) listeners[p] = [];
-    listeners[p].push({ type: event || "value", cb: cb });
-    // initial
+    listeners[p].push({ type: event, cb: cb, _seen: {} });
+    function fireValue(v) {
+      var s = snapVal(v);
+      s.key = childKey(p);
+      try { cb(s); } catch (e) {}
+    }
+    function fireChildren(v) {
+      if (!v || typeof v !== "object") return;
+      Object.keys(v).forEach(function (k) {
+        var childSnap = {
+          key: k,
+          val: function () { return v[k]; },
+          exists: function () { return v[k] != null; },
+          forEach: function () {}
+        };
+        try { cb(childSnap); } catch (e) {}
+      });
+    }
     readPath(p).then(function (v) {
-      try {
-        cb(snapVal(v));
-      } catch (e) {}
+      if (event === "value") fireValue(v);
+      else if (event === "child_added") fireChildren(v);
     });
-    // light poll (Supabase realtime opsional)
     if (!Ref._poll) {
+      Ref._last = {};
       Ref._poll = setInterval(function () {
         Object.keys(listeners).forEach(function (path) {
           if (!listeners[path] || !listeners[path].length) return;
           readPath(path).then(function (v) {
             listeners[path].forEach(function (L) {
-              if (L.type === "value") {
-                try {
+              try {
+                if (L.type === "value") {
                   L.cb(snapVal(v));
-                } catch (e) {}
-              }
+                } else if (L.type === "child_added") {
+                  if (!v || typeof v !== "object") return;
+                  L._seen = L._seen || {};
+                  Object.keys(v).forEach(function (k) {
+                    if (L._seen[k]) return;
+                    L._seen[k] = true;
+                    L.cb({
+                      key: k,
+                      val: function () { return v[k]; },
+                      exists: function () { return v[k] != null; },
+                      forEach: function () {}
+                    });
+                  });
+                }
+              } catch (e) {}
             });
           });
         });
-      }, 4000);
+      }, 2500);
     }
     return cb;
   };

@@ -288,6 +288,8 @@
     #ask-sheet .ask-yes { background:#fff; color:#111; }
 
     #app { display:none; height:100%; max-width:900px; margin:0 auto; position:relative; }
+    body.app-ready #app { display:block !important; visibility:visible !important; opacity:1 !important; }
+    body.app-ready #app-loader { display:none !important; }
 
     /* MAIN TABS */
     .tab-page {
@@ -5082,18 +5084,10 @@
     </div>
   </div>
 
-  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/js/config.js"></script>
+  
   <script src="/js/supabase-client.js"></script>
-  <script>
-    // === ISI PROJECT SUPABASE KAMU ===
-    window.WHYA_SUPABASE = window.WHYA_SUPABASE || {
-      url: "https://YOUR_PROJECT_REF.supabase.co",
-      anonKey: "YOUR_ANON_PUBLIC_KEY"
-    };
-  </script>
   <script src="/js/rtdb-supabase-shim.js"></script>
   <script>
     try {
@@ -5101,17 +5095,20 @@
     } catch(e) {
       
     }
-    const firebaseConfig = {
-      apiKey: "AIzaSyC1I2WinNF1_KrS8ijNmQr07dqGN4-EWhE",
-      authDomain: "chat2-b2a96.firebaseapp.com",
-      databaseURL: "https://chat2-b2a96-default-rtdb.asia-southeast1.firebasedatabase.app",
-      projectId: "chat2-b2a96",
-      storageBucket: "chat2-b2a96.firebasestorage.app"
-    };
-    /* Firebase RTDB dimatikan — memakai Supabase shim (js/rtdb-supabase-shim.js) */
-    if(typeof db==="undefined" || !db){ console.error("Supabase RT shim gagal dimuat"); }
+    /* FULL SUPABASE */
     var storage = null;
-    /* storage: pakai Supabase Storage via WhyaDB.uploadMedia */
+    if(typeof db==="undefined" || !db){
+      console.error("[whya] Shim Supabase belum siap — cek js/config.js anonKey");
+      window.db = { ref: function(){ return {
+        once: function(){ return Promise.resolve({ val:function(){return null}, exists:function(){return false}, forEach:function(){} }); },
+        on: function(e,cb){ try{ cb({ val:function(){return null}, exists:function(){return false}, forEach:function(){} }); }catch(err){} },
+        off: function(){}, set: function(){ return Promise.resolve(); }, update: function(){ return Promise.resolve(); },
+        push: function(){ return { key: "x"+Date.now(), then: function(fn){ return Promise.resolve().then(fn); } }; },
+        remove: function(){ return Promise.resolve(); }, limitToLast: function(){ return this; }, child: function(){ return this; }
+      }; } };
+    }
+    var db = window.db;
+    var firebase = window.firebase || { apps: [], initializeApp: function(){return {}}, database: function(){return db;}, auth: function(){return {}}, storage: function(){return null;} };
 
     let currentUser=null,currentRoom=null,messagesRef=null,lastUserChats={},pendingReg=null,generatedOTP=null;
     var isRecordingVoice=false, mediaRecorder=null, recordedChunks=[], voiceTimer=null, voiceSeconds=0;
@@ -6750,7 +6747,8 @@ function saveAccountLocal(user){
       // tampilkan app dulu, baru sync firebase
       try{
         var app=document.getElementById("app");
-        if(app) app.style.display="block";
+        if(app){ app.style.display="block"; app.style.visibility="visible"; }
+        if(document.body) document.body.classList.add("app-ready");
       }catch(e){}
       try{ hideAppLoader(); }catch(e){}
       var started=false;
@@ -6762,7 +6760,8 @@ function saveAccountLocal(user){
           try{ hideAppLoader(); }catch(e){}
           try{
             var app=document.getElementById("app");
-            if(app) app.style.display="block";
+            if(app){ app.style.display="block"; app.style.visibility="visible"; }
+            if(document.body) document.body.classList.add("app-ready");
           }catch(e){}
         }
       }
@@ -6800,7 +6799,11 @@ function saveAccountLocal(user){
 
     function startApp(){
       try{ hideAppLoader(); }catch(e){}
-      try{ var _app0=document.getElementById("app"); if(_app0) _app0.style.display="block"; }catch(e){}
+      try{
+        var _app0=document.getElementById("app");
+        if(_app0){ _app0.style.display="block"; _app0.style.visibility="visible"; _app0.style.opacity="1"; }
+        if(document.body) document.body.classList.add("app-ready");
+      }catch(e){}
       try{ applySavedTheme(); }catch(e){}
       try{ applyLiquidDockSetting(); }catch(e){}
       if(!currentUser){ try{ hideAppLoader(); }catch(e){} location.replace("login.html"+(location.search||"")); return; }
