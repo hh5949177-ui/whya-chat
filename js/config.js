@@ -4,6 +4,6 @@
  */
 window.WHYA_SUPABASE = {
   url: "https://wjmxiedyklmmoxcxjlw.supabase.co",
-  anonKey: "YOUR_ANON_PUBLIC_KEY"
+  anonKey: "sb_publishable_TMNireG8PZENCgtHdh-HQA_BkAlGAle"
 };
 window.WHYA_FULL_SUPABASE = true;
