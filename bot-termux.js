@@ -27,18 +27,15 @@ const POLL_MS = 2500;
 // ==============================================================
 
 const MENU_LINES = [
-  "〔 WhyA Chat 〕",
-  "Plugin pack aktif",
+  "〔 WhyA Chat 〕 130+ fitur",
   "────────────────",
-  "",
   "〔 UTAMA 〕 /menu /ping /info /waktu /status",
-  "〔 CANVAS 〕 /iqc /brat /nokia /fakeff /fakeffduo",
-  "  /fakecall /qcwa /ttqc /wmp1 /wmp2 /toqr /hd /remini",
-  "〔 DOWNLOADER 〕 /ttdown /ig /fb /ytmp4 /pin /aio /mediafire",
-  "〔 AI FOTO 〕 /tozombie /tohitam /tojepang /tochibi /toblonde /stc",
+  "〔 CANVAS 〕 /iqc /brat /brathd /nokia /fakeff /fakeffduo /hd",
+  "〔 DOWNLOADER 〕 /ttdown /ig /fb /ytmp4 /aio /pin /mediafire",
+  "〔 AI FOTO 〕 /tozombie /tohitam /tojepang /stc",
+  "〔 ISLAMI 〕 /ayatkursi /asmaulhusna /jadwalsholat",
+  "〔 ANIME 〕 /waifu /husbu /cosplay",
   "〔 TOOLS 〕 /ytserc /lyrics /hitung /password",
-  "〔 HIBURAN 〕 /quote /koin /dadu /random",
-  "",
   "Web: https://whyachtt.vercel.app"
 ];
 const BOT_BANNER_URL = "https://whyachtt.vercel.app/bot-banner.png";

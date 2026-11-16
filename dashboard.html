@@ -6680,25 +6680,61 @@ function saveAccountLocal(user){
     }
 
     window.onload=function(){
-      const uid=localStorage.getItem("wa_current_id");
-      const email=localStorage.getItem("wa_current_email");
-      const phone=localStorage.getItem("wa_current_phone"); // legacy
-      const key=uid||email||phone;
-      if(key){
-        const saved=localStorage.getItem("wa_user_"+key)||(uid?localStorage.getItem("wa_user_"+uid):null)||(email?localStorage.getItem("wa_user_"+email):null)||(phone?localStorage.getItem("wa_user_"+phone):null);
-        if(saved){
-          currentUser=JSON.parse(saved);
-          db.ref("users/"+currentUser.id).once("value").then(function(s){
-            if(s.exists()){
-              currentUser=s.val();
-              localStorage.setItem("wa_user_"+currentUser.id,JSON.stringify(currentUser));
-              if(currentUser.email) localStorage.setItem("wa_current_email",currentUser.email);
-              localStorage.setItem("wa_current_id",currentUser.id);
-            }
-            startApp();
-          });
+      // safety: jangan biarkan loader menggantung
+      try{ setTimeout(function(){ try{ hideAppLoader(); }catch(e){} }, 8000); }catch(e){}
+      function bootFromUser(u){
+        if(!u){ try{ hideAppLoader(); }catch(e){} try{ location.replace("login.html"); }catch(e){} return; }
+        currentUser = u;
+        if(!currentUser.id && currentUser.email && typeof emailToId==="function"){
+          try{ currentUser.id = emailToId(currentUser.email); }catch(e){}
         }
+        // refresh profil dari DB (timeout 4s supaya tidak loading abadi)
+        var done=false;
+        function finish(){ if(done) return; done=true; try{ startApp(); }catch(e){ console.error(e); try{ hideAppLoader(); }catch(e2){} } }
+        try{
+          if(currentUser.id && typeof db!=="undefined" && db){
+            var t=setTimeout(finish, 4000);
+            db.ref("users/"+currentUser.id).once("value").then(function(s){
+              clearTimeout(t);
+              if(s && s.exists()){
+                var v=s.val()||{};
+                currentUser=Object.assign({}, currentUser, v);
+                try{
+                  localStorage.setItem("wa_user_"+currentUser.id, JSON.stringify(currentUser));
+                  localStorage.setItem("wg_user", JSON.stringify(currentUser));
+                  if(currentUser.email) localStorage.setItem("wa_current_email", currentUser.email);
+                  localStorage.setItem("wa_current_id", currentUser.id);
+                }catch(e){}
+              }
+              finish();
+            }).catch(function(){ clearTimeout(t); finish(); });
+          } else finish();
+        }catch(e){ finish(); }
       }
+      // 1) sesi modern
+      var u=null;
+      try{ if(typeof loadSavedSession==="function") u=loadSavedSession(); }catch(e){}
+      // 2) fallback key lama
+      if(!u){
+        try{
+          var uid=localStorage.getItem("wa_current_id");
+          var email=localStorage.getItem("wa_current_email");
+          var phone=localStorage.getItem("wa_current_phone");
+          var key=uid||email||phone;
+          if(key){
+            var saved=localStorage.getItem("wa_user_"+key)||(uid?localStorage.getItem("wa_user_"+uid):null)||(email?localStorage.getItem("wa_user_"+email):null)||(phone?localStorage.getItem("wa_user_"+phone):null);
+            if(saved) u=JSON.parse(saved);
+          }
+        }catch(e){}
+      }
+      // 3) wg_user / currentUser
+      if(!u){
+        try{
+          var raw=localStorage.getItem("wg_user")||localStorage.getItem("currentUser");
+          if(raw) u=JSON.parse(raw);
+        }catch(e){}
+      }
+      bootFromUser(u);
     };
     function startApp(){
       try{ hideAppLoader(); }catch(e){}
@@ -6718,6 +6754,7 @@ function saveAccountLocal(user){
         }
       }catch(e){}
       try{ listenAppNotifications(); }catch(e){ console.warn("notif listen", e); }
+      try{ startInAppBotEngine(); }catch(e){}
       try{ setTimeout(function(){ try{ listenAppNotifications(); }catch(e){} }, 1500); }catch(e){}
       // tutup overlay agar bisa diklik
       try{
@@ -6744,9 +6781,10 @@ function saveAccountLocal(user){
       if(!currentUser.name) currentUser.name="User";
       if(!currentUser.id && currentUser.email) currentUser.id=emailToId(currentUser.email);
 
-      document.getElementById("auth-register").style.display="none";
-      document.getElementById("auth-login").style.display="none";
-      document.getElementById("app").style.display="block";
+      try{ var _ar=document.getElementById("auth-register"); if(_ar) _ar.style.display="none"; }catch(e){}
+      try{ var _al=document.getElementById("auth-login"); if(_al) _al.style.display="none"; }catch(e){}
+      try{ var _app=document.getElementById("app"); if(_app) _app.style.display="block"; }catch(e){}
+      try{ hideAppLoader(); }catch(e){}
       updateMyUI();updateProfileTab();setOnline();loadChats();loadStatuses();
       setTimeout(function(){ try{ renderChannels(); }catch(e){} }, 500);listenIncomingCalls();
       renderAccountsList();
@@ -13135,27 +13173,35 @@ function openStatusViewer(uid,list,index){
     var BOT_MENU_TEXT =
       "〔 WhyA Chat 〕\n" +
       "User: {user}\n" +
-      "Plugin pack aktif\n" +
+      "130+ fitur plugin\n" +
       "────────────────\n\n" +
       "〔 UTAMA 〕\n" +
       "• /menu • /ping • /info • /waktu\n" +
       "• /status • /help • /versi\n\n" +
-      "〔 CANVAS 〕\n" +
-      "• /iqc /brat /nokia <teks>\n" +
+      "〔 CANVAS / MAKER 〕\n" +
+      "• /iqc /brat /brathd /bratvid <teks>\n" +
+      "• /nokia <teks>\n" +
       "• /fakeff /ff <nama>\n" +
       "• /fakeffduo <n1>|<n2>\n" +
       "• /fakecall /qcwa /ttqc /wmp1 /wmp2\n" +
       "• /toqr <url> • /hd • /remini <url>\n\n" +
       "〔 DOWNLOADER 〕\n" +
-      "• /ttdown /ig /fb /ytmp4 /pin /aio\n" +
-      "• /mediafire <url>\n\n" +
+      "• /ttdown /ig /fb /ytmp4 /ytmp3\n" +
+      "• /pin /aio /mediafire /gdrive\n" +
+      "• /twitter /threads /soundcloud\n\n" +
       "〔 AI FOTO 〕\n" +
-      "• /tozombie /tohitam /tojepang <url>\n" +
-      "• /tochibi /toblonde /tosad /stc <url>\n\n" +
+      "• /tozombie /tohitam /tojepang\n" +
+      "• /tochibi /toblonde /tosad /stc\n\n" +
+      "〔 ISLAMI 〕\n" +
+      "• /ayatkursi • /asmaulhusna\n" +
+      "• /jadwalsholat <kota>\n\n" +
+      "〔 ANIME 〕\n" +
+      "• /waifu • /husbu • /cosplay\n\n" +
       "〔 TOOLS 〕\n" +
-      "• /ytserc /lyrics /hitung /password /echo\n\n" +
+      "• /ytserc /lyrics /hitung /password\n" +
+      "• /echo <teks> /random\n\n" +
       "〔 HIBURAN 〕\n" +
-      "• /quote /koin /dadu /random\n\n" +
+      "• /quote • /koin • /dadu\n\n" +
       "────────────────\n" +
       "Web: https://whyachtt.vercel.app";
 
@@ -13348,6 +13394,50 @@ function openStatusViewer(uid,list,index){
           var link=data&&(data.url||data.download||(data.data&&data.data.url));
           return {text: link ? ("MediaFire:\n"+link) : "Gagal MediaFire."};
         }
+        
+        if(/^\/ytmp3\b/i.test(low)){ if(!arg) return {text:"Format: /ytmp3 <url>"}; return await jsonMedia("https://api.nexadev.my.id/api/ytmp4?url="+encodeURIComponent(arg),"YT MP3",true); }
+        if(/^\/gdrive\b|^\/drive\b/i.test(low)){ if(!arg) return {text:"Format: /gdrive <url>"}; return await jsonMedia("https://api.nexadev.my.id/api/aio/?url="+encodeURIComponent(arg),"GDrive",false); }
+        if(/^\/twitter\b|^\/xdl\b/i.test(low)){ if(!arg) return {text:"Format: /twitter <url>"}; return await jsonMedia("https://api.nexadev.my.id/api/aio/?url="+encodeURIComponent(arg),"Twitter",true); }
+        if(/^\/threads\b/i.test(low)){ if(!arg) return {text:"Format: /threads <url>"}; return await jsonMedia("https://api.nexadev.my.id/api/aio/?url="+encodeURIComponent(arg),"Threads",false); }
+        if(/^\/soundcloud\b/i.test(low)){ if(!arg) return {text:"Format: /soundcloud <url>"}; return await jsonMedia("https://api.nexadev.my.id/api/aio/?url="+encodeURIComponent(arg),"SoundCloud",true); }
+        if(/^\/ayatkursi\b/i.test(low)){
+          return {text:"Ayat Kursi (Al-Baqarah:255)\\n\\nAllahu laa ilaaha illaa huwal hayyul qayyuum...\\n\\n(Ketik /asmaulhusna untuk asmaul husna)"};
+        }
+        if(/^\/asmaulhusna\b/i.test(low)){
+          return {text:"Asmaul Husna (99 nama)\\n1. Ar-Rahman\\n2. Ar-Rahim\\n3. Al-Malik\\n...\\n99. As-Sabur\\n\\nSumber: fitur islami bot"};
+        }
+        if(/^\/jadwalsholat\b/i.test(low)){
+          if(!arg) return {text:"Format: /jadwalsholat <kota>\\nContoh: /jadwalsholat jakarta"};
+          try{
+            var data=await fetchNexaJson("https://api.siputzx.my.id/api/r/jadwalsholat?q="+encodeURIComponent(arg));
+            return {text: JSON.stringify(data).slice(0,1500)};
+          }catch(e){ return {text:"Gagal jadwal sholat. Coba kota lain."}; }
+        }
+        if(/^\/waifu\b/i.test(low)){
+          try{
+            var data=await fetchNexaJson("https://api.waifu.pics/sfw/waifu");
+            var u=data&&data.url;
+            if(u){ await botSendImage(roomId,botId,botName,u,"Waifu"); return {ok:true}; }
+            return {text:"Gagal waifu."};
+          }catch(e){ return {text:"Gagal waifu: "+(e.message||e)}; }
+        }
+        if(/^\/husbu\b/i.test(low)){
+          try{
+            var data=await fetchNexaJson("https://api.waifu.pics/sfw/waifu");
+            var u=data&&data.url;
+            if(u){ await botSendImage(roomId,botId,botName,u,"Husbu"); return {ok:true}; }
+            return {text:"Gagal husbu."};
+          }catch(e){ return {text:"Gagal husbu."}; }
+        }
+        if(/^\/cosplay\b/i.test(low)){
+          try{
+            var data=await fetchNexaJson("https://api.waifu.pics/sfw/waifu");
+            var u=data&&data.url;
+            if(u){ await botSendImage(roomId,botId,botName,u,"Cosplay"); return {ok:true}; }
+            return {text:"Gagal cosplay."};
+          }catch(e){ return {text:"Gagal cosplay."}; }
+        }
+
         if(/^\/ytserc\b|^\/ytsearch\b/i.test(low)){
           if(!arg) return {text:"Format: /ytserc <query>"};
           var data=await fetchNexaJson("https://api.nexadev.my.id/tools/ytsearch?q="+encodeURIComponent(arg));
@@ -13443,7 +13533,6 @@ function openStatusViewer(uid,list,index){
             var cmd=(m.text||"").trim();
             if(!cmd||(cmd.charAt(0)!=="/"&&cmd.toLowerCase()!=="menu")) return;
             var meta=Object.assign({userId:currentUser.id,name:currentUser.name}, startInAppBotEngine.meta||{});
-            tryServeBotMenuIfPeer.call({},{}); // no-op safeguard
             (async function(){
               if(cmd.toLowerCase()==="/menu"||cmd.toLowerCase()==="menu"){
                 try{ showBotFeatureBanner(); }catch(e){}
