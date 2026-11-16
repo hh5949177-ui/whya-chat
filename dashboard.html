@@ -4111,6 +4111,31 @@
     </div>
   </div>
 
+  
+  <script>
+  /* Loader watchdog: paksa hilang jika boot gagal */
+  (function(){
+    function forceHide(){
+      try{
+        var l=document.getElementById("app-loader");
+        if(!l) return;
+        l.classList.add("hide","gone");
+        l.style.display="none";
+        l.style.opacity="0";
+        l.style.visibility="hidden";
+      }catch(e){}
+    }
+    setTimeout(forceHide, 2500);
+    setTimeout(forceHide, 5000);
+    setTimeout(forceHide, 9000);
+    document.addEventListener("DOMContentLoaded", function(){
+      setTimeout(forceHide, 3000);
+    });
+    window.addEventListener("load", function(){
+      setTimeout(forceHide, 2000);
+    });
+  })();
+  </script>
   <!-- APP -->
   
   <div id="app">
@@ -5063,6 +5088,14 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="/js/supabase-client.js"></script>
   <script>
+    // === ISI PROJECT SUPABASE KAMU ===
+    window.WHYA_SUPABASE = window.WHYA_SUPABASE || {
+      url: "https://YOUR_PROJECT_REF.supabase.co",
+      anonKey: "YOUR_ANON_PUBLIC_KEY"
+    };
+  </script>
+  <script src="/js/rtdb-supabase-shim.js"></script>
+  <script>
     try {
       emailjs.init({ publicKey: EMAILJS_PUBLIC_KEY });
     } catch(e) {
@@ -5075,10 +5108,10 @@
       projectId: "chat2-b2a96",
       storageBucket: "chat2-b2a96.firebasestorage.app"
     };
-    firebase.initializeApp(firebaseConfig);
-    const db=firebase.database();
+    /* Firebase RTDB dimatikan — memakai Supabase shim (js/rtdb-supabase-shim.js) */
+    if(typeof db==="undefined" || !db){ console.error("Supabase RT shim gagal dimuat"); }
     var storage = null;
-    try { storage = firebase.storage(); } catch(e) { console.warn("storage init", e); }
+    /* storage: pakai Supabase Storage via WhyaDB.uploadMedia */
 
     let currentUser=null,currentRoom=null,messagesRef=null,lastUserChats={},pendingReg=null,generatedOTP=null;
     var isRecordingVoice=false, mediaRecorder=null, recordedChunks=[], voiceTimer=null, voiceSeconds=0;
@@ -6679,42 +6712,16 @@ function saveAccountLocal(user){
       }catch(e){alert("Gagal: "+e.message)}
     }
 
-    window.onload=function(){
-      // safety: jangan biarkan loader menggantung
-      try{ setTimeout(function(){ try{ hideAppLoader(); }catch(e){} }, 8000); }catch(e){}
-      function bootFromUser(u){
-        if(!u){ try{ hideAppLoader(); }catch(e){} try{ location.replace("login.html"); }catch(e){} return; }
-        currentUser = u;
-        if(!currentUser.id && currentUser.email && typeof emailToId==="function"){
-          try{ currentUser.id = emailToId(currentUser.email); }catch(e){}
-        }
-        // refresh profil dari DB (timeout 4s supaya tidak loading abadi)
-        var done=false;
-        function finish(){ if(done) return; done=true; try{ startApp(); }catch(e){ console.error(e); try{ hideAppLoader(); }catch(e2){} } }
-        try{
-          if(currentUser.id && typeof db!=="undefined" && db){
-            var t=setTimeout(finish, 4000);
-            db.ref("users/"+currentUser.id).once("value").then(function(s){
-              clearTimeout(t);
-              if(s && s.exists()){
-                var v=s.val()||{};
-                currentUser=Object.assign({}, currentUser, v);
-                try{
-                  localStorage.setItem("wa_user_"+currentUser.id, JSON.stringify(currentUser));
-                  localStorage.setItem("wg_user", JSON.stringify(currentUser));
-                  if(currentUser.email) localStorage.setItem("wa_current_email", currentUser.email);
-                  localStorage.setItem("wa_current_id", currentUser.id);
-                }catch(e){}
-              }
-              finish();
-            }).catch(function(){ clearTimeout(t); finish(); });
-          } else finish();
-        }catch(e){ finish(); }
-      }
-      // 1) sesi modern
+    function bootDashboard(){
+      try{ hideAppLoader(); }catch(e){}
       var u=null;
       try{ if(typeof loadSavedSession==="function") u=loadSavedSession(); }catch(e){}
-      // 2) fallback key lama
+      if(!u){
+        try{
+          var raw=localStorage.getItem("wg_user")||localStorage.getItem("currentUser");
+          if(raw) u=JSON.parse(raw);
+        }catch(e){}
+      }
       if(!u){
         try{
           var uid=localStorage.getItem("wa_current_id");
@@ -6722,25 +6729,81 @@ function saveAccountLocal(user){
           var phone=localStorage.getItem("wa_current_phone");
           var key=uid||email||phone;
           if(key){
-            var saved=localStorage.getItem("wa_user_"+key)||(uid?localStorage.getItem("wa_user_"+uid):null)||(email?localStorage.getItem("wa_user_"+email):null)||(phone?localStorage.getItem("wa_user_"+phone):null);
+            var saved=localStorage.getItem("wa_user_"+key)
+              ||(uid?localStorage.getItem("wa_user_"+uid):null)
+              ||(email?localStorage.getItem("wa_user_"+email):null)
+              ||(phone?localStorage.getItem("wa_user_"+phone):null);
             if(saved) u=JSON.parse(saved);
           }
         }catch(e){}
       }
-      // 3) wg_user / currentUser
-      if(!u){
-        try{
-          var raw=localStorage.getItem("wg_user")||localStorage.getItem("currentUser");
-          if(raw) u=JSON.parse(raw);
-        }catch(e){}
+      if(!u || !(u.id||u.email||u.uid)){
+        try{ hideAppLoader(); }catch(e){}
+        try{ location.replace("login.html"); }catch(e){}
+        return;
       }
-      bootFromUser(u);
-    };
+      currentUser=u;
+      if(!currentUser.id && currentUser.uid) currentUser.id=currentUser.uid;
+      if(!currentUser.id && currentUser.email && typeof emailToId==="function"){
+        try{ currentUser.id=emailToId(currentUser.email); }catch(e){}
+      }
+      // tampilkan app dulu, baru sync firebase
+      try{
+        var app=document.getElementById("app");
+        if(app) app.style.display="block";
+      }catch(e){}
+      try{ hideAppLoader(); }catch(e){}
+      var started=false;
+      function go(){
+        if(started) return;
+        started=true;
+        try{ startApp(); }catch(err){
+          console.error("startApp", err);
+          try{ hideAppLoader(); }catch(e){}
+          try{
+            var app=document.getElementById("app");
+            if(app) app.style.display="block";
+          }catch(e){}
+        }
+      }
+      // sync user optional
+      try{
+        if(currentUser.id && typeof db!=="undefined" && db){
+          var to=setTimeout(go, 2500);
+          db.ref("users/"+currentUser.id).once("value").then(function(s){
+            clearTimeout(to);
+            try{
+              if(s && s.exists()){
+                currentUser=Object.assign({}, currentUser, s.val()||{});
+                localStorage.setItem("wg_user", JSON.stringify(currentUser));
+                localStorage.setItem("wa_user_"+currentUser.id, JSON.stringify(currentUser));
+                localStorage.setItem("wa_current_id", currentUser.id);
+              }
+            }catch(e){}
+            go();
+          }).catch(function(){ clearTimeout(to); go(); });
+        } else {
+          go();
+        }
+      }catch(e){ go(); }
+    }
+    window.bootDashboard = bootDashboard;
+    // beberapa jalur boot
+    if(document.readyState==="complete" || document.readyState==="interactive"){
+      setTimeout(bootDashboard, 50);
+    } else {
+      document.addEventListener("DOMContentLoaded", function(){ setTimeout(bootDashboard, 50); });
+    }
+    window.addEventListener("load", function(){ setTimeout(bootDashboard, 100); });
+    // fallback terakhir
+    setTimeout(function(){ try{ bootDashboard(); }catch(e){ try{ hideAppLoader(); }catch(e2){} } }, 1500);
+
     function startApp(){
       try{ hideAppLoader(); }catch(e){}
+      try{ var _app0=document.getElementById("app"); if(_app0) _app0.style.display="block"; }catch(e){}
       try{ applySavedTheme(); }catch(e){}
       try{ applyLiquidDockSetting(); }catch(e){}
-      if(!currentUser){ location.replace("login.html"+(location.search||"")); return; }
+      if(!currentUser){ try{ hideAppLoader(); }catch(e){} location.replace("login.html"+(location.search||"")); return; }
       if(!currentUser.name) currentUser.name="User";
       if(!currentUser.id && currentUser.email) currentUser.id=emailToId(currentUser.email);
       // simpan sesi agar tetap login saat refresh / buka ulang
@@ -7709,13 +7772,19 @@ function saveAccountLocal(user){
 
     /* ===== Welcome / loader ===== */
     function hideAppLoader(){
-      var l=document.getElementById("app-loader");
-      if(!l) return;
-      l.classList.add("hide");
-      setTimeout(function(){
-        try{ l.classList.add("gone"); l.style.display="none"; }catch(e){}
-      }, 520);
+      try{
+        var l=document.getElementById("app-loader");
+        if(!l) return;
+        l.classList.add("hide");
+        l.classList.add("gone");
+        l.style.display="none";
+        l.style.opacity="0";
+        l.style.visibility="hidden";
+        l.style.pointerEvents="none";
+        l.setAttribute("aria-hidden","true");
+      }catch(e){}
     }
+    window.hideAppLoader = hideAppLoader;
     function showWelcome(){ location.href="login.html"; }
     function goToLoginFromWelcome(){
       location.href="login.html";

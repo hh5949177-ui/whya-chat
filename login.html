@@ -952,75 +952,147 @@
       btns.forEach(function(b){ b.disabled = true; });
       if(err) err.textContent = "";
       try{
-        if(!firebase.auth){
-          throw new Error("Firebase Auth belum termuat");
+        if(typeof firebase==="undefined" || !firebase.auth){
+          throw new Error("Firebase Auth belum termuat. Refresh halaman.");
         }
+        // pastikan auth pakai domain yang benar
+        try { firebase.auth().languageCode = "id"; } catch(e) {}
         var provider = new firebase.auth.GoogleAuthProvider();
+        provider.addScope("email");
+        provider.addScope("profile");
         provider.setCustomParameters({ prompt: "select_account" });
-        var result = await firebase.auth().signInWithPopup(provider);
-        var fu = result.user;
-        if(!fu || !fu.email){
-          throw new Error("Akun Google tidak valid");
-        }
-        var email = String(fu.email).toLowerCase();
-        var uid = emailToId(email);
-        var snap = await db.ref("users/" + uid).once("value");
-        var user;
-        if(snap.exists()){
-          user = snap.val() || {};
-          user.id = user.id || uid;
-          user.email = email;
-          if(fu.displayName && !user.name) user.name = fu.displayName;
-          if(fu.photoURL && !user.photoURL) user.photoURL = fu.photoURL;
-          user.authProvider = "google";
-          await db.ref("users/" + uid).update({
-            email: email,
-            name: user.name || fu.displayName || "User",
-            photoURL: user.photoURL || fu.photoURL || null,
-            authProvider: "google",
-            lastLogin: Date.now()
-          });
-        } else {
-          var name = (fu.displayName || email.split("@")[0] || "User").trim();
-          var publicId = null;
-          try { publicId = await generateUniquePublicId(); } catch(e) { publicId = "whya" + Math.floor(1000+Math.random()*9000); }
-          user = {
-            id: uid,
-            email: email,
-            name: name,
-            avatar: name.charAt(0).toUpperCase(),
-            photoURL: fu.photoURL || null,
-            publicId: publicId,
-            role: "user",
-            verified: false,
-            badgeColor: "blue",
-            authProvider: "google",
-            createdAt: Date.now(),
-            lastLogin: Date.now()
-          };
-          await db.ref("users/" + uid).set(user);
-          try { await db.ref("publicIds/" + publicId).set(uid); } catch(e) {}
-        }
-        if(user.publicId){
-          try {
-            if(String(user.publicId).indexOf("whya") !== 0){
-              user.publicId = await generateUniquePublicId();
-              await db.ref("users/" + uid + "/publicId").set(user.publicId);
-              await db.ref("publicIds/" + user.publicId).set(uid);
+
+        var isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent||"");
+        var result = null;
+        try {
+          if(isMobile){
+            // di HP popup sering gagal → redirect
+            await firebase.auth().signInWithRedirect(provider);
+            return; // halaman akan reload
+          }
+          result = await firebase.auth().signInWithPopup(provider);
+        } catch(popErr) {
+          var code = popErr && popErr.code;
+          // fallback redirect jika popup diblokir / tidak didukung
+          if(code==="auth/popup-blocked" || code==="auth/popup-closed-by-user" || code==="auth/cancelled-popup-request" || isMobile){
+            try {
+              if(err) err.textContent = "Mengarahkan ke Google…";
+              await firebase.auth().signInWithRedirect(provider);
+              return;
+            } catch(redirErr) {
+              throw popErr;
             }
-          } catch(e) {}
+          }
+          throw popErr;
         }
-        persistSession(user);
-        goDashboard();
+        await finishGoogleUser(result.user);
       } catch(e) {
         var msg = (e && e.message) ? e.message : String(e);
-        if(e && e.code === "auth/popup-closed-by-user") msg = "Login dibatalkan";
-        if(e && e.code === "auth/popup-blocked") msg = "Popup diblokir browser — izinkan popup";
-        if(e && e.code === "auth/unauthorized-domain") msg = "Domain belum diizinkan di Firebase Auth";
+        var code = e && e.code;
+        if(code==="auth/popup-closed-by-user") msg = "Login dibatalkan";
+        else if(code==="auth/popup-blocked") msg = "Popup diblokir. Izinkan popup untuk situs ini, atau coba lagi.";
+        else if(code==="auth/unauthorized-domain") msg = "Domain belum diizinkan. Tambahkan whyachtt.vercel.app di Firebase Console → Authentication → Settings → Authorized domains";
+        else if(code==="auth/operation-not-allowed") msg = "Google Sign-In belum diaktifkan di Firebase Console → Authentication → Sign-in method";
+        else if(code==="auth/network-request-failed") msg = "Jaringan gagal. Cek internet lalu coba lagi.";
+        else if(code==="auth/internal-error") msg = "Error internal Auth. Pastikan Google provider aktif & domain authorized.";
         if(err) err.textContent = msg;
+        console.error("Google login", code, e);
         btns.forEach(function(b){ b.disabled = false; });
       }
     }
+
+    async function finishGoogleUser(fu){
+      if(!fu || !fu.email){
+        throw new Error("Akun Google tidak valid (email kosong)");
+      }
+      var email = String(fu.email).toLowerCase();
+      var uid = (typeof emailToId==="function") ? emailToId(email) : ("u_" + email.replace(/[^a-z0-9]/g,"_").slice(0,48));
+      var snap = await db.ref("users/" + uid).once("value");
+      var user;
+      if(snap.exists()){
+        user = snap.val() || {};
+        user.id = user.id || uid;
+        user.email = email;
+        if(fu.displayName && !user.name) user.name = fu.displayName;
+        if(fu.photoURL && !user.photoURL) user.photoURL = fu.photoURL;
+        user.authProvider = "google";
+        await db.ref("users/" + uid).update({
+          email: email,
+          name: user.name || fu.displayName || "User",
+          photoURL: user.photoURL || fu.photoURL || null,
+          authProvider: "google",
+          lastLogin: Date.now()
+        });
+      } else {
+        var name = (fu.displayName || email.split("@")[0] || "User").trim();
+        var publicId = null;
+        try { publicId = await generateUniquePublicId(); } catch(e) { publicId = "whya" + Math.floor(1000+Math.random()*9000); }
+        user = {
+          id: uid,
+          email: email,
+          name: name,
+          avatar: name.charAt(0).toUpperCase(),
+          photoURL: fu.photoURL || null,
+          publicId: publicId,
+          role: "user",
+          verified: false,
+          badgeColor: "blue",
+          authProvider: "google",
+          createdAt: Date.now(),
+          lastLogin: Date.now()
+        };
+        await db.ref("users/" + uid).set(user);
+        try { await db.ref("publicIds/" + publicId).set(uid); } catch(e) {}
+      }
+      if(user.publicId){
+        try {
+          if(String(user.publicId).indexOf("whya") !== 0){
+            user.publicId = await generateUniquePublicId();
+            await db.ref("users/" + uid + "/publicId").set(user.publicId);
+            await db.ref("publicIds/" + user.publicId).set(uid);
+          }
+        } catch(e) {}
+      }
+      // pastikan field wajib
+      user.id = user.id || uid;
+      user.email = email;
+      try { persistSession(user); } catch(e) {
+        try {
+          localStorage.setItem("wg_user", JSON.stringify(user));
+          localStorage.setItem("currentUser", JSON.stringify(user));
+          localStorage.setItem("wa_user_"+user.id, JSON.stringify(user));
+          localStorage.setItem("wa_current_id", user.id);
+          if(user.email) localStorage.setItem("wa_current_email", user.email);
+        } catch(e2) {}
+      }
+      try { goDashboard(); } catch(e) { location.href = "dashboard.html"; }
+    }
+
+    // Tangani hasil redirect Google (mobile)
+    (function handleGoogleRedirect(){
+      try{
+        if(typeof firebase==="undefined" || !firebase.auth) return;
+        firebase.auth().getRedirectResult().then(function(result){
+          if(result && result.user){
+            var err = document.getElementById("login-err") || document.getElementById("reg-err");
+            if(err) err.textContent = "Menyelesaikan login Google…";
+            finishGoogleUser(result.user).catch(function(e){
+              if(err) err.textContent = (e && e.message) || "Gagal login Google";
+              console.error(e);
+            });
+          }
+        }).catch(function(e){
+          if(!e || !e.code || e.code==="auth/popup-closed-by-user") return;
+          var err = document.getElementById("login-err") || document.getElementById("reg-err");
+          var msg = e.message || String(e);
+          if(e.code==="auth/unauthorized-domain") msg = "Domain belum diizinkan di Firebase Auth (Authorized domains)";
+          if(e.code==="auth/operation-not-allowed") msg = "Google Sign-In belum diaktifkan di Firebase";
+          if(err) err.textContent = msg;
+          console.error("redirect result", e);
+        });
+      }catch(e){}
+    })();
+
 
     async function doLogin(){
       var email = document.getElementById("login-email").value.trim().toLowerCase();
