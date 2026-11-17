@@ -22,8 +22,7 @@ const BOT_USER_ID = "ISI_USER_ID_BOT";      // ID internal (users/...)
 const BOT_ACCOUNT_ID = "ISI_PUBLIC_ID_BOT"; // Public ID
 const BOT_NAME = "whya-bot";
 const DATABASE_URL =
-  "https://chat2-b2a96-default-rtdb.asia-southeast1.firebasedatabase.app";
-const POLL_MS = 2500;
+  "https://cconst POLL_MS = 2500;
 // ==============================================================
 
 const MENU_LINES = [
@@ -49,7 +48,6 @@ const QUOTES = [
 ];
 const FAKTA = [
   "Termux bisa menjalankan Node.js di Android.",
-  "Firebase Realtime Database memakai HTTP REST.",
   "Base64 menambah ukuran data sekitar 33%."
 ];
 const NAMA = ["Alya", "Raka", "Sinta", "Dimas", "Naufal", "Putri", "Bima", "Kirana"];

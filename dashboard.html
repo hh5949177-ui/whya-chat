@@ -5095,44 +5095,44 @@
     } catch(e) {
       
     }
-    /* FULL SUPABASE */
+    /* FULL SUPABASE ONLY */
     var storage = null;
-    if(typeof db==="undefined" || !db){
-      console.error("[whya] Shim Supabase belum siap — cek js/config.js anonKey");
-      window.db = { ref: function(){ return {
-        once: function(){ return Promise.resolve({ val:function(){return null}, exists:function(){return false}, forEach:function(){} }); },
-        on: function(e,cb){ try{ cb({ val:function(){return null}, exists:function(){return false}, forEach:function(){} }); }catch(err){} },
-        off: function(){}, set: function(){ return Promise.resolve(); }, update: function(){ return Promise.resolve(); },
-        push: function(){ return { key: "x"+Date.now(), then: function(fn){ return Promise.resolve().then(fn); } }; },
-        remove: function(){ return Promise.resolve(); }, limitToLast: function(){ return this; }, child: function(){ return this; }
-      }; } };
-    }
     var db = window.db;
 
-    /* WHYA_AUTH_GATE — jangan tampilkan dashboard tanpa sesi */
-    (function whyaAuthGate(){
-      try{
+    /* WHYA_AUTH_GATE */
+    (function(){
+      try {
         var raw = localStorage.getItem("wg_user") || localStorage.getItem("currentUser");
         var ok = false;
-        if(raw){
+        if (raw) {
           var u = JSON.parse(raw);
           ok = !!(u && (u.id || u.email));
         }
-        if(!ok){
-          var id = localStorage.getItem("wa_current_id");
-          if(id && localStorage.getItem("wa_user_"+id)) ok = true;
+        if (!ok) {
+          location.replace("/login.html");
+          return;
         }
-        if(!ok){
-          var path = (location.pathname||"");
-          if(/dashboard/i.test(path) || path==="/" ){
-            location.replace("/login.html");
-            return;
-          }
-        }
-      }catch(e){}
+      } catch(e) {
+        location.replace("/login.html");
+      }
     })();
 
-    var firebase = window.firebase || { apps: [], initializeApp: function(){return {}}, database: function(){return db;}, auth: function(){return {}}, storage: function(){return null;} };
+    if (!db) {
+      console.error("db shim missing");
+      window.db = { ref: function(){ return { once:function(){return Promise.resolve({val:function(){return null},exists:function(){return false},forEach:function(){}})}, on:function(e,cb){try{cb({val:function(){return null},exists:function(){return false}})}catch(err){}}, off:function(){}, set:function(){return Promise.resolve()}, update:function(){return Promise.resolve()}, push:function(){return {key:"x",then:function(fn){return Promise.resolve().then(fn)}}}, remove:function(){return Promise.resolve()}, child:function(){return this}, limitToLast:function(){return this} }; } };
+      db = window.db;
+    }
+}, auth: function(){return {}}, storage: function(){return null;} };
+
+    
+    /* firebase removed — stub agar sisa referensi tidak crash */
+    var firebase = {
+      apps: [],
+      initializeApp: function(){ return {}; },
+      database: function(){ return window.db; },
+      auth: function(){ return { signInWithPopup: function(){ return Promise.reject(new Error("Pakai login Supabase")); }, signInWithRedirect: function(){ return Promise.reject(new Error("Pakai login Supabase")); }, getRedirectResult: function(){ return Promise.resolve({}); }, currentUser: null }; },
+      storage: function(){ return null; }
+    };
 
     let currentUser=null,currentRoom=null,messagesRef=null,lastUserChats={},pendingReg=null,generatedOTP=null;
     var isRecordingVoice=false, mediaRecorder=null, recordedChunks=[], voiceTimer=null, voiceSeconds=0;

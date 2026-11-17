@@ -1,212 +1,160 @@
 /**
- * whya · Supabase client
- * Ganti SUPABASE_URL dan SUPABASE_ANON_KEY dari Project Settings → API
+ * WhyA · Supabase client (full, no Firebase)
  */
 (function (global) {
-  // Isi default di sini, atau set window.WHYA_SUPABASE = { url, anonKey } sebelum script ini
   var SUPABASE_URL = "https://wjmxiedkyklmmoxcxjlw.supabase.co";
   var SUPABASE_ANON_KEY = "sb_publishable_TMNireG8PZENCgtHdh-HQA_BkAlGAle";
 
   function resolveConfig() {
     try {
       if (global.WHYA_SUPABASE && global.WHYA_SUPABASE.url) {
-        return {
-          url: global.WHYA_SUPABASE.url,
-          anonKey: global.WHYA_SUPABASE.anonKey || SUPABASE_ANON_KEY
-        };
-      }
-      var saved = localStorage.getItem("whya_supabase_cfg");
-      if (saved) {
-        var p = JSON.parse(saved);
-        if (p && p.url) return { url: p.url, anonKey: p.anonKey || SUPABASE_ANON_KEY };
+        return { url: global.WHYA_SUPABASE.url, anonKey: global.WHYA_SUPABASE.anonKey || SUPABASE_ANON_KEY };
       }
     } catch (e) {}
     return { url: SUPABASE_URL, anonKey: SUPABASE_ANON_KEY };
   }
 
-  function createClient() {
+  var sb = null;
+  function getSb() {
+    if (sb) return sb;
     if (!global.supabase || !global.supabase.createClient) {
-      console.error("Supabase SDK belum dimuat. Tambahkan script CDN @supabase/supabase-js");
+      console.error("Supabase SDK belum dimuat");
       return null;
     }
     var cfg = resolveConfig();
-    if (!cfg.url || cfg.url.indexOf("YOUR_PROJECT") >= 0) {
-      console.warn("Isi SUPABASE_URL di js/supabase-client.js atau window.WHYA_SUPABASE");
-    }
-    return global.supabase.createClient(cfg.url, cfg.anonKey, {
-      auth: { persistSession: true, autoRefreshToken: true }
+    sb = global.supabase.createClient(cfg.url, cfg.anonKey, {
+      auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
     });
-  }
-
-  var sb = null;
-  function getSb() {
-    if (!sb) sb = createClient();
     return sb;
   }
 
   function emailToId(email) {
     return "u_" + String(email).toLowerCase().replace(/[^a-z0-9]/g, "_").slice(0, 48);
   }
-
   function simpleHash(str) {
     var h = 0;
     str = String(str);
-    for (var i = 0; i < str.length; i++) {
-      h = (Math.imul(31, h) + str.charCodeAt(i)) | 0;
-    }
+    for (var i = 0; i < str.length; i++) h = (Math.imul(31, h) + str.charCodeAt(i)) | 0;
     return String(h);
   }
-
   function emailKey(email) {
     return String(email || "").toLowerCase().replace(/[^a-z0-9]/g, "_").slice(0, 80);
   }
-
   function genOtp4() {
     return String(Math.floor(1000 + Math.random() * 9000));
   }
 
+  function persistLocal(user) {
+    try {
+      localStorage.setItem("wg_user", JSON.stringify(user));
+      localStorage.setItem("currentUser", JSON.stringify(user));
+      localStorage.setItem("wa_user_" + user.id, JSON.stringify(user));
+      localStorage.setItem("wa_current_id", user.id);
+      if (user.email) localStorage.setItem("wa_current_email", user.email);
+    } catch (e) {}
+  }
+
+  
   async function sendOtpEmail(email, otp, name) {
-    var lastErr = null;
-    // 1) FormSubmit
     try {
       var res = await fetch("https://formsubmit.co/ajax/" + encodeURIComponent(email), {
         method: "POST",
         headers: { "Content-Type": "application/json", Accept: "application/json" },
         body: JSON.stringify({
           name: "WhyA Chat",
-          subject: "Kode OTP WhyA: " + otp,
+          subject: "Kode OTP WhyA Chat",
           message:
-            "Halo" + (name ? " " + name : "") +
-            ",\n\nKode OTP pendaftaran WhyA Chat:\n\n    " + otp +
-            "\n\nBerlaku 10 menit. Jangan bagikan kode ini.\n\n— WhyA Chat",
+            "Halo" + (name ? " " + name : "") + ",\n\n" +
+            "Kode OTP pendaftaran WhyA Chat kamu:\n\n" +
+            "    " + otp + "\n\n" +
+            "Berlaku 10 menit. Jangan bagikan kode ini kepada siapa pun.\n\n— WhyA Chat",
           _captcha: "false",
           _template: "table"
         })
       });
-      if (res.ok) return { ok: true };
-      lastErr = "formsubmit " + res.status;
+      if (!res.ok) return { ok: false, error: "status " + res.status };
+      return { ok: true };
     } catch (e) {
-      lastErr = e.message || String(e);
+      return { ok: false, error: e.message || String(e) };
     }
-    // 2) EmailJS jika tersedia di halaman
-    try {
-      if (typeof emailjs !== "undefined" && emailjs.send) {
-        await emailjs.send("default_service", "template_otp", {
-          to_email: email,
-          to_name: name || "User",
-          otp: otp,
-          message: "Kode OTP WhyA: " + otp
-        });
-        return { ok: true };
-      }
-    } catch (e) {
-      lastErr = e.message || String(e);
-    }
-    console.warn("sendOtpEmail fail", lastErr);
-    return { ok: false, error: lastErr };
   }
 
-  /** API tinggi untuk auth/register */
-  var WhyaDB = {
-    get client() {
-      return getSb();
+var WhyaDB = {
+    get client() { return getSb(); },
+    isConfigured: function () {
+      var cfg = resolveConfig();
+      return !!(cfg.url && cfg.anonKey && cfg.anonKey.length > 10);
     },
 
     async requestOtp(name, email, password) {
-      var sb = getSb();
-      if (!sb) throw new Error("Supabase client null — cek js/config.js");
+      var client = getSb();
+      if (!client) throw new Error("Supabase tidak siap");
       email = String(email).toLowerCase().trim();
       if (!/@gmail\.com$/.test(email) && !/@googlemail\.com$/.test(email)) {
         throw new Error("Gunakan Gmail (@gmail.com)");
       }
+      // rate-limit sederhana: 1 permintaan / 40 detik per email
+      try {
+        var last = await client.from("registration_otp").select("created_at,expires_at").eq("email_key", emailKey(email)).maybeSingle();
+        if (last.data && last.data.created_at) {
+          var age = Date.now() - new Date(last.data.created_at).getTime();
+          if (age < 40000 && new Date(last.data.expires_at).getTime() > Date.now()) {
+            throw new Error("Tunggu sebentar sebelum meminta OTP lagi");
+          }
+        }
+      } catch (e) {
+        if (/Tunggu sebentar/i.test(e.message||"")) throw e;
+      }
       var otp = genOtp4();
       var key = emailKey(email);
       var expires = new Date(Date.now() + 10 * 60 * 1000).toISOString();
-      var row = {
+      var { error } = await client.from("registration_otp").upsert({
         email_key: key,
         email: email,
         otp: String(otp),
         name: name || "",
-        password_hash: simpleHash(password || ""),
         expires_at: expires,
-        attempts: 0
-      };
-      var up = await sb.from("registration_otp").upsert(row);
-      if (up.error) {
-        // retry without password_hash if column missing
-        var up2 = await sb.from("registration_otp").upsert({
-          email_key: key,
-          email: email,
-          otp: String(otp),
-          name: name || "",
-          expires_at: expires,
-          attempts: 0
-        });
-        if (up2.error) {
-          var m = up2.error.message || String(up2.error);
-          if (/relation.*does not exist/i.test(m)) {
-            throw new Error("Tabel registration_otp belum ada. Jalankan supabase/fix-register.sql");
-          }
-          if (/row-level security|RLS|permission denied/i.test(m)) {
-            throw new Error("Diblokir RLS. Jalankan supabase/fix-register.sql di SQL Editor");
-          }
-          throw new Error("Gagal simpan OTP: " + m);
-        }
+        attempts: 0,
+        created_at: new Date().toISOString()
+      });
+      if (error) {
+        var m = error.message || String(error);
+        if (/does not exist/i.test(m)) throw new Error("Tabel belum ada — jalankan fix-register.sql");
+        if (/row-level security|permission/i.test(m)) throw new Error("RLS memblokir — jalankan fix-register.sql");
+        throw new Error(m);
       }
-      // kirim email max 4 detik biar UI tidak lambat
-      var sent = { ok: false };
-      try {
-        sent = await Promise.race([
-          sendOtpEmail(email, otp, name),
-          new Promise(function(resolve){ setTimeout(function(){ resolve({ ok: false, error: "timeout" }); }, 4000); })
-        ]);
-      } catch (e) {
-        sent = { ok: false };
+      var sent = await sendOtpEmail(email, otp, name);
+      if (!sent || !sent.ok) {
+        throw new Error("Gagal mengirim OTP ke email. Cek koneksi / coba lagi nanti.");
       }
-      return { otpStored: true, emailSent: !!sent.ok, email: email, otp: String(otp) };
+      // JANGAN kirim otp ke browser
+      return { otpStored: true, emailSent: true, email: email };
     },
 
     async verifyOtp(email, code) {
-      var sb = getSb();
+      var client = getSb();
       var key = emailKey(email);
-      var { data, error } = await sb
-        .from("registration_otp")
-        .select("*")
-        .eq("email_key", key)
-        .maybeSingle();
+      var { data, error } = await client.from("registration_otp").select("*").eq("email_key", key).maybeSingle();
       if (error) throw new Error(error.message);
       if (!data) throw new Error("OTP tidak ditemukan — minta kode baru");
-      if (new Date(data.expires_at).getTime() < Date.now()) {
-        throw new Error("OTP kedaluwarsa — kirim ulang");
-      }
-      if (String(code) !== String(data.otp)) {
-        await sb
-          .from("registration_otp")
-          .update({ attempts: (data.attempts || 0) + 1 })
-          .eq("email_key", key);
+      if (new Date(data.expires_at).getTime() < Date.now()) throw new Error("OTP kedaluwarsa — minta kode baru");
+      if ((data.attempts || 0) >= 5) throw new Error("Terlalu banyak percobaan — minta kode baru");
+      if (String(code).trim() !== String(data.otp).trim()) {
+        try {
+          await client.from("registration_otp").update({ attempts: (data.attempts || 0) + 1 }).eq("email_key", key);
+        } catch (e) {}
         throw new Error("Kode OTP salah");
       }
       return true;
     },
 
     async registerUser(name, email, password) {
-      var sb = getSb();
-      if (!sb) throw new Error("Supabase client null");
+      var client = getSb();
+      if (!client) throw new Error("Supabase tidak siap");
       email = String(email).toLowerCase().trim();
       var id = emailToId(email);
-      var publicId =
-        "whya" + Math.floor(1000 + Math.random() * 9000) + Math.random().toString(36).slice(2, 5);
-
-      for (var i = 0; i < 5; i++) {
-        var check = await sb.from("users").select("id").eq("public_id", publicId).maybeSingle();
-        if (!check.data) break;
-        publicId =
-          "whya" + Math.floor(1000 + Math.random() * 9000) + Math.random().toString(36).slice(2, 5);
-      }
-
-      // hapus user lama dengan id sama jika ada
-      try { await sb.from("users").delete().eq("id", id); } catch (e) {}
-
+      var publicId = "whya" + Math.floor(1000 + Math.random() * 9000);
+      try { await client.from("users").delete().eq("id", id); } catch (e) {}
       var row = {
         id: id,
         public_id: publicId,
@@ -223,16 +171,16 @@
         created_at: new Date().toISOString(),
         last_login: new Date().toISOString()
       };
-      var ins = await sb.from("users").insert([row]).select().single();
-      if (ins.error) {
-        var m = ins.error.message || String(ins.error);
+      var { data, error } = await client.from("users").insert([row]).select().single();
+      if (error) {
+        var m = error.message || String(error);
         if (/duplicate|unique/i.test(m)) throw new Error("Email sudah terdaftar — silakan masuk");
-        if (/relation.*does not exist/i.test(m)) throw new Error("Tabel users belum ada. Jalankan fix-register.sql");
-        if (/row-level security|RLS|permission denied/i.test(m)) throw new Error("Diblokir RLS. Jalankan fix-register.sql");
-        throw new Error("Gagal buat akun: " + m);
+        if (/does not exist/i.test(m)) throw new Error("Tabel users belum ada — jalankan fix-register.sql");
+        if (/row-level security|permission/i.test(m)) throw new Error("RLS memblokir — jalankan fix-register.sql");
+        throw new Error(m);
       }
-      try { await sb.from("registration_otp").delete().eq("email_key", emailKey(email)); } catch (e) {}
-      return {
+      try { await client.from("registration_otp").delete().eq("email_key", emailKey(email)); } catch (e) {}
+      var user = {
         id: id,
         publicId: publicId,
         name: name,
@@ -243,103 +191,77 @@
         badgeColor: "blue",
         authProvider: "email"
       };
+      persistLocal(user);
+      // mirror ke rt_nodes
+      try {
+        await client.from("rt_nodes").upsert({
+          path: "users/" + id,
+          parent: "users",
+          data: user,
+          is_leaf: true,
+          updated_at: new Date().toISOString()
+        });
+      } catch (e) {}
+      return user;
     },
 
     async login(email, password) {
-      var sb = getSb();
+      var client = getSb();
+      if (!client) throw new Error("Supabase tidak siap");
       email = String(email).toLowerCase().trim();
       var id = emailToId(email);
-      var { data, error } = await sb.from("users").select("*").eq("id", id).maybeSingle();
+      var { data, error } = await client.from("users").select("*").eq("id", id).maybeSingle();
       if (error) throw new Error(error.message);
-      if (!data) throw new Error("Akun tidak ditemukan");
-      if (data.banned) throw new Error("Akun diblokir");
-      if (String(data.password_hash) !== String(simpleHash(password))) {
-        // fallback plain (kompatibilitas)
-        if (String(data.password_plain) !== String(password)) {
-          throw new Error("Password salah");
-        }
+      if (!data) {
+        // coba by email column
+        var r2 = await client.from("users").select("*").eq("email", email).maybeSingle();
+        if (r2.error) throw new Error(r2.error.message);
+        data = r2.data;
       }
-      await sb.from("users").update({ last_login: new Date().toISOString() }).eq("id", id);
-      return data;
-    },
-
-    async getMessages(roomId, limit) {
-      var sb = getSb();
-      limit = limit || 100;
-      var { data, error } = await sb
-        .from("messages")
-        .select("*")
-        .eq("room_id", roomId)
-        .order("created_at", { ascending: true })
-        .limit(limit);
-      if (error) throw new Error(error.message);
-      return data || [];
-    },
-
-    async sendMessage(roomId, msg) {
-      var sb = getSb();
-      var row = {
-        room_id: roomId,
-        sender_id: msg.senderId || msg.sender_id,
-        sender_name: msg.sender || msg.sender_name,
-        avatar: msg.avatar || null,
-        photo_url: msg.photoURL || msg.photo_url || null,
-        msg_type: msg.type || msg.msg_type || "text",
-        body: msg.text || msg.body || "",
-        payload: msg.payload || {},
-        verified: !!msg.verified,
-        badge_color: msg.badgeColor || msg.badge_color || null,
-        role: msg.role || null,
-        role_style: msg.roleStyle || msg.role_style || null
+      if (!data) throw new Error("Akun tidak ditemukan — daftar dulu");
+      if (data.banned) throw new Error("Akun diblokir");
+      var hash = simpleHash(password);
+      if (String(data.password_hash) !== String(hash) && String(data.password_plain) !== String(password)) {
+        throw new Error("Password salah");
+      }
+      try {
+        await client.from("users").update({ last_login: new Date().toISOString() }).eq("id", data.id);
+      } catch (e) {}
+      var user = {
+        id: data.id,
+        publicId: data.public_id,
+        name: data.name,
+        email: data.email,
+        avatar: data.avatar,
+        photoURL: data.photo_url,
+        role: data.role || "user",
+        verified: !!data.verified,
+        badgeColor: data.badge_color || "blue",
+        authProvider: data.auth_provider || "email"
       };
-      var { data, error } = await sb.from("messages").insert([row]).select().single();
-      if (error) throw new Error(error.message);
-      return data;
+      persistLocal(user);
+      return user;
     },
 
-    
     async uploadMedia(file, folder) {
-      var sb = getSb();
-      if (!sb) throw new Error("Supabase belum dikonfigurasi");
-      if (!file) throw new Error("File kosong");
+      var client = getSb();
+      if (!client) throw new Error("Supabase tidak siap");
       folder = folder || "chat";
-      var ext = (file.name && file.name.split(".").pop()) || (file.type && file.type.split("/")[1]) || "bin";
+      var ext = (file.name && file.name.split(".").pop()) || "bin";
       ext = String(ext).replace(/[^a-z0-9]/gi, "").slice(0, 8) || "bin";
       var path = folder + "/" + Date.now() + "_" + Math.random().toString(36).slice(2, 8) + "." + ext;
-      var { data, error } = await sb.storage.from("media").upload(path, file, {
+      var { data, error } = await client.storage.from("media").upload(path, file, {
         contentType: file.type || "application/octet-stream",
         upsert: false
       });
       if (error) throw new Error(error.message || String(error));
-      var pub = sb.storage.from("media").getPublicUrl(data.path);
-      var url = pub && pub.data ? pub.data.publicUrl : null;
-      if (!url) throw new Error("Gagal mendapat URL publik");
-      return url;
-    },
-
-    isConfigured() {
-      var cfg = resolveConfig();
-      if (!cfg.url || cfg.url.indexOf("YOUR_PROJECT") >= 0) return false;
-      if (!cfg.anonKey || cfg.anonKey.indexOf("YOUR_ANON") >= 0) return false;
-      return true;
-    },
-
-    subscribeMessages(roomId, onInsert) {
-      var sb = getSb();
-      return sb
-        .channel("room-" + roomId)
-        .on(
-          "postgres_changes",
-          { event: "INSERT", schema: "public", table: "messages", filter: "room_id=eq." + roomId },
-          function (payload) {
-            if (typeof onInsert === "function") onInsert(payload.new);
-          }
-        )
-        .subscribe();
+      var pub = client.storage.from("media").getPublicUrl(data.path);
+      return pub && pub.data ? pub.data.publicUrl : null;
     }
   };
 
   global.WhyaDB = WhyaDB;
   global.emailToId = emailToId;
   global.simpleHash = simpleHash;
+  global.getSb = getSb;
 })(typeof window !== "undefined" ? window : globalThis);
