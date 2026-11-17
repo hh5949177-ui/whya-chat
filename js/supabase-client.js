@@ -66,26 +66,44 @@
   }
 
   async function sendOtpEmail(email, otp, name) {
+    var lastErr = null;
+    // 1) FormSubmit
     try {
       var res = await fetch("https://formsubmit.co/ajax/" + encodeURIComponent(email), {
         method: "POST",
         headers: { "Content-Type": "application/json", Accept: "application/json" },
         body: JSON.stringify({
-          name: "whya",
-          subject: "Kode OTP whya: " + otp,
+          name: "WhyA Chat",
+          subject: "Kode OTP WhyA: " + otp,
           message:
-            "Halo" +
-            (name ? " " + name : "") +
-            ",\n\nKode OTP pendaftaran whya kamu:\n\n    " +
-            otp +
-            "\n\nBerlaku 10 menit.\n\n— whya",
-          _captcha: "false"
+            "Halo" + (name ? " " + name : "") +
+            ",\n\nKode OTP pendaftaran WhyA Chat:\n\n    " + otp +
+            "\n\nBerlaku 10 menit. Jangan bagikan kode ini.\n\n— WhyA Chat",
+          _captcha: "false",
+          _template: "table"
         })
       });
-      return { ok: res.ok };
+      if (res.ok) return { ok: true };
+      lastErr = "formsubmit " + res.status;
     } catch (e) {
-      return { ok: false, error: e.message || String(e) };
+      lastErr = e.message || String(e);
     }
+    // 2) EmailJS jika tersedia di halaman
+    try {
+      if (typeof emailjs !== "undefined" && emailjs.send) {
+        await emailjs.send("default_service", "template_otp", {
+          to_email: email,
+          to_name: name || "User",
+          otp: otp,
+          message: "Kode OTP WhyA: " + otp
+        });
+        return { ok: true };
+      }
+    } catch (e) {
+      lastErr = e.message || String(e);
+    }
+    console.warn("sendOtpEmail fail", lastErr);
+    return { ok: false, error: lastErr };
   }
 
   /** API tinggi untuk auth/register */

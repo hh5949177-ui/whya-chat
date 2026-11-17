@@ -938,123 +938,114 @@ function emailToId(email){
       err.textContent = "";
       if (!name || name.length < 2) { err.textContent = "Nama minimal 2 karakter"; return; }
       if (!email.includes("@") || !email.includes(".")) { err.textContent = "Gmail tidak valid"; return; }
-      // wajib Gmail
       if (!/@gmail\.com$/.test(email) && !/@googlemail\.com$/.test(email)) {
         err.textContent = "Gunakan alamat Gmail (@gmail.com)";
         return;
       }
       if (!password || password.length < 6) { err.textContent = "Password minimal 6 karakter"; return; }
-      var btn = document.getElementById("btn-reg");
-      btn.disabled = true; btn.textContent = "Mengirim OTP...";
+      var btn = document.getElementById("btn-reg-next") || document.getElementById("btn-register");
+      if (btn) { btn.disabled = true; btn.textContent = "Mengirim OTP..."; }
       try {
+        if (typeof WhyaDB === "undefined" || !WhyaDB.isConfigured()) {
+          throw new Error("Supabase belum siap. Hard refresh / cek js/config.js");
+        }
+        // cek email sudah terdaftar
         try {
-          await db.ref("meta/ping").set({ t: Date.now(), ok: true });
-        } catch (pingErr) {
-          var pm = (pingErr && pingErr.message) || String(pingErr);
-          if (/permission/i.test(pm)) {
-            throw new Error("Firebase Rules memblokir tulis. Set rules .read/.write = true lalu Publish.");
-          }
-          throw new Error("Tidak bisa hubungi database: " + pm);
+          var exist = await WhyaDB.client.from("users").select("id").eq("id", emailToId(email)).maybeSingle();
+          if (exist && exist.data) throw new Error("Email sudah terdaftar — silakan masuk");
+        } catch (e) {
+          if (/sudah terdaftar/i.test(e.message||"")) throw e;
         }
-        var userId = emailToId(email);
-        var exist = await db.ref("users/" + userId).once("value");
-        if (exist.exists()) {
-          var reuse = confirm("Email ini sudah terdaftar.\n\nOK = lanjut OTP & timpa akun lama\nBatal = batalkan");
-          if (!reuse) { btn.disabled = false; btn.textContent = "Selanjutnya"; return; }
-        }
-        var otp = genOtp4();
-        pendingReg = { name: name, email: email, password: password, otp: otp, expires: Date.now()+10*60*1000 };
-        var sent = await sendOtpEmail(email, otp, name);
-        if(!sent.ok){
-          // tetap lanjut ke OTP (kode tersimpan di Firebase); info user cek inbox/spam
-          console.warn("OTP email send:", sent.error);
-        }
+        var res = await WhyaDB.requestOtp(name, email, password);
+        pendingReg = {
+          name: name,
+          email: email,
+          password: password,
+          expires: Date.now() + 10*60*1000
+        };
+        try { sessionStorage.setItem("whya_pending_reg", JSON.stringify(pendingReg)); } catch(e) {}
         showOtpStep(email);
-        err.textContent = sent.ok
-          ? ""
-          : "Kode dibuat. Jika email belum masuk, cek Spam atau ketuk kirim ulang. (Aktivasi FormSubmit mungkin diperlukan di inbox saat pertama kali)";
-        btn.disabled = false; btn.textContent = "Selanjutnya";
+        if (!res.emailSent) {
+          err.textContent = "OTP disimpan, tapi email mungkin tertunda. Cek inbox/spam Gmail. Atau ketik ulang / kirim ulang.";
+        } else {
+          err.textContent = "";
+        }
       } catch (e) {
-        err.textContent = e.message || String(e);
-        btn.disabled = false; btn.textContent = "Selanjutnya";
+        var msg = (e && e.message) ? e.message : String(e);
+        if (/Failed to fetch|NetworkError/i.test(msg)) {
+          msg = "Gagal hubungi Supabase. Cek internet & pastikan tabel registration_otp sudah dibuat (SQL schema).";
+        }
+        if (/relation.*registration_otp|does not exist/i.test(msg)) {
+          msg = "Tabel OTP belum ada. Jalankan supabase/schema.sql di SQL Editor.";
+        }
+        err.textContent = msg;
+      } finally {
+        if (btn) { btn.disabled = false; btn.textContent = btn.getAttribute("data-label") || "Lanjut"; }
       }
     }
     async function resendRegistrationOtp(){
       var err = document.getElementById("reg-err");
-      if(!pendingReg){ err.textContent = "Isi formulir dulu"; backToRegForm(); return; }
-      try{
-        var otp = genOtp4();
-        pendingReg.otp = otp;
-        pendingReg.expires = Date.now()+10*60*1000;
-        var sent = await sendOtpEmail(pendingReg.email, otp, pendingReg.name);
-        clearOtpInputs();
-        startResendCooldown(30);
-        err.textContent = sent.ok ? "Kode baru dikirim." : "Kode baru dibuat. Cek inbox/Spam.";
-      }catch(e){
-        err.textContent = e.message||String(e);
+      if (!pendingReg) {
+        try { pendingReg = JSON.parse(sessionStorage.getItem("whya_pending_reg")||"null"); } catch(e) {}
+      }
+      if (!pendingReg) { err.textContent = "Sesi habis — isi formulir lagi"; backToRegForm(); return; }
+      try {
+        err.textContent = "Mengirim ulang OTP...";
+        var res = await WhyaDB.requestOtp(pendingReg.name, pendingReg.email, pendingReg.password);
+        pendingReg.expires = Date.now() + 10*60*1000;
+        err.textContent = res.emailSent ? "OTP baru dikirim ke Gmail." : "OTP dibuat. Cek inbox/spam.";
+      } catch (e) {
+        err.textContent = (e && e.message) || String(e);
       }
     }
     async function verifyOtpAndRegister(){
       var err = document.getElementById("reg-err");
       err.textContent = "";
-      if(!pendingReg){ err.textContent = "Sesi OTP habis — isi formulir lagi"; backToRegForm(); return; }
+      if (!pendingReg) {
+        try { pendingReg = JSON.parse(sessionStorage.getItem("whya_pending_reg")||"null"); } catch(e) {}
+      }
+      if (!pendingReg) { err.textContent = "Sesi OTP habis — isi formulir lagi"; backToRegForm(); return; }
       var input = getOtpInput();
-      if(input.length !== 4){ err.textContent = "Masukkan 4 digit OTP"; return; }
-      if(Date.now() > (pendingReg.expires||0)){ err.textContent = "OTP kedaluwarsa — kirim ulang"; return; }
+      if (input.length !== 4) { err.textContent = "Masukkan 4 digit OTP"; return; }
       var btn = document.getElementById("btn-otp-verify");
-      if(btn){ btn.disabled = true; btn.textContent = "Memverifikasi..."; }
-      try{
-        var key = emailKey(pendingReg.email);
-        var snap = await db.ref("registrationOtp/"+key).once("value");
-        var row = snap.exists() ? (snap.val()||{}) : {};
-        var real = String(row.otp || pendingReg.otp || "");
-        if(String(input) !== real){
-          try{
-            await db.ref("registrationOtp/"+key+"/attempts").transaction(function(a){ return (a||0)+1; });
-          }catch(e){}
-          throw new Error("Kode OTP salah");
-        }
-        if(row.expiresAt && Date.now() > row.expiresAt){
-          throw new Error("OTP kedaluwarsa — kirim ulang");
-        }
-        // OTP benar → buat akun
+      if (btn) { btn.disabled = true; btn.textContent = "Memverifikasi..."; }
+      try {
+        await WhyaDB.verifyOtp(pendingReg.email, input);
         await registerAccountAfterOtp(pendingReg.name, pendingReg.email, pendingReg.password);
-        try{ await db.ref("registrationOtp/"+key).remove(); }catch(e){}
-        pendingReg = null;
-      }catch(e){
-        err.textContent = e.message || String(e);
-        if(btn){ btn.disabled = false; btn.textContent = "Verifikasi & Buat Akun"; }
+      } catch (e) {
+        err.textContent = (e && e.message) || String(e);
+        if (btn) { btn.disabled = false; btn.textContent = "Verifikasi"; }
       }
     }
     async function registerAccountAfterOtp(name, email, password){
       var err = document.getElementById("reg-err");
       var btn = document.getElementById("btn-otp-verify");
-      if(btn){ btn.disabled = true; btn.textContent = "Membuat akun..."; }
+      if (btn) { btn.disabled = true; btn.textContent = "Membuat akun..."; btn.text = "Membuat akun..."; }
       try {
-        var userId = emailToId(email);
-        var exist = await db.ref("users/" + userId).once("value");
-        if (exist.exists()) {
-          var old = exist.val() || {};
-          try { if (old.publicId) await db.ref("publicIds/" + old.publicId).remove(); } catch(e) {}
-          await db.ref("users/" + userId).remove();
+        var user = await WhyaDB.registerUser(name, email, password);
+        if (!user || !user.id) throw new Error("Gagal membuat akun");
+        // juga mirror ke rt_nodes agar chat/profil konsisten
+        try {
+          if (db && db.ref) {
+            await db.ref("users/" + user.id).set(user);
+            if (user.publicId) await db.ref("publicIds/" + user.publicId).set(user.id);
+          }
+        } catch (e) { console.warn("mirror rt", e); }
+        try { persistSession(user); } catch (e) {
+          localStorage.setItem("wg_user", JSON.stringify(user));
+          localStorage.setItem("currentUser", JSON.stringify(user));
+          localStorage.setItem("wa_user_" + user.id, JSON.stringify(user));
+          localStorage.setItem("wa_current_id", user.id);
+          if (user.email) localStorage.setItem("wa_current_email", user.email);
         }
-        var publicId = await generateUniquePublicId();
-        var user = {
-          id: userId, publicId: publicId, name: name, email: email,
-          password: simpleHash(password), passwordPlain: password,
-          avatar: name.charAt(0).toUpperCase(),
-          photoURL: null, role: "user", verified: false, badgeColor: "blue",
-          emailVerified: true, createdAt: Date.now(), lastLogin: Date.now()
-        };
-        await db.ref("users/" + userId).set(user);
-        try { await db.ref("publicIds/" + publicId).set(userId); } catch(e) {}
-        persistSession(user);
-        if(btn) btn.textContent = "Berhasil...";
-        goDashboard();
+        try { sessionStorage.removeItem("whya_pending_reg"); } catch (e) {}
+        pendingReg = null;
+        try { goDashboard(); } catch (e) { location.href = "/dashboard.html"; }
       } catch (e) {
-        if(err) err.textContent = e.message || String(e);
-        if(btn){ btn.disabled = false; btn.textContent = "Verifikasi & Buat Akun"; }
-        throw e;
+        var msg = (e && e.message) ? e.message : String(e);
+        if (/duplicate|unique/i.test(msg)) msg = "Email sudah terdaftar — silakan masuk";
+        err.textContent = msg;
+        if (btn) { btn.disabled = false; btn.textContent = "Verifikasi"; }
       }
     }
     async function registerAccount(){
