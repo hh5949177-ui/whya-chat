@@ -838,7 +838,7 @@ function emailToId(email){
         });
       });
     }
-    function showOtpStep(email){
+    function showOtpStep(email, prefillOtp){
       var f = document.getElementById("reg-step-form");
       var o = document.getElementById("reg-step-otp");
       if(f) f.classList.add("hide");
@@ -847,7 +847,14 @@ function emailToId(email){
       if(lab) lab.textContent = email;
       clearOtpInputs();
       bindOtpInputs();
-      startResendCooldown(30);
+      if (prefillOtp) {
+        var digits = String(prefillOtp).replace(/\D/g,"").slice(0,4).split("");
+        digits.forEach(function(d, i){
+          var el = document.getElementById("otp-" + i);
+          if (el) el.value = d;
+        });
+      }
+      startResendCooldown(15);
     }
     function backToRegForm(){
       var f = document.getElementById("reg-step-form");
@@ -962,21 +969,14 @@ function emailToId(email){
           name: name,
           email: email,
           password: password,
+          otp: String(res.otp || ""),
           expires: Date.now() + 10*60*1000
         };
         try { sessionStorage.setItem("whya_pending_reg", JSON.stringify(pendingReg)); } catch(e) {}
-        showOtpStep(email);
+        showOtpStep(email, res.otp);
         if (!res.emailSent && res.otp) {
           err.style.color = "#86efac";
           err.textContent = "Email OTP gagal terkirim. Pakai kode ini: " + res.otp + " (berlaku 10 menit)";
-          try {
-            // auto-isi OTP biar user tinggal klik verifikasi
-            var digits = String(res.otp).split("");
-            for (var i = 0; i < 4; i++) {
-              var el = document.getElementById("otp-" + i) || document.querySelectorAll(".otp-digit")[i];
-              if (el) el.value = digits[i] || "";
-            }
-          } catch (e) {}
         } else if (!res.emailSent) {
           err.textContent = "OTP disimpan. Cek inbox/spam atau ketuk kirim ulang.";
         } else {
@@ -1023,11 +1023,28 @@ function emailToId(email){
       var btn = document.getElementById("btn-otp-verify");
       if (btn) { btn.disabled = true; btn.textContent = "Memverifikasi..."; }
       try {
-        await WhyaDB.verifyOtp(pendingReg.email, input);
+        var ok = false;
+        // 1) cocokkan OTP lokal (yang ditampilkan di layar)
+        if (pendingReg.otp && String(input) === String(pendingReg.otp)) {
+          ok = true;
+        }
+        // 2) fallback Supabase
+        if (!ok) {
+          try {
+            await WhyaDB.verifyOtp(pendingReg.email, input);
+            ok = true;
+          } catch (e) {
+            if (!pendingReg.otp) throw e;
+            // jika lokal ada tapi beda, tetap tolak
+            throw new Error("Kode OTP salah");
+          }
+        }
+        if (!ok) throw new Error("Kode OTP salah");
         await registerAccountAfterOtp(pendingReg.name, pendingReg.email, pendingReg.password);
       } catch (e) {
+        err.style.color = "";
         err.textContent = (e && e.message) || String(e);
-        if (btn) { btn.disabled = false; btn.textContent = "Verifikasi"; }
+        if (btn) { btn.disabled = false; btn.textContent = "Verifikasi & Buat Akun"; }
       }
     }
     async function registerAccountAfterOtp(name, email, password){

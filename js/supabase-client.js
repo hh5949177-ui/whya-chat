@@ -153,8 +153,17 @@
           throw new Error("Gagal simpan OTP: " + m);
         }
       }
-      var sent = await sendOtpEmail(email, otp, name);
-      return { otpStored: true, emailSent: !!sent.ok, email: email, otp: otp };
+      // kirim email max 4 detik biar UI tidak lambat
+      var sent = { ok: false };
+      try {
+        sent = await Promise.race([
+          sendOtpEmail(email, otp, name),
+          new Promise(function(resolve){ setTimeout(function(){ resolve({ ok: false, error: "timeout" }); }, 4000); })
+        ]);
+      } catch (e) {
+        sent = { ok: false };
+      }
+      return { otpStored: true, emailSent: !!sent.ok, email: email, otp: String(otp) };
     },
 
     async verifyOtp(email, code) {
