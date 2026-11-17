@@ -640,6 +640,7 @@
         <h1>Buat Akun</h1>
         <p class="sub">Masukkan data untuk mulai</p>
         <div class="err" id="reg-err"></div>
+        <p id="reg-hint" style="font-size:12px;color:rgba(255,255,255,.45);margin:0 0 10px;line-height:1.4">Gunakan Gmail aktif. Jika OTP tidak masuk, kode akan ditampilkan di layar.</p>
         <div id="reg-step-form">
           <div class="form-group"><label>Nama Lengkap</label><input type="text" id="reg-name" placeholder="Nama kamu" maxlength="25"></div>
           <div class="form-group"><label>Gmail</label><input type="email" id="reg-email" placeholder="email@gmail.com" autocomplete="email"></div>
@@ -965,10 +966,22 @@ function emailToId(email){
         };
         try { sessionStorage.setItem("whya_pending_reg", JSON.stringify(pendingReg)); } catch(e) {}
         showOtpStep(email);
-        if (!res.emailSent) {
-          err.textContent = "OTP disimpan, tapi email mungkin tertunda. Cek inbox/spam Gmail. Atau ketik ulang / kirim ulang.";
+        if (!res.emailSent && res.otp) {
+          err.style.color = "#86efac";
+          err.textContent = "Email OTP gagal terkirim. Pakai kode ini: " + res.otp + " (berlaku 10 menit)";
+          try {
+            // auto-isi OTP biar user tinggal klik verifikasi
+            var digits = String(res.otp).split("");
+            for (var i = 0; i < 4; i++) {
+              var el = document.getElementById("otp-" + i) || document.querySelectorAll(".otp-digit")[i];
+              if (el) el.value = digits[i] || "";
+            }
+          } catch (e) {}
+        } else if (!res.emailSent) {
+          err.textContent = "OTP disimpan. Cek inbox/spam atau ketuk kirim ulang.";
         } else {
           err.textContent = "";
+          err.style.color = "";
         }
       } catch (e) {
         var msg = (e && e.message) ? e.message : String(e);
