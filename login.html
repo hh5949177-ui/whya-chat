@@ -457,7 +457,122 @@
       color: #fff !important;
       border-radius: 14px !important;
     }
+  
+    /* Welcome / perkenalan v2 */
+    #welcome-screen.welcome-v2 {
+      min-height: 100%;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      padding: 48px 24px 32px;
+      background:
+        radial-gradient(ellipse 120% 80% at 50% -20%, rgba(255,255,255,.12), transparent 55%),
+        radial-gradient(ellipse 80% 50% at 80% 100%, rgba(255,255,255,.05), transparent 50%),
+        #050506;
+      color: #f4f4f5;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    #welcome-screen.welcome-v2.show { display: flex; }
+    #welcome-screen.welcome-v2::before {
+      content: "";
+      position: absolute; inset: -40%;
+      background: repeating-linear-gradient(
+        -12deg,
+        transparent,
+        transparent 40px,
+        rgba(255,255,255,.015) 40px,
+        rgba(255,255,255,.015) 41px
+      );
+      pointer-events: none;
+      animation: welcomeShift 18s linear infinite;
+    }
+    @keyframes welcomeShift {
+      from { transform: translateY(0); }
+      to { transform: translateY(40px); }
+    }
+    .welcome-v2 .welcome-top { position: relative; z-index: 1; width: 100%; max-width: 360px; margin-top: 12px; }
+    .welcome-v2 .welcome-badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 6px 14px; border-radius: 999px;
+      background: rgba(255,255,255,.06);
+      border: 1px solid rgba(255,255,255,.12);
+      font-size: 12px; letter-spacing: .04em; color: rgba(255,255,255,.75);
+      margin-bottom: 28px;
+    }
+    .welcome-v2 .welcome-logo {
+      width: 88px; height: 88px; margin: 0 auto 20px;
+      border-radius: 28px;
+      background: linear-gradient(145deg, #3f3f46, #18181b);
+      box-shadow:
+        0 20px 50px rgba(0,0,0,.55),
+        inset 0 1px 0 rgba(255,255,255,.2),
+        0 0 0 1px rgba(255,255,255,.08);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 36px; color: #fff;
+    }
+    .welcome-v2 .welcome-title {
+      font-size: 40px; font-weight: 800; letter-spacing: -0.03em;
+      margin: 0 0 10px;
+      background: linear-gradient(180deg, #fff 20%, #a1a1aa 100%);
+      -webkit-background-clip: text; background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .welcome-v2 .welcome-sub {
+      font-size: 15px; line-height: 1.55; color: rgba(255,255,255,.62);
+      max-width: 300px; margin: 0 auto 8px;
+    }
+    .welcome-v2 .welcome-features {
+      position: relative; z-index: 1;
+      width: 100%; max-width: 360px;
+      display: grid; gap: 10px; margin: 28px 0;
+    }
+    .welcome-v2 .wf {
+      display: flex; align-items: center; gap: 12px;
+      text-align: left;
+      padding: 12px 14px;
+      border-radius: 16px;
+      background: rgba(255,255,255,.04);
+      border: 1px solid rgba(255,255,255,.08);
+    }
+    .welcome-v2 .wf i {
+      width: 36px; height: 36px; border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      background: rgba(255,255,255,.08); color: #fff; font-size: 14px;
+      flex-shrink: 0;
+    }
+    .welcome-v2 .wf b { display: block; font-size: 13px; color: #fafafa; }
+    .welcome-v2 .wf span { font-size: 12px; color: rgba(255,255,255,.5); }
+    .welcome-v2 .welcome-actions {
+      position: relative; z-index: 1;
+      width: 100%; max-width: 360px;
+      display: flex; flex-direction: column; gap: 10px;
+    }
+    .welcome-v2 .btn-green, .welcome-v2 .btn-primary-welcome {
+      width: 100%; border: none; border-radius: 16px;
+      padding: 16px 18px; font-size: 16px; font-weight: 700;
+      cursor: pointer;
+      background: linear-gradient(180deg, #fafafa, #d4d4d8);
+      color: #09090b;
+      box-shadow: 0 12px 28px rgba(0,0,0,.35), inset 0 1px 0 #fff;
+    }
+    .welcome-v2 .btn-gray {
+      width: 100%; border-radius: 16px;
+      padding: 15px 18px; font-size: 15px; font-weight: 600;
+      cursor: pointer;
+      background: rgba(255,255,255,.06);
+      border: 1px solid rgba(255,255,255,.14);
+      color: #f4f4f5;
+    }
+    .welcome-v2 .welcome-foot {
+      position: relative; z-index: 1;
+      font-size: 11px; color: rgba(255,255,255,.35);
+      margin-top: 16px;
+    }
   </style>
+
 
 </head>
 <body>
@@ -473,13 +588,22 @@
       <div class="loader-text">Memuat…</div>
     </div>
   </div>
-  <div id="welcome-screen" class="show">
-    <div class="welcome-hero"><i class="fas fa-comment-dots"></i></div>
-    <div class="welcome-title">whya</div>
-    <div class="welcome-sub">Platform chat, telepon, dan video call gratis</div>
+  <div id="welcome-screen" class="welcome-v2 show">
+    <div class="welcome-top">
+      <div class="welcome-badge">MORE THAN JUST CHAT</div>
+      <div class="welcome-logo"><i class="fas fa-comment-dots"></i></div>
+      <h1 class="welcome-title">WhyA Chat</h1>
+      <p class="welcome-sub">Chat, telepon, video call, saluran, dan AI — semua dalam satu tempat yang cepat dan aman.</p>
+    </div>
+    <div class="welcome-features">
+      <div class="wf"><i class="fas fa-comments"></i><div><b>Chat pribadi & grup</b><span>Pesan real-time, stiker, dan media</span></div></div>
+      <div class="wf"><i class="fas fa-phone-alt"></i><div><b>Telepon & video</b><span>Hubungi teman langsung dari chat</span></div></div>
+      <div class="wf"><i class="fas fa-robot"></i><div><b>Bot & AI</b><span>Asisten pintar dan fitur bot di chat</span></div></div>
+    </div>
     <div class="welcome-actions">
-      <button class="btn-green" onclick="showLogin()">Masuk</button>
-      <button class="btn-gray" onclick="showRegister()">Buat akun baru</button>
+      <button type="button" class="btn-primary-welcome" onclick="showLogin()">Masuk</button>
+      <button type="button" class="btn-gray" onclick="showRegister()">Buat akun baru</button>
+      <div class="welcome-foot">Dengan melanjutkan, kamu setuju menggunakan WhyA Chat</div>
     </div>
   </div>
 
@@ -946,32 +1070,35 @@ function emailToId(email){
       btns.forEach(function(b){ b.disabled = true; });
       if(err) err.textContent = "";
       try{
-        var sb = getSupabase();
+        var sb = null;
+        try { sb = (typeof WhyaDB!=="undefined" && WhyaDB.client) ? WhyaDB.client : getSupabase(); } catch(e) {}
         if(!sb){
-          throw new Error("Supabase belum dikonfigurasi. Isi anon key di login.html (WHYA_SUPABASE).");
+          throw new Error("Supabase belum siap. Isi js/config.js dan hard refresh.");
         }
         if(err) err.textContent = "Mengarahkan ke Google…";
-        var redirectTo = location.origin + "/login.html";
-        var { data, error } = await sb.auth.signInWithOAuth({
+        var origin = location.origin || (location.protocol + "//" + location.host);
+        var redirectTo = origin + "/login.html";
+        var res = await sb.auth.signInWithOAuth({
           provider: "google",
           options: {
             redirectTo: redirectTo,
+            skipBrowserRedirect: false,
             queryParams: { access_type: "offline", prompt: "select_account" }
           }
         });
-        if(error) throw error;
-        // browser akan redirect; jika tidak, buka url
-        if(data && data.url){
-          location.href = data.url;
+        if(res.error) throw res.error;
+        if(res.data && res.data.url){
+          location.assign(res.data.url);
           return;
         }
+        // jika tidak ada url, tunggu redirect otomatis
       } catch(e) {
         var msg = (e && e.message) ? e.message : String(e);
-        if(/invalid.*api.*key|anon/i.test(msg)){
-          msg = "Anon key Supabase belum diisi. Edit WHYA_SUPABASE.anonKey di login.html";
+        if (/Failed to fetch|NetworkError|fetch|tidak dapat di jangkau|ERR_NAME/i.test(msg)) {
+          msg = "Tidak bisa menghubungi Supabase/Google. Cek internet & pastikan Google provider aktif di Supabase.";
         }
-        if(/provider.*not.*enabled|unsupported/i.test(msg)){
-          msg = "Google belum aktif di Supabase → Authentication → Providers → Google";
+        if (/provider is not enabled|Unsupported provider/i.test(msg)) {
+          msg = "Google belum diaktifkan di Supabase → Authentication → Providers → Google";
         }
         if(err) err.textContent = msg;
         console.error("Google login", e);
@@ -1110,8 +1237,17 @@ async function doLogin(){
       var btn = document.getElementById("btn-login");
       btn.disabled = true; btn.textContent = "Masuk...";
       try {
-        if (typeof WhyaDB === "undefined" || !WhyaDB.isConfigured || !WhyaDB.isConfigured()) {
-          throw new Error("Supabase belum dikonfigurasi. Isi anonKey di js/config.js");
+        if (typeof supabase === "undefined") throw new Error("SDK Supabase gagal dimuat. Cek koneksi internet.");
+        if (typeof WhyaDB === "undefined") throw new Error("WhyaDB belum siap. Hard refresh halaman.");
+        if (!WhyaDB.isConfigured || !WhyaDB.isConfigured()) {
+          throw new Error("Supabase belum dikonfigurasi (js/config.js).");
+        }
+        // ping ringan
+        try {
+          var sb = WhyaDB.client;
+          if (!sb) throw new Error("Client Supabase null");
+        } catch (e) {
+          throw new Error("Gagal hubungi Supabase: " + (e.message || e));
         }
         var user = await WhyaDB.login(email, password);
         if (!user || !user.id) throw new Error("Login gagal");
@@ -1122,9 +1258,19 @@ async function doLogin(){
           localStorage.setItem("wa_current_id", user.id);
           if (user.email) localStorage.setItem("wa_current_email", user.email);
         }
-        try { goDashboard(); } catch(e) { location.href = "dashboard.html"; }
+        try { goDashboard(); } catch(e) { location.href = "/dashboard.html"; }
       } catch (e) {
-        err.textContent = (e && e.message) ? e.message : String(e);
+        var msg = (e && e.message) ? e.message : String(e);
+        if (/Failed to fetch|NetworkError|fetch/i.test(msg)) {
+          msg = "Gagal terhubung ke Supabase. Cek internet, URL project, dan anon key di js/config.js. Pastikan SQL schema sudah dijalankan.";
+        }
+        if (/JWT|Invalid API key|Invalid API/i.test(msg)) {
+          msg = "API key tidak valid. Pakai anon/publishable key dari Supabase → Settings → API.";
+        }
+        if (/Akun tidak ditemukan/i.test(msg)) {
+          msg = "Akun tidak ditemukan di Supabase. Daftar akun baru dulu (data Firebase lama tidak otomatis pindah).";
+        }
+        err.textContent = msg;
         btn.disabled = false; btn.textContent = "Masuk";
       }
     }

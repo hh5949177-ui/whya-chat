@@ -5108,6 +5108,30 @@
       }; } };
     }
     var db = window.db;
+
+    /* WHYA_AUTH_GATE — jangan tampilkan dashboard tanpa sesi */
+    (function whyaAuthGate(){
+      try{
+        var raw = localStorage.getItem("wg_user") || localStorage.getItem("currentUser");
+        var ok = false;
+        if(raw){
+          var u = JSON.parse(raw);
+          ok = !!(u && (u.id || u.email));
+        }
+        if(!ok){
+          var id = localStorage.getItem("wa_current_id");
+          if(id && localStorage.getItem("wa_user_"+id)) ok = true;
+        }
+        if(!ok){
+          var path = (location.pathname||"");
+          if(/dashboard/i.test(path) || path==="/" ){
+            location.replace("/login.html");
+            return;
+          }
+        }
+      }catch(e){}
+    })();
+
     var firebase = window.firebase || { apps: [], initializeApp: function(){return {}}, database: function(){return db;}, auth: function(){return {}}, storage: function(){return null;} };
 
     let currentUser=null,currentRoom=null,messagesRef=null,lastUserChats={},pendingReg=null,generatedOTP=null;
@@ -6710,7 +6734,6 @@ function saveAccountLocal(user){
     }
 
     function bootDashboard(){
-      try{ hideAppLoader(); }catch(e){}
       var u=null;
       try{ if(typeof loadSavedSession==="function") u=loadSavedSession(); }catch(e){}
       if(!u){
@@ -6736,7 +6759,8 @@ function saveAccountLocal(user){
       }
       if(!u || !(u.id||u.email||u.uid)){
         try{ hideAppLoader(); }catch(e){}
-        try{ location.replace("login.html"); }catch(e){}
+        try{ sessionStorage.setItem("whya_need_login","1"); }catch(e){}
+        try{ location.replace("/login.html"); }catch(e){ location.href="login.html"; }
         return;
       }
       currentUser=u;

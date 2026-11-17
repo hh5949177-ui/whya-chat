@@ -14,13 +14,15 @@
         var raw = localStorage.getItem("wg_user") || localStorage.getItem("currentUser");
         if (raw) u = JSON.parse(raw);
       } catch(e) {}
-      var q = location.search || "";
-      if (u && (u.id || u.email)) location.replace("dashboard.html" + q);
-      else location.replace("login.html" + q);
+      if (!u || !(u.id || u.email)) {
+        location.replace("/login.html");
+        return;
+      }
+      location.replace("/dashboard.html");
     })();
   </script>
 </head>
-<body style="background:#050505;color:#aaa;font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0">
+<body style="background:#050506;color:#fff;font-family:system-ui;display:flex;align-items:center;justify-content:center;height:100vh;margin:0">
   Memuat…
 </body>
 </html>
