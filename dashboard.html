@@ -3982,6 +3982,25 @@
     #app, #app * { pointer-events: auto; }
     .tab-page.active { pointer-events: auto !important; }
 
+  
+    /* FIX: jangan blokir UI dashboard */
+    .auth-screen { display:none !important; pointer-events:none !important; visibility:hidden !important; }
+    #welcome-screen { display:none !important; pointer-events:none !important; }
+    #about-whya:not(.show) { display:none !important; pointer-events:none !important; }
+    #app-loader { display:none !important; pointer-events:none !important; }
+    #group-invite-screen:not(.gis-visible):not(.show) { display:none !important; pointer-events:none !important; }
+    #account-warning-overlay:not(.show) { display:none !important; pointer-events:none !important; }
+    #app-notif-modal { display:none !important; pointer-events:none !important; }
+    #app-notif-modal.show { display:flex !important; pointer-events:auto !important; }
+
+    #app { display:flex !important; flex-direction:column !important; height:100% !important; max-width:900px; margin:0 auto; position:relative; z-index:1; pointer-events:auto !important; }
+    .tab-page { display:none !important; flex:1; min-height:0; flex-direction:column; overflow:hidden; opacity:1 !important; }
+    .tab-page.active { display:flex !important; opacity:1 !important; visibility:visible !important; }
+    .bottom-nav { position:relative; z-index:50; pointer-events:auto !important; }
+    .bottom-nav .nav-item { pointer-events:auto !important; position:relative; z-index:2; }
+    .liquid-dock-pill { pointer-events:none !important; }
+    body.liquid-dock-on .liquid-dock-pill { pointer-events:none !important; }
+
   </style>
 
 
@@ -5268,19 +5287,39 @@
 
     /* ===== TABS ===== */
     function switchTab(name){
-      document.querySelectorAll(".tab-page").forEach(function(p){p.classList.remove("active")});
-      document.querySelectorAll(".nav-item").forEach(function(n){n.classList.remove("active")});
-      var page=document.getElementById("tab-"+name);
-      // restart animation
-      if(page){ void page.offsetWidth; page.classList.add("active"); }
-      var nav=document.getElementById("nav-"+name);
-      if(nav) nav.classList.add("active");
-      try{ updateLiquidDockPill(); }catch(e){}
-      if(name==="status"){ renderStatusPage(); renderChannels(); }
-      if(name==="web"){ try{ renderWebList(); }catch(e){} }
-      if(name==="profile") updateProfileTab();
-      if(name==="calls") renderCallHistory();
+      try{
+        name = String(name||"chat");
+        document.querySelectorAll(".tab-page").forEach(function(p){
+          p.classList.remove("active");
+          p.style.display = "none";
+        });
+        document.querySelectorAll(".nav-item").forEach(function(n){ n.classList.remove("active"); });
+        var page=document.getElementById("tab-"+name);
+        if(page){
+          page.classList.add("active");
+          page.style.display = "flex";
+          page.style.opacity = "1";
+          page.style.visibility = "visible";
+        }
+        var nav=document.getElementById("nav-"+name);
+        if(nav) nav.classList.add("active");
+        try{ updateLiquidDockPill(); }catch(e){}
+        if(name==="chat"){ try{ if(typeof lastUserChats!=="undefined") renderChatList(lastUserChats||{}); }catch(e){} }
+        if(name==="status"){ try{ renderStatusPage(); }catch(e){} try{ renderChannels(); }catch(e){} }
+        if(name==="web"){ try{ renderWebList(); }catch(e){} }
+        if(name==="profile"){ try{ updateProfileTab(); }catch(e){} }
+        if(name==="calls"){ try{ renderCallHistory(); }catch(e){} }
+      }catch(e){ console.error("switchTab", e); }
     }
+    // backup binding nav (jika onclick terblokir)
+    document.addEventListener("click", function(ev){
+      var t = ev.target;
+      if(!t) return;
+      var btn = t.closest ? t.closest(".nav-item") : null;
+      if(!btn || !btn.id || btn.id.indexOf("nav-")!==0) return;
+      var name = btn.id.replace(/^nav-/, "");
+      if(name) switchTab(name);
+    }, true);
     function openFs(id){
       var el=document.getElementById(id);
       if(!el){ console.warn("openFs missing", id); return; }
@@ -6790,13 +6829,18 @@ function saveAccountLocal(user){
       }catch(e){alert("Gagal: "+e.message)}
     }
 
+    var __whyaBootStarted = false;
     function bootDashboard(){
       try{
         var l=document.getElementById("app-loader");
         if(l){ l.style.display="none"; l.classList.add("hide","gone"); }
         var app=document.getElementById("app");
-        if(app){ app.style.display="block"; app.style.visibility="visible"; app.style.opacity="1"; }
+        if(app){ app.style.display="flex"; app.style.visibility="visible"; app.style.opacity="1"; }
         if(document.body) document.body.classList.add("app-ready");
+        ["welcome-screen","auth-register","auth-login","about-whya"].forEach(function(id){
+          var el=document.getElementById(id);
+          if(el){ el.style.display="none"; el.style.pointerEvents="none"; }
+        });
       }catch(e){}
       var u=null;
       try{ if(typeof loadSavedSession==="function") u=loadSavedSession(); }catch(e){}
@@ -6839,10 +6883,9 @@ function saveAccountLocal(user){
         if(document.body) document.body.classList.add("app-ready");
       }catch(e){}
       try{ hideAppLoader(); }catch(e){}
-      var started=false;
       function go(){
-        if(started) return;
-        started=true;
+        if(__whyaBootStarted) return;
+        __whyaBootStarted=true;
         try{ startApp(); }catch(err){
           console.error("startApp", err);
           try{ hideAppLoader(); }catch(e){}
@@ -6913,6 +6956,24 @@ function saveAccountLocal(user){
       }catch(e){}
       try{ listenAppNotifications(); }catch(e){ console.warn("notif listen", e); }
       try{ startInAppBotEngine(); }catch(e){}
+      // muat daftar chat (kosong pun tampilkan empty state)
+      try{
+        if(typeof lastUserChats==="undefined") window.lastUserChats = {};
+        db.ref("userChats/"+(currentUser.id||"")).once("value").then(function(s){
+          var v = (s && s.val && s.val()) || {};
+          lastUserChats = v;
+          try{ renderChatList(v); }catch(e){ console.warn(e); }
+        }).catch(function(){ try{ renderChatList({}); }catch(e){} });
+        // listen perubahan
+        try{
+          db.ref("userChats/"+(currentUser.id||"")).on("value", function(s){
+            var v = (s && s.val && s.val()) || {};
+            lastUserChats = v;
+            try{ renderChatList(v); }catch(e){}
+          });
+        }catch(e){}
+      }catch(e){ try{ renderChatList({}); }catch(e2){} }
+
       try{ setTimeout(function(){ try{ listenAppNotifications(); }catch(e){} }, 1500); }catch(e){}
       // tutup overlay agar bisa diklik
       try{
@@ -7447,6 +7508,14 @@ function saveAccountLocal(user){
         return (b.lastMessageTime||0)-(a.lastMessageTime||0);
       });
 
+      if(!items.length){
+        box.innerHTML = '<div style="padding:48px 24px;text-align:center;color:rgba(255,255,255,.45);font-size:14px;line-height:1.6">'
+          +'<div style="font-size:40px;margin-bottom:12px;opacity:.5"><i class="fas fa-comments"></i></div>'
+          +'<div style="font-weight:700;color:rgba(255,255,255,.75);margin-bottom:6px">Belum ada chat</div>'
+          +'<div>Tekan ikon user+ untuk tambah teman atau ikon grup untuk buat grup</div>'
+          +'</div>';
+        return;
+      }
       box.innerHTML = "";
       items.forEach(function(it){
         var el = document.createElement("div");
