@@ -3965,6 +3965,23 @@
     .msg-img-link img { width:100%; max-width:280px; display:block; border-radius:12px; }
     .msg-img-caption { font-size:12px; margin-top:6px; opacity:.9; }
     .msg-img-linkurl { font-size:11px; color:#7dd3fc; margin-top:4px; text-decoration:none; display:inline-block; }
+  
+    /* Overlays tersembunyi jangan blokir klik */
+    #welcome-screen:not(.show),
+    #about-whya:not(.show),
+    #auth-register,
+    #auth-login,
+    #app-loader.hide,
+    #app-loader.gone,
+    #group-invite-screen:not(.show),
+    #app-notif-modal:not(.show),
+    #account-warning-overlay:not(.show) {
+      display: none !important;
+      pointer-events: none !important;
+    }
+    #app, #app * { pointer-events: auto; }
+    .tab-page.active { pointer-events: auto !important; }
+
   </style>
 
 
@@ -4117,30 +4134,47 @@
 
   
   <script>
-  /* Emergency UI boot — jangan biarkan black screen */
+  /* Emergency UI boot — sekali saja, tidak merusak style */
   (function(){
+    var done = false;
     function forceShow(){
+      if (done) return;
+      done = true;
       try{
         var l=document.getElementById("app-loader");
         if(l){
           l.classList.add("hide","gone");
-          l.style.cssText="display:none!important;opacity:0;visibility:hidden;pointer-events:none";
+          l.style.display="none";
+          l.style.pointerEvents="none";
         }
+        ["welcome-screen","about-whya","auth-register","auth-login","account-warning-overlay","group-invite-screen","app-notif-modal"].forEach(function(id){
+          var el=document.getElementById(id);
+          if(!el) return;
+          el.style.display="none";
+          el.style.pointerEvents="none";
+          el.classList.remove("show");
+        });
         var app=document.getElementById("app");
         if(app){
-          app.style.cssText="display:block!important;visibility:visible!important;opacity:1!important;height:100%;max-width:900px;margin:0 auto;position:relative";
+          app.style.display="block";
+          app.style.visibility="visible";
+          app.style.opacity="1";
+          app.style.pointerEvents="auto";
         }
-        if(document.body) document.body.classList.add("app-ready");
+        if(document.body){
+          document.body.classList.add("app-ready");
+          document.body.style.pointerEvents="auto";
+        }
         var tab=document.querySelector(".tab-page.active")||document.getElementById("tab-chat");
         if(tab){
+          tab.classList.add("active");
           tab.style.display="flex";
           tab.style.opacity="1";
           tab.style.visibility="visible";
-          tab.classList.add("active");
+          tab.style.pointerEvents="auto";
         }
       }catch(e){}
     }
-    // Cek sesi; jika tidak ada → login
     function gate(){
       try{
         var raw=localStorage.getItem("wg_user")||localStorage.getItem("currentUser");
@@ -4153,22 +4187,13 @@
           var id=localStorage.getItem("wa_current_id");
           if(id && localStorage.getItem("wa_user_"+id)) ok=true;
         }
-        if(!ok){
-          location.replace("/login.html");
-          return;
-        }
+        if(!ok){ location.replace("/login.html"); return; }
         forceShow();
       }catch(e){ forceShow(); }
     }
-    if(document.readyState==="loading"){
-      document.addEventListener("DOMContentLoaded", gate);
-    } else {
-      gate();
-    }
-    setTimeout(forceShow, 800);
-    setTimeout(forceShow, 2000);
-    setTimeout(forceShow, 4000);
-    window.addEventListener("load", function(){ setTimeout(forceShow, 300); });
+    if(document.readyState==="loading") document.addEventListener("DOMContentLoaded", gate);
+    else gate();
+    setTimeout(function(){ if(!done) forceShow(); }, 1200);
   })();
   </script>
   <!-- APP -->
@@ -6864,8 +6889,12 @@ function saveAccountLocal(user){
       try{ hideAppLoader(); }catch(e){}
       try{
         var _app0=document.getElementById("app");
-        if(_app0){ _app0.style.display="block"; _app0.style.visibility="visible"; _app0.style.opacity="1"; }
-        if(document.body) document.body.classList.add("app-ready");
+        if(_app0){ _app0.style.display="block"; _app0.style.visibility="visible"; _app0.style.opacity="1"; _app0.style.pointerEvents="auto"; }
+        if(document.body){ document.body.classList.add("app-ready"); document.body.style.pointerEvents="auto"; }
+        ["welcome-screen","about-whya","auth-register","auth-login","app-loader"].forEach(function(id){
+          var el=document.getElementById(id);
+          if(el){ el.style.display="none"; el.style.pointerEvents="none"; el.classList.remove("show"); }
+        });
       }catch(e){}
       try{ applySavedTheme(); }catch(e){}
       try{ applyLiquidDockSetting(); }catch(e){}
@@ -7384,16 +7413,8 @@ function saveAccountLocal(user){
       var items = [];
 
       // General selalu di atas
-      items.push({
-        id: "general",
-        name: "General Chat",
-        avatar: "G",
-        photoURL: null,
-        type: "general",
-        lastMessage: (userChats.general && userChats.general.lastMessage) || "Chat publik semua pengguna",
-        lastMessageTime: (userChats.general && userChats.general.lastMessageTime) || 0,
-        unreadCount: (userChats.general && userChats.general.unreadCount) || 0
-      });
+      /* general chat dihapus */
+
 
       Object.keys(userChats||{}).forEach(function(id){
         if(id==="general" || id==="General" || id==="General Chat") return;
@@ -9318,7 +9339,7 @@ function saveAccountLocal(user){
       list.innerHTML='<p style="text-align:center;color:var(--muted);padding:20px">Memuat…</p>';
       var chats=lastUserChats||{};
       var roomIds=Object.keys(chats);
-      roomIds.push("general");
+      /* roomIds.push("general"); */
       var items=[];
       var tasks=roomIds.map(function(rid){
         return db.ref("chats/"+rid).orderByChild("timestamp").limitToLast(30).once("value").then(function(snap){
@@ -14320,19 +14341,26 @@ function openStatusViewer(uid,list,index){
 
     /* BOOT_IMMEDIATE */
     (function(){
+      var ran=false;
       function run(){
+        if(ran) return;
+        ran=true;
         try { if (typeof bootDashboard === "function") bootDashboard(); } catch(e) { console.error("boot", e); }
         try {
           var app=document.getElementById("app");
-          if(app){ app.style.display="block"; app.style.visibility="visible"; app.style.opacity="1"; }
+          if(app){ app.style.display="block"; app.style.visibility="visible"; app.style.opacity="1"; app.style.pointerEvents="auto"; }
           var l=document.getElementById("app-loader");
-          if(l) l.style.display="none";
+          if(l){ l.style.display="none"; l.style.pointerEvents="none"; }
           document.body && document.body.classList.add("app-ready");
+          ["welcome-screen","auth-login","auth-register"].forEach(function(id){
+            var el=document.getElementById(id);
+            if(el){ el.style.display="none"; el.style.pointerEvents="none"; }
+          });
         } catch(e) {}
       }
       if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", run);
       else run();
-      setTimeout(run, 500);
-      setTimeout(run, 1500);
+      setTimeout(run, 600);
     })();
+
  
