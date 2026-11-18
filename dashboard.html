@@ -287,17 +287,19 @@
     #ask-sheet .ask-no { background:rgba(255,255,255,.08); color:#fff; }
     #ask-sheet .ask-yes { background:#fff; color:#111; }
 
-    #app { display:none; height:100%; max-width:900px; margin:0 auto; position:relative; }
+    #app { display:block; height:100%; max-width:900px; margin:0 auto; position:relative; visibility:visible; opacity:1; }
     body.app-ready #app { display:block !important; visibility:visible !important; opacity:1 !important; }
-    body.app-ready #app-loader { display:none !important; }
+    body.app-ready #app-loader, #app-loader.hide, #app-loader.gone { display:none !important; visibility:hidden !important; opacity:0 !important; pointer-events:none !important; }
 
     /* MAIN TABS */
     .tab-page {
       display:none; height:calc(100% - var(--nav-h)); flex-direction:column; overflow:hidden;
-      opacity:0;
+      opacity:1;
     }
     .tab-page.active {
-      display:flex;
+      display:flex !important;
+      opacity:1 !important;
+      visibility:visible !important;
       animation: tabIn .32s cubic-bezier(0.22, 1, 0.36, 1) forwards;
     }
     @keyframes tabIn {
@@ -2142,7 +2144,7 @@
     /* Splash & loading */
     #app-loader {
       position:fixed; inset:0; z-index:99999;
-      display:flex; align-items:center; justify-content:center;
+      display:none; align-items:center; justify-content:center;
       background:#050506;
       overflow:hidden;
       transition: opacity .5s ease, visibility .5s;
@@ -4115,27 +4117,58 @@
 
   
   <script>
-  /* Loader watchdog: paksa hilang jika boot gagal */
+  /* Emergency UI boot — jangan biarkan black screen */
   (function(){
-    function forceHide(){
+    function forceShow(){
       try{
         var l=document.getElementById("app-loader");
-        if(!l) return;
-        l.classList.add("hide","gone");
-        l.style.display="none";
-        l.style.opacity="0";
-        l.style.visibility="hidden";
+        if(l){
+          l.classList.add("hide","gone");
+          l.style.cssText="display:none!important;opacity:0;visibility:hidden;pointer-events:none";
+        }
+        var app=document.getElementById("app");
+        if(app){
+          app.style.cssText="display:block!important;visibility:visible!important;opacity:1!important;height:100%;max-width:900px;margin:0 auto;position:relative";
+        }
+        if(document.body) document.body.classList.add("app-ready");
+        var tab=document.querySelector(".tab-page.active")||document.getElementById("tab-chat");
+        if(tab){
+          tab.style.display="flex";
+          tab.style.opacity="1";
+          tab.style.visibility="visible";
+          tab.classList.add("active");
+        }
       }catch(e){}
     }
-    setTimeout(forceHide, 2500);
-    setTimeout(forceHide, 5000);
-    setTimeout(forceHide, 9000);
-    document.addEventListener("DOMContentLoaded", function(){
-      setTimeout(forceHide, 3000);
-    });
-    window.addEventListener("load", function(){
-      setTimeout(forceHide, 2000);
-    });
+    // Cek sesi; jika tidak ada → login
+    function gate(){
+      try{
+        var raw=localStorage.getItem("wg_user")||localStorage.getItem("currentUser");
+        var ok=false;
+        if(raw){
+          var u=JSON.parse(raw);
+          ok=!!(u && (u.id||u.email));
+        }
+        if(!ok){
+          var id=localStorage.getItem("wa_current_id");
+          if(id && localStorage.getItem("wa_user_"+id)) ok=true;
+        }
+        if(!ok){
+          location.replace("/login.html");
+          return;
+        }
+        forceShow();
+      }catch(e){ forceShow(); }
+    }
+    if(document.readyState==="loading"){
+      document.addEventListener("DOMContentLoaded", gate);
+    } else {
+      gate();
+    }
+    setTimeout(forceShow, 800);
+    setTimeout(forceShow, 2000);
+    setTimeout(forceShow, 4000);
+    window.addEventListener("load", function(){ setTimeout(forceShow, 300); });
   })();
   </script>
   <!-- APP -->
@@ -5090,8 +5123,9 @@
   <script src="/js/supabase-client.js"></script>
   <script src="/js/rtdb-supabase-shim.js"></script>
   <script>
+    var EMAILJS_PUBLIC_KEY = window.EMAILJS_PUBLIC_KEY || "";
     try {
-      emailjs.init({ publicKey: EMAILJS_PUBLIC_KEY });
+      if (EMAILJS_PUBLIC_KEY && typeof emailjs!=="undefined") emailjs.init({ publicKey: EMAILJS_PUBLIC_KEY });
     } catch(e) {
       
     }
@@ -5099,7 +5133,7 @@
     var storage = null;
     var db = window.db;
 
-    /* WHYA_AUTH_GATE */
+    /* WHYA_AUTH_GATE — soft */
     (function(){
       try {
         var raw = localStorage.getItem("wg_user") || localStorage.getItem("currentUser");
@@ -5109,12 +5143,13 @@
           ok = !!(u && (u.id || u.email));
         }
         if (!ok) {
-          location.replace("/login.html");
-          return;
+          var id = localStorage.getItem("wa_current_id");
+          if (id && localStorage.getItem("wa_user_" + id)) ok = true;
         }
-      } catch(e) {
-        location.replace("/login.html");
-      }
+        if (!ok) {
+          try { location.replace("/login.html"); } catch(e) {}
+        }
+      } catch(e) {}
     })();
 
     if (!db) {
@@ -6731,6 +6766,13 @@ function saveAccountLocal(user){
     }
 
     function bootDashboard(){
+      try{
+        var l=document.getElementById("app-loader");
+        if(l){ l.style.display="none"; l.classList.add("hide","gone"); }
+        var app=document.getElementById("app");
+        if(app){ app.style.display="block"; app.style.visibility="visible"; app.style.opacity="1"; }
+        if(document.body) document.body.classList.add("app-ready");
+      }catch(e){}
       var u=null;
       try{ if(typeof loadSavedSession==="function") u=loadSavedSession(); }catch(e){}
       if(!u){
@@ -14275,4 +14317,22 @@ function openStatusViewer(uid,list,index){
         return false;
       }catch(e){ return false; }
     }
+
+    /* BOOT_IMMEDIATE */
+    (function(){
+      function run(){
+        try { if (typeof bootDashboard === "function") bootDashboard(); } catch(e) { console.error("boot", e); }
+        try {
+          var app=document.getElementById("app");
+          if(app){ app.style.display="block"; app.style.visibility="visible"; app.style.opacity="1"; }
+          var l=document.getElementById("app-loader");
+          if(l) l.style.display="none";
+          document.body && document.body.classList.add("app-ready");
+        } catch(e) {}
+      }
+      if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", run);
+      else run();
+      setTimeout(run, 500);
+      setTimeout(run, 1500);
+    })();
  
