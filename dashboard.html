@@ -5122,10 +5122,7 @@
       window.db = { ref: function(){ return { once:function(){return Promise.resolve({val:function(){return null},exists:function(){return false},forEach:function(){}})}, on:function(e,cb){try{cb({val:function(){return null},exists:function(){return false}})}catch(err){}}, off:function(){}, set:function(){return Promise.resolve()}, update:function(){return Promise.resolve()}, push:function(){return {key:"x",then:function(fn){return Promise.resolve().then(fn)}}}, remove:function(){return Promise.resolve()}, child:function(){return this}, limitToLast:function(){return this} }; } };
       db = window.db;
     }
-}, auth: function(){return {}}, storage: function(){return null;} };
-
-    
-    /* firebase removed — stub agar sisa referensi tidak crash */
+/* firebase removed — stub agar sisa referensi tidak crash */
     var firebase = {
       apps: [],
       initializeApp: function(){ return {}; },
