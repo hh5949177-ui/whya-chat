@@ -1314,13 +1314,16 @@
 
     function refreshAll() {
       document.getElementById("last-sync").textContent = "Memuat…";
+      if(typeof db==="undefined"||!db){ toast("Supabase DB belum siap"); return; }
       try{ loadSeasonLinkSettings(); }catch(e){}
+      if(!db){ document.getElementById("last-sync").textContent="DB error"; toast("Database belum siap"); return; }
       Promise.all([
         db.ref("users").once("value"),
         db.ref("channels").once("value"),
         db.ref("webs").once("value")
       ]).then(function (res) {
-        var uv = res[0].val() || {};
+        var uv = (res[0] && res[0].val) ? (res[0].val() || {}) : {};
+        console.log("[admin] users keys", Object.keys(uv||{}).length);
         users = Object.keys(uv).map(function (id) {
           var u = uv[id] || {};
           return {

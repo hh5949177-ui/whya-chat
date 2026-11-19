@@ -4195,6 +4195,34 @@
       margin: 10px 0;
     }
 
+  
+    /* msg-vis-fix */
+    #active-chat.open #messages,
+    #active-chat.open .messages {
+      display: block !important;
+      flex: 1 1 auto !important;
+      overflow-y: auto !important;
+      min-height: 120px !important;
+      visibility: visible !important;
+      opacity: 1 !important;
+    }
+    #active-chat .message,
+    #messages .message {
+      display: block !important;
+      visibility: visible !important;
+      opacity: 1 !important;
+      color: #e8eaf0 !important;
+    }
+    #active-chat .message.me .bubble,
+    #messages .message.me {
+      background: #1a3a5c !important;
+      color: #fff !important;
+    }
+    #active-chat .message.in .bubble,
+    #messages .message.in {
+      background: #1c1e2a !important;
+      color: #e8eaf0 !important;
+    }
   </style>
 
 
@@ -7945,11 +7973,30 @@ function saveAccountLocal(user){
           if(msgs) msgs.classList.remove("channel-mode");
         }
 
+        // load sekali + realtime
+        try{
+          messagesRef.once("value").then(function(snap){
+            var all = snap && snap.val && snap.val();
+            if(all && typeof all === "object"){
+              Object.keys(all).forEach(function(k){
+                var msg = all[k];
+                if(!msg) return;
+                if(deletedForMe[roomId] && deletedForMe[roomId][k]) return;
+                try{ appendMessage(k, msg); }catch(err){}
+              });
+              try{
+                var box=document.getElementById("messages");
+                if(box) box.scrollTop = box.scrollHeight;
+              }catch(e){}
+            }
+          });
+        }catch(e){}
         messagesRef.limitToLast(80).on("child_added", function(snap){
-          var msg = snap.val();
+          var msg = (snap && typeof snap.val==="function") ? snap.val() : (snap && snap.val) || snap;
           if(!msg) return;
-          if(deletedForMe[roomId] && deletedForMe[roomId][snap.key]) return;
-          try{ appendMessage(snap.key, msg); }catch(err){ console.warn(err); }
+          var sk = snap.key || (snap.path && String(snap.path).split("/").pop());
+          if(deletedForMe[roomId] && deletedForMe[roomId][sk]) return;
+          try{ appendMessage(sk, msg); }catch(err){ console.warn(err); }
         });
         messagesRef.on("child_changed", function(snap){
           var el = document.querySelector('.message[data-key="'+snap.key+'"]') || document.getElementById("msg-"+snap.key);
@@ -9871,12 +9918,20 @@ function saveAccountLocal(user){
       try{
         var ref = await db.ref("chats/"+currentRoom).push(payload);
         updateChatPreview(currentRoom, text, true);
-        // tampilkan langsung (optimistic) jika listener belum sempat
+        // tampilkan langsung (optimistic)
         try{
-          var key = ref && ref.key;
-          if(key && !document.getElementById("msg-"+key)){
+          var key = (ref && ref.key) || (payload && payload._key) || null;
+          if(!key && ref && typeof ref === "object"){
+            try{ key = ref.path && String(ref.path).split("/").pop(); }catch(e){}
+          }
+          if(!key) key = "local_"+Date.now().toString(36);
+          if(!document.getElementById("msg-"+key)){
             appendMessage(key, payload);
           }
+          try{
+            var box=document.getElementById("messages");
+            if(box) box.scrollTop = box.scrollHeight;
+          }catch(e){}
         }catch(e){ console.warn("optimistic append", e); }
         try{ input.focus(); }catch(e){}
       }catch(err){
@@ -13233,6 +13288,19 @@ function openStatusViewer(uid,list,index){
         var snap=await db.ref("webs").once("value");
         var val=snap.val()||{};
         var items=Object.keys(val).map(function(k){ var o=val[k]||{}; o.id=o.id||k; return o; });
+        // hanya web milik user + dedupe by url
+        items = items.filter(function(o){
+          if(o.ownerId && currentUser && o.ownerId !== currentUser.id) return false;
+          return true;
+        });
+        var seenUrl = {};
+        items = items.filter(function(o){
+          var u = String(o.url||o.link||"").toLowerCase().replace(/\/$/,"");
+          if(!u) return true;
+          if(seenUrl[u]) return false;
+          seenUrl[u] = true;
+          return true;
+        });
         items.sort(function(a,b){ return (b.createdAt||0)-(a.createdAt||0); });
         if(!items.length){ if(empty){ empty.style.display="block"; empty.textContent="Belum ada web. Ketuk + lalu tempel URL."; } return; }
         if(empty) empty.style.display="none";

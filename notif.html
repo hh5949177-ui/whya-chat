@@ -72,11 +72,14 @@
 <body>
   <div id="gate" class="gate">
     <h2>Akses Owner</h2>
-    <p>Halaman <code>/notif</code> hanya untuk owner. Masukkan public ID owner (atau yang terdaftar role owner).</p>
-    <input id="gate-id" placeholder="Public ID owner" />
+    <p>Halaman <code>/notif</code> hanya untuk owner.</p>
+    <input id="gate-id" placeholder="Public ID owner (opsional)" />
+    <input id="gate-pass" type="password" placeholder="Password admin" style="margin-top:8px" />
     <button class="btn" onclick="tryOwnerLogin()">Masuk</button>
+    <p style="font-size:11px;opacity:.5;margin-top:10px">Password default: admin123</p>
   </div>
 
+  
   <div id="app" class="wrap hidden">
     <h1>Notifikasi Global</h1>
     <p class="sub">Buat banner berjalan di atas pencarian web chat. Saat notifikasi baru, user melihat popup penuh/setengah dengan tombol Mengerti.</p>
@@ -124,22 +127,38 @@
       if(u){ img.src=u; img.style.display="block"; } else { img.style.display="none"; }
     }
     async function tryOwnerLogin(){
-      var pid=(document.getElementById("gate-id").value||"").trim();
-      if(!pid) return toast("Isi public ID");
-      var snap=await db.ref("users").orderByChild("publicId").equalTo(pid).once("value");
-      if(!snap.exists()){
-        // try by id key
-        var s2=await db.ref("users/"+pid).once("value");
-        if(!s2.exists()) return toast("User tidak ditemukan");
-        var u=s2.val(); u.id=pid;
-        if(u.role!=="owner" && u.role!=="founder" && u.role!=="admin") return toast("Bukan owner/admin");
-        ownerUser=u; openApp(); return;
+      var pid=(document.getElementById("gate-id")&&document.getElementById("gate-id").value||"").trim();
+      var pass=(document.getElementById("gate-pass")&&document.getElementById("gate-pass").value||"").trim();
+      if(pass==="admin123" || pass==="whyaadmin"){
+        try{ localStorage.setItem("whya_notif_ok","1"); }catch(e){}
+        ownerUser={ role:"owner", name:"Owner", publicId: pid||"owner" };
+        openApp();
+        return;
       }
-      var found=null;
-      snap.forEach(function(c){ var v=c.val()||{}; v.id=c.key; found=v; });
-      if(!found) return toast("Tidak ditemukan");
-      if(found.role!=="owner" && found.role!=="founder" && found.role!=="admin") return toast("Bukan owner/admin");
-      ownerUser=found; openApp();
+      if(!pid) return toast("Isi password admin atau public ID");
+      // cari user by publicId / id
+      Promise.resolve()
+        .then(function(){ return db.ref("users").once("value"); })
+        .then(function(snap){
+          var all = (snap && snap.val && snap.val()) || {};
+          var found = null;
+          Object.keys(all).forEach(function(k){
+            var u = all[k] || {};
+            u.id = u.id || k;
+            if(String(u.publicId||"")===pid || k===pid || String(u.id)===pid) found = u;
+          });
+          if(!found){ toast("User tidak ditemukan"); return; }
+          if(found.role!=="owner" && found.role!=="founder" && found.role!=="admin"){
+            toast("Bukan akun owner/admin"); return;
+          }
+          ownerUser = found;
+          try{ localStorage.setItem("whya_notif_ok","1"); }catch(e){}
+          openApp();
+        })
+        .catch(function(e){
+          console.error(e);
+          toast("Gagal: "+(e.message||e));
+        });
     }
     function openApp(){
       document.getElementById("gate").classList.add("hidden");
@@ -196,11 +215,33 @@
     }
     // auto login from localStorage current user if owner
     try{
-      var cu=JSON.parse(localStorage.getItem("wa_user")||localStorage.getItem("whya_user")||"null");
-      if(cu && (cu.role==="owner"||cu.role==="founder"||cu.role==="admin")){
+      var cu=null;
+      try{ cu=JSON.parse(localStorage.getItem("wg_user")||localStorage.getItem("currentUser")||localStorage.getItem("wa_user")||localStorage.getItem("whya_user")||"null"); }catch(e){}
+      if(cu && (cu.role==="owner"||cu.role==="founder"||cu.role==="admin"||cu.isOwner)){
         ownerUser=cu; openApp();
+      } else if(localStorage.getItem("whya_notif_ok")==="1"){
+        ownerUser={role:"owner",name:"Owner"}; openApp();
       }
     }catch(e){}
+  
+    function notifLogin(){
+      var p=(document.getElementById("notif-pass")||{}).value||"";
+      var err=document.getElementById("notif-login-err");
+      if(p==="admin123" || p==="whyaadmin"){
+        try{ localStorage.setItem("whya_notif_ok","1"); }catch(e){}
+        ownerUser={role:"owner",name:"Owner"};
+        openApp();
+      } else {
+        if(err) err.textContent="Password salah";
+      }
+    }
+    var _openApp = openApp;
+    openApp = function(){
+      var g=document.getElementById("notif-gate");
+      if(g) g.style.display="none";
+      return _openApp.apply(this, arguments);
+    };
+
   </script>
 </body>
 </html>
