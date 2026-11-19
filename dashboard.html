@@ -7167,7 +7167,9 @@ function saveAccountLocal(user){
         db.ref("userChats/"+currentUser.id).once("value").then(function(us){
           var v=us.val()||{};
           Object.keys(v).forEach(function(k){
-            if(String(k).indexOf("channel_")==0 || (v[k]&&v[k].type==="channel")){
+            var ck = v[k] || {};
+            if(ck.type==="group" || ck.type==="private") return;
+            if(String(k).indexOf("channel_")==0 || ck.type==="channel"){
               db.ref("userChats/"+currentUser.id+"/"+k).remove();
             }
           });
@@ -7650,28 +7652,37 @@ function saveAccountLocal(user){
       var box = document.getElementById("chat-list");
       if(!box) return;
       var items = [];
+      var src = userChats || {};
+      // normalisasi jika data nested (Supabase kadang bungkus .data)
+      try{
+        Object.keys(src).forEach(function(id){
+          var c = src[id];
+          if(c && typeof c==="object" && c.data && typeof c.data==="object" && !c.name && !c.type){
+            src[id] = c.data;
+          }
+        });
+      }catch(e){}
 
-      // General selalu di atas
-      /* general chat dihapus */
-
-
-      Object.keys(userChats||{}).forEach(function(id){
+      Object.keys(src).forEach(function(id){
+        if(!id) return;
         if(id==="general" || id==="General" || id==="General Chat") return;
         if(String(id).indexOf("channel_")==0) return;
-        var chat = userChats[id];
-        if(!chat) return;
+        var chat = src[id];
+        if(!chat || typeof chat!=="object") return;
         if(chat.archived) return;
         if(chat.type==="general" || chat.type==="channel") return;
         var nm = (chat.name||"").toLowerCase();
         if(nm==="general chat" || nm==="general") return;
+        // deteksi grup
+        var typ = chat.type || (chat.members ? "group" : "private");
         items.push({
           id: id,
-          name: chat.name || "Chat",
+          name: chat.name || (typ==="group" ? "Grup" : "Chat"),
           avatar: chat.avatar || (chat.name||"?").charAt(0),
           photoURL: chat.photoURL || null,
-          type: chat.type || "private",
+          type: typ,
           lastMessage: chat.lastMessage || "",
-          lastMessageTime: chat.lastMessageTime || 0,
+          lastMessageTime: chat.lastMessageTime || chat.updatedAt || chat.createdAt || 0,
           unreadCount: chat.unreadCount || 0,
           verified: chat.verified,
           badgeColor: chat.badgeColor,
@@ -7776,10 +7787,17 @@ function saveAccountLocal(user){
         var chatEl = document.getElementById("active-chat");
         if(chatEl){
           chatEl.classList.remove("closing");
-          // force reflow supaya animasi open selalu jalan ulang
           void chatEl.offsetWidth;
           chatEl.classList.add("open");
+          chatEl.style.display = "flex";
+          chatEl.style.opacity = "1";
+          chatEl.style.visibility = "visible";
+          chatEl.style.pointerEvents = "auto";
         }
+        try{
+          var app=document.getElementById("app");
+          if(app){ app.style.display="flex"; app.style.opacity="1"; app.style.visibility="visible"; }
+        }catch(e){}
         var nav = document.querySelector(".bottom-nav");
         if(nav) nav.classList.add("hidden");
 
@@ -8752,6 +8770,15 @@ function saveAccountLocal(user){
         });
         closeCreateGroup();
         toast("Grup dibuat","ok");
+        // pastikan muncul di list
+        try{
+          if(!lastUserChats) lastUserChats = {};
+          lastUserChats[gid] = {
+            type:"group", name:name, avatar:group.avatar, photoURL:null,
+            lastMessage:"Grup dibuat", lastMessageTime:Date.now(), unreadCount:0, archived:false
+          };
+          renderChatList(lastUserChats);
+        }catch(e){}
         openRoom(gid, name, group.avatar, null, null, null, "group");
       }catch(e){
         console.error(e);
@@ -10249,7 +10276,9 @@ function saveAccountLocal(user){
           html+='<img src="'+imgSrc+'" onclick="openLightboxImg(this)" alt="" onerror="this.outerHTML=\'<div class=media-placeholder>Gambar gagal dimuat</div>\'">';
         }
         if(msg.text||msg.caption){
-          html+='<div class="msg-img-caption">'+(msg.text||msg.caption)+'</div>';
+          var capRaw = String(msg.text||msg.caption||"");
+          var capHtml = (typeof escHtml==="function" ? escHtml(capRaw) : capRaw.replace(/</g,"&lt;")).replace(/\n/g,"<br>");
+          html+='<div class="msg-img-caption" style="white-space:pre-wrap;word-break:break-word;line-height:1.45;padding:8px 4px 2px;font-size:13.5px">'+capHtml+'</div>';
         }
         if(link){
           html+='<a class="msg-img-linkurl" href="'+link+'" target="_blank" rel="noopener">'+link.replace("https://","")+'</a>';
