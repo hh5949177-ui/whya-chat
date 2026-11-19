@@ -1,79 +1,50 @@
 /**
  * ============================================================
- *  WhyA Bot — Termux (Node.js, tanpa npm)
+ *  WhyA Bot — Termux (pairing kode)
  * ============================================================
  *  1) pkg install nodejs
- *  2) Edit BOT_USER_ID & BOT_ACCOUNT_ID (dari app → Jadi Bot)
- *  3) node bot-termux.js
- *  4) Chat pribadi ke akun bot → ketik /menu
+ *  2) node bot-termux.js
+ *  3) Masukkan email → dapat kode (whya-xxxx)
+ *  4) Di app: Pengaturan → Jadi Bot → Tautkan Bot → isi kode
+ *  5) Biarkan Termux tetap jalan
  * ============================================================
  */
 
 const https = require("https");
 const http = require("http");
 const { URL } = require("url");
-
-// ============== ISI DI BAWAH ==============
-const BOT_USER_ID = "ISI_USER_ID_BOT";
-const BOT_ACCOUNT_ID = "ISI_PUBLIC_ID_BOT";
-const BOT_NAME = "whyaBot";
+const readline = require("readline");
 
 const SUPABASE_URL = "https://wjmxiedkyklmmoxcxjlw.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_TMNireG8PZENCgtHdh-HQA_BkAlGAle";
 const POLL_MS = 2500;
-// ==========================================
-
-const BOT_BANNER_URL = "https://whyachtt.vercel.app/bot-banner.png";
 const BOT_WEB_URL = "https://whyachtt.vercel.app";
+const BOT_BANNER_URL = "https://whyachtt.vercel.app/bot-banner.png";
 const CF_PROXIES = ["https://imghd.hh5949177.workers.dev"];
+
+// diisi setelah pairing sukses
+var BOT_USER_ID = "";
+var BOT_ACCOUNT_ID = "";
+var BOT_NAME = "whyaBot";
+var BOT_PHOTO = null;
+var BOT_EMAIL = "";
+var PAIR_CODE = "";
 
 const MENU_TEXT =
   "✦ WhyA Bot Menu\n" +
   "────────────────\n" +
   "\n〔 UTAMA 〕\n" +
-  "• /menu\n" +
-  "• /ping\n" +
-  "• /info\n" +
-  "• /waktu\n" +
-  "• /status\n" +
-  "• /versi\n" +
-  "• /link\n" +
-  "• /ai\n" +
-  "• /stop\n" +
-  "• /motivasi\n" +
+  "• /menu\n• /ping\n• /info\n• /waktu\n• /status\n• /versi\n• /link\n• /ai\n• /stop\n• /motivasi\n" +
   "\n〔 CANVAS / MAKER 〕\n" +
-  "• /iqc teks\n" +
-  "• /brat teks\n" +
-  "• /brathd teks\n" +
-  "• /nokia teks\n" +
-  "• /fakeff nama\n" +
-  "• /qc teks\n" +
-  "• /quote teks\n" +
-  "• /qr teks\n" +
-  "• /toqr url\n" +
+  "• /iqc teks\n• /brat teks\n• /brathd teks\n• /nokia teks\n• /fakeff nama\n• /qc teks\n• /qr teks\n• /toqr url\n" +
   "\n〔 MEDIA 〕\n" +
-  "• /hd url_gambar\n" +
-  "• /ssweb url\n" +
-  "• /ttdown url_tiktok\n" +
-  "• /ytserc kata kunci\n" +
+  "• /hd url_gambar\n• /ssweb url\n• /ttdown url_tiktok\n• /ytserc kata kunci\n" +
   "\n〔 ISLAMI 〕\n" +
-  "• /ayatkursi\n" +
-  "• /asmaulhusna\n" +
-  "• /niatsholat\n" +
+  "• /ayatkursi\n• /asmaulhusna\n• /niatsholat\n" +
   "\n〔 ANIME 〕\n" +
-  "• /waifu\n" +
-  "• /neko\n" +
-  "• /cosplay\n" +
+  "• /waifu\n• /neko\n• /cosplay\n" +
   "\n〔 TOOLS 〕\n" +
-  "• /hitung 1+2*3\n" +
-  "• /password\n" +
-  "• /uuid\n" +
-  "• /base64 teks\n" +
-  "• /dadu\n" +
-  "• /koin\n" +
-  "• /random\n" +
-  "• /warna\n" +
-  "• /nama\n" +
+  "• /hitung 1+2*3\n• /password\n• /uuid\n• /base64 teks\n• /dadu\n• /koin\n• /random\n• /warna\n• /nama\n" +
   "\nWeb: " + BOT_WEB_URL;
 
 const QUOTES = [
@@ -111,6 +82,10 @@ function childKey(p) {
 }
 function pushId() {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 9);
+}
+function genPairCode() {
+  var a = Math.random().toString(36).slice(2, 6);
+  return "whya-" + a;
 }
 
 function sbRequest(method, pathWithQuery, body) {
@@ -197,12 +172,14 @@ async function sendText(roomId, text) {
     text: String(text || ""),
     senderId: BOT_USER_ID,
     senderName: BOT_NAME,
+    sender: BOT_NAME,
+    photoURL: BOT_PHOTO,
+    avatar: (BOT_NAME || "B").charAt(0),
     timestamp: Date.now(),
     isBot: true
   });
 }
 
-/** Satu pesan gambar + caption (tidak kirim teks terpisah) */
 async function sendImage(roomId, imageUrl, caption) {
   var cap = caption ? String(caption) : "";
   return dbPost("chats/" + roomId, {
@@ -214,6 +191,9 @@ async function sendImage(roomId, imageUrl, caption) {
     text: cap,
     senderId: BOT_USER_ID,
     senderName: BOT_NAME,
+    sender: BOT_NAME,
+    photoURL: BOT_PHOTO,
+    avatar: (BOT_NAME || "B").charAt(0),
     timestamp: Date.now(),
     isBot: true,
     mime: "image/png",
@@ -229,7 +209,7 @@ function httpsGetBuffer(urlStr, redirects) {
     var lib = u.protocol === "http:" ? http : https;
     var req = lib.get(
       urlStr,
-      { timeout: 35000, headers: { "User-Agent": "WhyABot/2.1", Accept: "*/*" } },
+      { timeout: 35000, headers: { "User-Agent": "WhyABot/2.2", Accept: "*/*" } },
       function (res) {
         if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location && redirects < 5) {
           res.resume();
@@ -240,7 +220,7 @@ function httpsGetBuffer(urlStr, redirects) {
         res.on("end", function () {
           var buf = Buffer.concat(chunks);
           if (res.statusCode >= 400) {
-            return reject(new Error("GET " + res.statusCode + " " + buf.slice(0, 100).toString()));
+            return reject(new Error("GET " + res.statusCode));
           }
           resolve(buf);
         });
@@ -289,11 +269,69 @@ async function resolveImageSrc(fullUrl) {
     var mime = "image/png";
     if (buf[0] === 0xff && buf[1] === 0xd8) mime = "image/jpeg";
     else if (buf[0] === 0x47 && buf[1] === 0x49) mime = "image/gif";
-    else if (buf[0] === 0x52 && buf[1] === 0x49) mime = "image/webp";
     return "data:" + mime + ";base64," + buf.toString("base64");
   } catch (e) {
     return fullUrl;
   }
+}
+
+function ask(question) {
+  var rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+  return new Promise(function (resolve) {
+    rl.question(question, function (ans) {
+      rl.close();
+      resolve(String(ans || "").trim());
+    });
+  });
+}
+
+async function runPairing() {
+  console.log("\n=== WhyA Bot Pairing ===\n");
+  var email = await ask("Masukkan email akun WhyA: ");
+  if (!email || email.indexOf("@") < 0) {
+    console.error("Email tidak valid.");
+    process.exit(1);
+  }
+  BOT_EMAIL = email.toLowerCase();
+  PAIR_CODE = genPairCode();
+  console.log("\nMemproses…");
+  await dbSet("botPairCodes/" + PAIR_CODE, {
+    email: BOT_EMAIL,
+    code: PAIR_CODE,
+    createdAt: Date.now(),
+    used: false,
+    platform: "Termux",
+    name: "Termux Bot"
+  });
+  console.log("\n=================================");
+  console.log("  KODE PAIRING ANDA:");
+  console.log("  " + PAIR_CODE);
+  console.log("=================================");
+  console.log("\nBuka app WhyA → Pengaturan → Jadi Bot");
+  console.log("→ Tautkan Bot → masukkan kode di atas.\n");
+  console.log("Menunggu penautan");
+  for (var i = 0; i < 120; i++) {
+    process.stdout.write(".");
+    var data = await dbGet("botPairCodes/" + PAIR_CODE);
+    if (data && data.used && data.userId) {
+      BOT_USER_ID = data.userId;
+      BOT_ACCOUNT_ID = data.accountId || data.userId;
+      console.log("\n\n✓ Bot tertaut ke akun:", BOT_USER_ID);
+      // ambil profil
+      try {
+        var u = await dbGet("users/" + BOT_USER_ID);
+        if (u) {
+          BOT_NAME = u.name || u.displayName || BOT_NAME;
+          BOT_PHOTO = u.photoURL || u.avatarUrl || null;
+        }
+      } catch (e) {}
+      await dbSet("botAccounts/" + BOT_USER_ID + "/lastSeen", Date.now());
+      return;
+    }
+    await sleep(3000);
+  }
+  console.error("\nTimeout menunggu pairing. Jalankan ulang.");
+  process.exit(1);
 }
 
 function handleCommand(text) {
@@ -303,53 +341,33 @@ function handleCommand(text) {
   var arg = raw.replace(/^\S+\s*/, "").trim();
 
   if (low === "/menu" || low === "menu" || low === "/help") return { kind: "menu" };
-
   if (low === "/ping") return { kind: "text", text: "pong ✅" };
   if (low === "/info") {
-    return {
-      kind: "text",
-      text: "WhyA Bot · Termux + Supabase\nID: " + BOT_USER_ID + "\nAcc: " + BOT_ACCOUNT_ID
-    };
+    return { kind: "text", text: "WhyA Bot · " + BOT_NAME + "\nEmail: " + BOT_EMAIL + "\nID: " + BOT_USER_ID };
   }
   if (low === "/waktu") return { kind: "text", text: new Date().toLocaleString("id-ID") };
   if (low === "/status") return { kind: "text", text: "✅ Bot online (Termux)" };
-  if (low === "/versi") return { kind: "text", text: "whya-bot Termux v2.1" };
+  if (low === "/versi") return { kind: "text", text: "whya-bot Termux v2.2 (pairing)" };
   if (low === "/link") return { kind: "text", text: BOT_WEB_URL + "/dashboard" };
   if (low === "/ai") return { kind: "text", text: "Buka asisten AI di app: /aiwhya" };
-  if (low === "/stop") {
-    return { kind: "text", text: "Matikan di app: Jadi Bot → nonaktif.\nTermux: Ctrl+C." };
-  }
+  if (low === "/stop") return { kind: "text", text: "Stop Termux: Ctrl+C. Lepas bot di app: Jadi Bot." };
   if (low === "/motivasi") {
     return { kind: "text", text: "💪 " + QUOTES[Math.floor(Math.random() * QUOTES.length)] };
   }
   if (low === "/password") {
-    return {
-      kind: "text",
-      text: "🔑 " + Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2, 8)
-    };
+    return { kind: "text", text: "🔑 " + Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2, 8) };
   }
   if (low === "/uuid") {
-    return {
-      kind: "text",
-      text: Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 10)
-    };
+    return { kind: "text", text: Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 10) };
   }
   if (low.indexOf("/base64 ") === 0) {
     return { kind: "text", text: Buffer.from(arg, "utf8").toString("base64") };
   }
   if (low === "/random") return { kind: "text", text: String(Math.floor(Math.random() * 1000)) };
-  if (low === "/koin") {
-    return { kind: "text", text: Math.random() > 0.5 ? "🪙 Angka" : "🪙 Gambar" };
-  }
-  if (low === "/dadu") {
-    return { kind: "text", text: "🎲 " + (1 + Math.floor(Math.random() * 6)) };
-  }
-  if (low === "/warna") {
-    return { kind: "text", text: "🎨 " + WARNA[Math.floor(Math.random() * WARNA.length)] };
-  }
-  if (low === "/nama") {
-    return { kind: "text", text: "👤 " + NAMA[Math.floor(Math.random() * NAMA.length)] };
-  }
+  if (low === "/koin") return { kind: "text", text: Math.random() > 0.5 ? "🪙 Angka" : "🪙 Gambar" };
+  if (low === "/dadu") return { kind: "text", text: "🎲 " + (1 + Math.floor(Math.random() * 6)) };
+  if (low === "/warna") return { kind: "text", text: "🎨 " + WARNA[Math.floor(Math.random() * WARNA.length)] };
+  if (low === "/nama") return { kind: "text", text: "👤 " + NAMA[Math.floor(Math.random() * NAMA.length)] };
   if (low.indexOf("/hitung ") === 0) {
     try {
       if (!/^[\d\s+\-*/().]+$/.test(arg)) return { kind: "text", text: "Format: /hitung 1+2*3" };
@@ -359,29 +377,18 @@ function handleCommand(text) {
       return { kind: "text", text: "Gagal hitung" };
     }
   }
-
   if (low === "/ayatkursi" || low === "/akursi") {
     return {
       kind: "text",
-      text:
-        "📖 Ayat Kursi (Al-Baqarah:255)\n\n" +
-        "Allahu laa ilaaha illaa huwal hayyul qayyuum...\n\n" +
-        "Allah, tidak ada Tuhan selain Dia Yang Maha Hidup, lagi terus-menerus mengurus (makhluk-Nya)."
+      text: "📖 Ayat Kursi (Al-Baqarah:255)\n\nAllahu laa ilaaha illaa huwal hayyul qayyuum..."
     };
   }
   if (low === "/asmaulhusna" || low === "/asma") {
     return { kind: "text", text: "✨ Asmaul Husna (1–10)\n\n" + ASMAUL.join("\n") };
   }
   if (low === "/niatsholat" || low === "/niat") {
-    return {
-      kind: "text",
-      text:
-        "🕌 Niat Sholat Fardhu (ringkas)\n" +
-        "• Subuh · Dzuhur · Ashar · Maghrib · Isya\n" +
-        "Ushalli fardha ... (lengkap di buku sholat)"
-    };
+    return { kind: "text", text: "🕌 Niat Sholat Fardhu\n• Subuh · Dzuhur · Ashar · Maghrib · Isya" };
   }
-
   if (low === "/waifu") {
     return { kind: "image", url: "https://api.waifu.pics/sfw/waifu", jsonPick: "url", caption: "" };
   }
@@ -391,7 +398,6 @@ function handleCommand(text) {
   if (low === "/cosplay") {
     return { kind: "image", url: "https://api.waifu.pics/sfw/shinobu", jsonPick: "url", caption: "" };
   }
-
   if (low.indexOf("/iqc") === 0) {
     return {
       kind: "image",
@@ -443,7 +449,7 @@ function handleCommand(text) {
     };
   }
   if (low.indexOf("/toqr") === 0 || low.indexOf("/qr") === 0) {
-    if (!arg) return { kind: "text", text: "Format: /qr teks  atau  /toqr https://..." };
+    if (!arg) return { kind: "text", text: "Format: /qr teks" };
     return {
       kind: "image",
       url: "https://quickchart.io/qr?text=" + encodeURIComponent(arg) + "&size=400",
@@ -454,11 +460,7 @@ function handleCommand(text) {
     if (!arg) return { kind: "text", text: "Format: /ssweb https://example.com" };
     var u = arg;
     if (!/^https?:\/\//i.test(u)) u = "https://" + u;
-    return {
-      kind: "image",
-      url: "https://image.thum.io/get/width/800/" + u,
-      caption: ""
-    };
+    return { kind: "image", url: "https://image.thum.io/get/width/800/" + u, caption: "" };
   }
   if (low.indexOf("/hd ") === 0 || low === "/hd") {
     if (!arg) return { kind: "text", text: "Format: /hd https://gambar.jpg" };
@@ -468,7 +470,6 @@ function handleCommand(text) {
       caption: ""
     };
   }
-
   if (low.indexOf("/ttdown") === 0) {
     if (!arg) return { kind: "text", text: "Format: /ttdown <url tiktok>" };
     return {
@@ -485,32 +486,27 @@ function handleCommand(text) {
       label: "YT"
     };
   }
-
   if (low.charAt(0) === "/") return { kind: "text", text: "Perintah tidak dikenal. Ketik /menu" };
   return null;
 }
 
 async function handleAnswer(roomId, ans) {
   if (!ans) return;
-
   if (ans.kind === "menu") {
-    // SATU pesan: gambar banner + teks menu sebagai caption
     await sendImage(roomId, BOT_BANNER_URL, MENU_TEXT);
     return;
   }
-
   if (ans.kind === "text") {
     await sendText(roomId, ans.text || "");
     return;
   }
-
   if (ans.kind === "image") {
     try {
       var src = ans.url;
       if (ans.jsonPick) {
         var j = await fetchJsonUrl(ans.url);
         src = j && (j[ans.jsonPick] || j.url || j.image);
-        if (!src) throw new Error("URL gambar kosong");
+        if (!src) throw new Error("URL kosong");
       } else {
         src = await resolveImageSrc(ans.url);
       }
@@ -520,7 +516,6 @@ async function handleAnswer(roomId, ans) {
     }
     return;
   }
-
   if (ans.kind === "json_media") {
     try {
       var data = await fetchJsonUrl(ans.jsonUrl);
@@ -528,9 +523,6 @@ async function handleAnswer(roomId, ans) {
         (data && data.data && (data.data.hdplay || data.data.play || data.data.wmplay)) ||
         (data && (data.url || data.download)) ||
         null;
-      if (!media && data && data.data && data.data.images && data.data.images[0]) {
-        media = data.data.images[0];
-      }
       if (!media) {
         await sendText(roomId, "Media tidak ditemukan.");
         return;
@@ -545,6 +537,8 @@ async function handleAnswer(roomId, ans) {
           text: ans.label || "",
           senderId: BOT_USER_ID,
           senderName: BOT_NAME,
+          sender: BOT_NAME,
+          photoURL: BOT_PHOTO,
           timestamp: Date.now(),
           isBot: true
         });
@@ -556,7 +550,6 @@ async function handleAnswer(roomId, ans) {
     }
     return;
   }
-
   if (ans.kind === "json_list") {
     try {
       var jj = await fetchJsonUrl(ans.jsonUrl);
@@ -579,19 +572,14 @@ var tick = 0;
 
 async function pollOnce() {
   tick++;
-  if (!BOT_USER_ID || String(BOT_USER_ID).indexOf("ISI_") === 0) {
-    if (tick === 1) console.error("Isi BOT_USER_ID dulu (Pengaturan → Jadi Bot).");
-    return;
-  }
+  if (!BOT_USER_ID) return;
   var chats = await dbGet("userChats/" + BOT_USER_ID);
   if (!chats || typeof chats !== "object") return;
   var roomIds = Object.keys(chats);
-
   for (var i = 0; i < roomIds.length; i++) {
     var roomId = roomIds[i];
     var msgs = await dbGet("chats/" + roomId);
     if (!msgs || typeof msgs !== "object") continue;
-
     var entries = Object.keys(msgs).map(function (k) {
       var m = msgs[k] || {};
       m.id = k;
@@ -601,7 +589,6 @@ async function pollOnce() {
       return (a.timestamp || 0) - (b.timestamp || 0);
     });
     var recent = entries.slice(-12);
-
     for (var j = 0; j < recent.length; j++) {
       var m = recent[j];
       if (!m.id || seen.has(m.id)) continue;
@@ -609,31 +596,28 @@ async function pollOnce() {
       if (m.senderId === BOT_USER_ID) continue;
       if (m.isBot) continue;
       if (m.type && m.type !== "text") continue;
-
       var ans = handleCommand(m.text || "");
       if (!ans) continue;
       console.log("[" + roomId + "] <=", String(m.text || "").slice(0, 60));
       try {
         await handleAnswer(roomId, ans);
       } catch (e) {
-        console.error("reply error", e.message || e);
+        console.error("reply", e.message || e);
       }
     }
   }
-  if (tick % 20 === 0) console.log("poll ok · rooms:", roomIds.length, "· seen:", seen.size);
+  if (tick % 12 === 0) {
+    try {
+      await dbSet("botAccounts/" + BOT_USER_ID + "/lastSeen", Date.now());
+    } catch (e) {}
+    console.log("poll ok · rooms:", roomIds.length);
+  }
 }
 
 async function main() {
-  console.log("WhyA Bot Termux v2.1");
-  console.log("User:", BOT_USER_ID, "| Account:", BOT_ACCOUNT_ID);
-  if (String(BOT_USER_ID).indexOf("ISI_") === 0) {
-    console.error("\n[!] Edit BOT_USER_ID dan BOT_ACCOUNT_ID di file ini dulu.\n");
-  }
-  try {
-    await dbSet("botAccounts/" + BOT_USER_ID + "/lastSeen", Date.now());
-  } catch (e) {
-    console.warn("heartbeat:", e.message || e);
-  }
+  console.log("WhyA Bot Termux v2.2");
+  await runPairing();
+  console.log("Bot siap sebagai:", BOT_NAME, "|", BOT_USER_ID);
   for (;;) {
     try {
       await pollOnce();

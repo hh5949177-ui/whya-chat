@@ -4126,6 +4126,75 @@
       margin: 10px 0;
     }
 
+  
+    /* === FIX: chat overlay stabil === */
+    #active-chat {
+      position: fixed !important;
+      inset: 0 !important;
+      z-index: 220 !important;
+      background: var(--chat-bg, #0e101c) !important;
+      flex-direction: column !important;
+    }
+    #active-chat.open {
+      display: flex !important;
+      opacity: 1 !important;
+      visibility: visible !important;
+      pointer-events: auto !important;
+      transform: none !important;
+    }
+    body.in-chat .bottom-nav {
+      display: none !important;
+      opacity: 0 !important;
+      pointer-events: none !important;
+    }
+    body.in-chat #ai-fab { display: none !important; }
+    #active-chat .messages {
+      flex: 1 1 auto !important;
+      overflow-y: auto !important;
+      min-height: 0 !important;
+    }
+    #active-chat .input-wrap {
+      flex: 0 0 auto !important;
+      display: block !important;
+    }
+    .msg-img-caption {
+      white-space: pre-wrap !important;
+      word-break: break-word;
+      line-height: 1.45;
+      padding: 8px 6px 4px;
+      font-size: 13.5px;
+    }
+    /* sembunyikan ikon file/gambar palsu di bubble bot */
+    .message.bot-msg .file-msg,
+    .message .msg-file-icon { display: none !important; }
+    .bot-device-list { margin-top: 12px; }
+    .bot-device-item {
+      display: flex; align-items: center; gap: 12px;
+      padding: 12px; border-radius: 14px;
+      background: rgba(255,255,255,.04);
+      border: 1px solid rgba(255,255,255,.08);
+      margin-bottom: 8px;
+    }
+    .bot-device-item .bd-ico {
+      width: 42px; height: 42px; border-radius: 12px;
+      background: #1a1a1a; display:flex; align-items:center; justify-content:center;
+      font-size: 18px;
+    }
+    .bot-device-item .bd-meta { flex:1; min-width:0; }
+    .bot-device-item .bd-name { font-weight: 700; font-size: 14px; }
+    .bot-device-item .bd-sub { font-size: 12px; color: rgba(255,255,255,.5); margin-top: 2px; }
+    .bot-device-item .bd-off {
+      background: transparent; border: none; color: #f66; font-size: 12px; cursor: pointer;
+    }
+    .pair-code-display {
+      font-family: ui-monospace, monospace;
+      font-size: 22px; letter-spacing: .12em;
+      text-align: center; padding: 14px;
+      border-radius: 12px; background: rgba(255,255,255,.06);
+      border: 1px dashed rgba(255,255,255,.2);
+      margin: 10px 0;
+    }
+
   </style>
 
 
@@ -4930,7 +4999,26 @@
       </div>
       <div class="fs-body" style="padding:16px;overflow-y:auto">
         <div class="bot-card">
-          <h4><i class="fas fa-robot" style="margin-right:8px;opacity:.8"></i>Status Bot</h4>
+          <h4><i class="fas fa-link" style="margin-right:8px;opacity:.8"></i>Tautkan Bot</h4>
+          <p style="font-size:13px;color:rgba(255,255,255,.55);margin:0 0 12px">Jalankan script di Termux, masukkan email, lalu masukkan kode pairing di sini (contoh: <b>whya-ab12</b>).</p>
+          <button type="button" class="bot-btn bot-btn-primary" id="bot-link-btn" onclick="showBotPairInput()">Tautkan Bot</button>
+          <div id="bot-pair-input-wrap" style="display:none;margin-top:14px">
+            <input class="bot-field" id="bot-pair-code-input" placeholder="whya-xxxx" maxlength="16" style="text-align:center;letter-spacing:.15em;font-size:16px;text-transform:lowercase" />
+            <button type="button" class="bot-btn bot-btn-primary" style="margin-top:8px" onclick="confirmBotPairCode()">Hubungkan</button>
+            <div id="bot-pair-result" style="margin-top:8px;font-size:12px;color:rgba(255,255,255,.55)"></div>
+          </div>
+        </div>
+
+        <div class="bot-card">
+          <h4>Bot Tertaut</h4>
+          <p style="font-size:12px;color:rgba(255,255,255,.45);margin:0 0 8px">Ketuk perangkat untuk ubah nama atau lepaskan.</p>
+          <div class="bot-device-list" id="bot-device-list">
+            <div style="font-size:13px;color:rgba(255,255,255,.4);padding:8px 0">Belum ada bot tertaut</div>
+          </div>
+        </div>
+
+        <div class="bot-card">
+          <h4>Status</h4>
           <div class="bot-row">
             <div class="bot-status">
               <span class="bot-dot" id="bot-dot"></span>
@@ -4941,32 +5029,12 @@
               <input type="checkbox" id="bot-enabled" style="width:18px;height:18px" />
             </label>
           </div>
-          <p>Saat aktif, orang lain bisa ketik <b>/menu</b> di chat ini (gaya WhatsApp bot).</p>
-        </div>
-
-        <div class="bot-card">
-          <h4>ID Akun</h4>
-          <p>ID internal & public ID akun kamu (otomatis).</p>
-          <input class="bot-field" id="bot-user-id" readonly placeholder="User ID" />
-          <input class="bot-field" id="bot-account-id" readonly placeholder="Public ID" />
-        </div>
-
-        <div class="bot-card">
-          <h4><i class="fas fa-envelope" style="margin-right:8px;opacity:.8"></i>Pairing Bot lewat Email</h4>
-          <p>Masukkan Gmail yang dipakai di Termux/bot. Sistem mengirim kode 6 digit untuk menghubungkan bot ke akun ini.</p>
-          <input class="bot-field" id="bot-pair-email" type="email" placeholder="email@gmail.com" autocomplete="email" />
-          <button type="button" class="bot-btn bot-btn-primary" id="bot-pair-send-btn" onclick="requestBotPairCode()">Kirim Kode Pairing</button>
-          <div id="bot-pair-code-wrap" style="display:none;margin-top:12px">
-            <p style="margin-bottom:6px">Masukkan kode dari email:</p>
-            <input class="bot-field" id="bot-pair-code" maxlength="6" placeholder="123456" inputmode="numeric" style="text-align:center;letter-spacing:.25em;font-size:18px" />
-            <button type="button" class="bot-btn bot-btn-primary" onclick="confirmBotPairCode()">Hubungkan Bot</button>
-          </div>
-          <div id="bot-pair-result" style="margin-top:10px;font-size:12px;color:rgba(255,255,255,.55)"></div>
+          <p style="font-size:12px;color:rgba(255,255,255,.45)">Saat aktif, orang lain bisa ketik <b>/menu</b> di chat pribadi/grup.</p>
         </div>
 
         <div class="bot-card">
           <h4>Script Termux</h4>
-          <p>Download script bot, isi email + kode pairing, lalu jalankan di Termux.</p>
+          <p style="font-size:12px;color:rgba(255,255,255,.45)">Download, jalankan di Termux, ikuti perintah email & kode.</p>
           <button type="button" class="bot-btn bot-btn-ghost" onclick="downloadBotScript()">Download bot-termux.js</button>
         </div>
 
@@ -7698,6 +7766,10 @@ function saveAccountLocal(user){
       });
 
       if(!items.length){
+        // jangan hapus list yang sudah ada bila snapshot kosong sementara
+        if(box.children && box.children.length && box.querySelector(".chat-item")){
+          return;
+        }
         box.innerHTML = '<div style="padding:48px 24px;text-align:center;color:rgba(255,255,255,.45);font-size:14px;line-height:1.6">'
           +'<div style="font-size:40px;margin-bottom:12px;opacity:.5"><i class="fas fa-comments"></i></div>'
           +'<div style="font-weight:700;color:rgba(255,255,255,.75);margin-bottom:6px">Belum ada chat</div>'
@@ -7798,8 +7870,9 @@ function saveAccountLocal(user){
           var app=document.getElementById("app");
           if(app){ app.style.display="flex"; app.style.opacity="1"; app.style.visibility="visible"; }
         }catch(e){}
+        try{ document.body.classList.add("in-chat"); }catch(e){}
         var nav = document.querySelector(".bottom-nav");
-        if(nav) nav.classList.add("hidden");
+        if(nav){ nav.classList.add("hidden"); nav.style.display="none"; }
 
         var cn = document.getElementById("chat-name");
         if(cn) cn.innerHTML = escHtml(name||"Chat");
@@ -7902,33 +7975,19 @@ function saveAccountLocal(user){
       try{ hideBotFeatureBanner(); }catch(e){}
       var chatEl = document.getElementById("active-chat");
       if(chatEl){
-        chatEl.classList.add("closing");
         chatEl.classList.remove("open");
-        setTimeout(function(){
-          chatEl.classList.remove("closing");
-        }, 280);
+        chatEl.classList.remove("closing");
+        chatEl.style.display = "none";
+        chatEl.style.opacity = "0";
       }
       try{ document.body.classList.remove("in-chat"); }catch(e){}
-      try{ setWhyaPath("/dashboard"); }catch(e){ try{ history.pushState({},"", "/dashboard"); }catch(e2){} }
       var nav = document.querySelector(".bottom-nav");
-      if(nav) nav.classList.remove("hidden");
-      if(messagesRef){ try{ messagesRef.off(); }catch(e){} messagesRef=null; }
-      currentRoom = null;
-      currentChatType = "private";
-      currentChatPeerId = null;
-      currentChatPhone = null;
-      currentGroupData = null;
-      replyTo = null;
-      try{ cancelReply(); }catch(e){}
-      try{
-        var box=document.getElementById("messages");
-        if(box) box.innerHTML="";
-      }catch(e){}
+      if(nav){ nav.classList.remove("hidden"); nav.style.display=""; }
+      try{ currentRoom = null; }catch(e){}
+      try{ setWhyaPath("/dashboard"); }catch(e){ try{ history.pushState({},"", "/dashboard"); }catch(_e){} }
+      try{ if(messagesRef){ messagesRef.off(); messagesRef=null; } }catch(e){}
     }
-
-    /* ===== Profile sheet (6+ features) ===== */
-    
-    function openChatProfileSheet(){
+        function openChatProfileSheet(){
       if(!currentRoom) return;
       if(currentChatType==="general"){ toast("General Chat — chat publik","info"); return; }
       if(currentChatType==="group"){
@@ -8590,6 +8649,117 @@ function saveAccountLocal(user){
     
     /* Bot dihapus */
     var botEngineOn=false;
+    
+    function showBotPairInput(){
+      var w=document.getElementById("bot-pair-input-wrap");
+      if(w) w.style.display = w.style.display==="none"||!w.style.display ? "block" : "block";
+      var inp=document.getElementById("bot-pair-code-input");
+      if(inp){ inp.value=""; inp.focus(); }
+    }
+    async function confirmBotPairCode(){
+      var inp=document.getElementById("bot-pair-code-input");
+      var res=document.getElementById("bot-pair-result");
+      var code=((inp&&inp.value)||"").trim().toLowerCase().replace(/\s+/g,"");
+      if(!code){ if(res) res.textContent="Masukkan kode pairing"; return; }
+      if(code.indexOf("whya-")!==0){ if(res) res.textContent="Kode harus diawali whya-"; return; }
+      if(!currentUser||!currentUser.id){ toast("Login dulu","err"); return; }
+      if(res) res.textContent="Menghubungkan…";
+      try{
+        var snap=await db.ref("botPairCodes/"+code).once("value");
+        var data=snap.val();
+        if(!data || !data.email){
+          if(res) res.textContent="Kode tidak valid / sudah kadaluarsa";
+          return;
+        }
+        if(data.used){ if(res) res.textContent="Kode sudah dipakai"; return; }
+        var deviceId = "bot_"+Date.now().toString(36);
+        var device = {
+          id: deviceId,
+          code: code,
+          email: data.email,
+          name: data.name || "Termux Bot",
+          linkedAt: Date.now(),
+          lastSeen: data.lastSeen || Date.now(),
+          platform: data.platform || "Termux"
+        };
+        await db.ref("botDevices/"+currentUser.id+"/"+deviceId).set(device);
+        await db.ref("botPairCodes/"+code).update({
+          used: true,
+          userId: currentUser.id,
+          accountId: currentUser.publicId || currentUser.id,
+          deviceId: deviceId,
+          linkedAt: Date.now()
+        });
+        // enable bot on this account
+        await db.ref("botAccounts/"+currentUser.id).update({
+          enabled: true,
+          linkedEmail: data.email,
+          updatedAt: Date.now()
+        });
+        if(res) res.textContent="Bot terhubung ✓";
+        toast("Bot berhasil ditautkan","ok");
+        try{ loadBotSettingsUi(); }catch(e){}
+      }catch(e){
+        console.error(e);
+        if(res) res.textContent="Gagal: "+(e.message||e);
+      }
+    }
+    async function unlinkBotDevice(deviceId){
+      if(!currentUser||!deviceId) return;
+      try{
+        await db.ref("botDevices/"+currentUser.id+"/"+deviceId).remove();
+        toast("Bot dilepas","ok");
+        loadBotSettingsUi();
+      }catch(e){ toast("Gagal lepas bot","err"); }
+    }
+    async function loadBotSettingsUi(){
+      var u=currentUser;
+      if(!u) return;
+      try{
+        var en=document.getElementById("bot-enabled");
+        var lab=document.getElementById("bot-status-label");
+        var dot=document.getElementById("bot-dot");
+        var acc=await db.ref("botAccounts/"+u.id).once("value");
+        var a=acc.val()||{};
+        if(en) en.checked = !!a.enabled;
+        var online = a.lastSeen && (Date.now()-a.lastSeen < 60000);
+        if(lab) lab.textContent = a.enabled ? (online?"Bot online":"Bot aktif (menunggu Termux)") : "Bot nonaktif";
+        if(dot){ dot.style.background = a.enabled?(online?"#3d5":"#fa0"):"#666"; }
+        // devices
+        var list=document.getElementById("bot-device-list");
+        if(list){
+          var ds=await db.ref("botDevices/"+u.id).once("value");
+          var devices=ds.val()||{};
+          var keys=Object.keys(devices);
+          if(!keys.length){
+            list.innerHTML='<div style="font-size:13px;color:rgba(255,255,255,.4);padding:8px 0">Belum ada bot tertaut</div>';
+          } else {
+            list.innerHTML=keys.map(function(k){
+              var d=devices[k]||{};
+              var when=d.linkedAt? new Date(d.linkedAt).toLocaleString("id-ID"):"";
+              return '<div class="bot-device-item">'+
+                '<div class="bd-ico">💻</div>'+
+                '<div class="bd-meta"><div class="bd-name">'+escHtml(d.name||"Termux Bot")+'</div>'+
+                '<div class="bd-sub">'+escHtml(d.email||"")+' · '+escHtml(when)+'</div></div>'+
+                '<button type="button" class="bd-off" onclick="unlinkBotDevice(\''+k+'\')">Lepas</button></div>';
+            }).join("");
+          }
+        }
+      }catch(e){ console.warn(e); }
+    }
+    async function saveBotSettings(){
+      if(!currentUser) return toast("Login dulu","err");
+      var en=document.getElementById("bot-enabled");
+      try{
+        await db.ref("botAccounts/"+currentUser.id).update({
+          enabled: !!(en&&en.checked),
+          updatedAt: Date.now()
+        });
+        toast("Pengaturan bot disimpan","ok");
+        loadBotSettingsUi();
+      }catch(e){ toast("Gagal simpan","err"); }
+    }
+
     function openBotSettings(){
       var page = document.getElementById("fs-bot-settings");
       if(!page){
