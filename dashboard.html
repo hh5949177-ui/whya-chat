@@ -4001,6 +4001,131 @@
     .liquid-dock-pill { pointer-events:none !important; }
     body.liquid-dock-on .liquid-dock-pill { pointer-events:none !important; }
 
+  
+    /* Smooth transitions global */
+    .tab-page {
+      transition: opacity .28s ease, transform .32s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    .tab-page.active {
+      animation: tabIn .38s cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+    @keyframes tabIn {
+      from { opacity:0; transform:translateY(18px); }
+      to { opacity:1; transform:translateY(0); }
+    }
+    .fs-page {
+      transition: transform .36s cubic-bezier(0.22, 1, 0.36, 1), opacity .3s ease;
+    }
+    .fs-page.open {
+      animation: fsIn .36s cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+    @keyframes fsIn {
+      from { opacity:0; transform:translateX(24px); }
+      to { opacity:1; transform:translateX(0); }
+    }
+    .chat-item, .menu-item, .status-row-item {
+      transition: background .18s ease, transform .18s ease, opacity .25s ease;
+    }
+    .chat-list-enter .chat-item {
+      animation: listIn .35s cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+    .chat-list-enter .chat-item:nth-child(1){animation-delay:.02s}
+    .chat-list-enter .chat-item:nth-child(2){animation-delay:.05s}
+    .chat-list-enter .chat-item:nth-child(3){animation-delay:.08s}
+    .chat-list-enter .chat-item:nth-child(4){animation-delay:.11s}
+    .chat-list-enter .chat-item:nth-child(5){animation-delay:.14s}
+    .chat-list-enter .chat-item:nth-child(n+6){animation-delay:.17s}
+    @keyframes listIn {
+      from { opacity:0; transform:translateY(12px); }
+      to { opacity:1; transform:translateY(0); }
+    }
+    .bot-card {
+      background: rgba(255,255,255,.05);
+      border: 1px solid rgba(255,255,255,.1);
+      border-radius: 16px;
+      padding: 16px;
+      margin-bottom: 14px;
+    }
+    .bot-card h4 {
+      margin: 0 0 8px;
+      font-size: 14px;
+      font-weight: 700;
+      color: #fff;
+    }
+    .bot-card p {
+      margin: 0 0 12px;
+      font-size: 12px;
+      color: rgba(255,255,255,.5);
+      line-height: 1.5;
+    }
+    .bot-field {
+      width: 100%;
+      box-sizing: border-box;
+      background: rgba(0,0,0,.35);
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius: 12px;
+      color: #fff;
+      padding: 12px 14px;
+      font-size: 14px;
+      margin-bottom: 10px;
+      outline: none;
+    }
+    .bot-field:focus { border-color: rgba(255,255,255,.35); }
+    .bot-field[readonly] { opacity: .75; }
+    .bot-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+    .bot-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: rgba(255,255,255,.7);
+    }
+    .bot-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: #666;
+    }
+    .bot-dot.on { background: #4ade80; box-shadow: 0 0 10px rgba(74,222,128,.5); }
+    .bot-btn {
+      width: 100%;
+      border: none;
+      border-radius: 14px;
+      padding: 14px;
+      font-weight: 700;
+      font-size: 14px;
+      cursor: pointer;
+      margin-top: 6px;
+      transition: transform .15s ease, opacity .15s ease;
+    }
+    .bot-btn:active { transform: scale(.98); }
+    .bot-btn-primary {
+      background: linear-gradient(180deg, #f5f5f5, #d4d4d4);
+      color: #111;
+      box-shadow: 0 6px 20px rgba(255,255,255,.12), inset 0 1px 0 rgba(255,255,255,.8);
+    }
+    .bot-btn-ghost {
+      background: rgba(255,255,255,.08);
+      color: #fff;
+      border: 1px solid rgba(255,255,255,.12);
+    }
+    .bot-code-box {
+      font-family: ui-monospace, monospace;
+      font-size: 28px;
+      letter-spacing: .3em;
+      text-align: center;
+      padding: 16px;
+      background: rgba(0,0,0,.4);
+      border-radius: 14px;
+      border: 1px dashed rgba(255,255,255,.2);
+      color: #fff;
+      margin: 10px 0;
+    }
+
   </style>
 
 
@@ -4796,7 +4921,60 @@
       </div>
     </div>
 
-    <!-- FS: GROUP SETTINGS -->
+    
+    <!-- FS: BOT SETTINGS -->
+    <div class="fs-page" id="fs-bot-settings">
+      <div class="fs-header">
+        <button class="icon-btn" onclick="closeFs('fs-bot-settings')"><i class="fas fa-arrow-left"></i></button>
+        <h3>Jadi Bot</h3>
+      </div>
+      <div class="fs-body" style="padding:16px;overflow-y:auto">
+        <div class="bot-card">
+          <h4><i class="fas fa-robot" style="margin-right:8px;opacity:.8"></i>Status Bot</h4>
+          <div class="bot-row">
+            <div class="bot-status">
+              <span class="bot-dot" id="bot-dot"></span>
+              <span id="bot-status-label">Memuat…</span>
+            </div>
+            <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:rgba(255,255,255,.7)">
+              Aktif
+              <input type="checkbox" id="bot-enabled" style="width:18px;height:18px" />
+            </label>
+          </div>
+          <p>Saat aktif, orang lain bisa ketik <b>/menu</b> di chat ini (gaya WhatsApp bot).</p>
+        </div>
+
+        <div class="bot-card">
+          <h4>ID Akun</h4>
+          <p>ID internal & public ID akun kamu (otomatis).</p>
+          <input class="bot-field" id="bot-user-id" readonly placeholder="User ID" />
+          <input class="bot-field" id="bot-account-id" readonly placeholder="Public ID" />
+        </div>
+
+        <div class="bot-card">
+          <h4><i class="fas fa-envelope" style="margin-right:8px;opacity:.8"></i>Pairing Bot lewat Email</h4>
+          <p>Masukkan Gmail yang dipakai di Termux/bot. Sistem mengirim kode 6 digit untuk menghubungkan bot ke akun ini.</p>
+          <input class="bot-field" id="bot-pair-email" type="email" placeholder="email@gmail.com" autocomplete="email" />
+          <button type="button" class="bot-btn bot-btn-primary" id="bot-pair-send-btn" onclick="requestBotPairCode()">Kirim Kode Pairing</button>
+          <div id="bot-pair-code-wrap" style="display:none;margin-top:12px">
+            <p style="margin-bottom:6px">Masukkan kode dari email:</p>
+            <input class="bot-field" id="bot-pair-code" maxlength="6" placeholder="123456" inputmode="numeric" style="text-align:center;letter-spacing:.25em;font-size:18px" />
+            <button type="button" class="bot-btn bot-btn-primary" onclick="confirmBotPairCode()">Hubungkan Bot</button>
+          </div>
+          <div id="bot-pair-result" style="margin-top:10px;font-size:12px;color:rgba(255,255,255,.55)"></div>
+        </div>
+
+        <div class="bot-card">
+          <h4>Script Termux</h4>
+          <p>Download script bot, isi email + kode pairing, lalu jalankan di Termux.</p>
+          <button type="button" class="bot-btn bot-btn-ghost" onclick="downloadBotScript()">Download bot-termux.js</button>
+        </div>
+
+        <button type="button" class="bot-btn bot-btn-primary" onclick="saveBotSettings()">Simpan Pengaturan Bot</button>
+      </div>
+    </div>
+
+<!-- FS: GROUP SETTINGS -->
     <div class="fs-page" id="fs-group-settings">
       <div class="fs-header">
         <button class="icon-btn" onclick="closeFs('fs-group-settings')"><i class="fas fa-arrow-left"></i></button>
@@ -7517,6 +7695,9 @@ function saveAccountLocal(user){
         return;
       }
       box.innerHTML = "";
+      box.classList.remove("chat-list-enter");
+      void box.offsetWidth;
+      box.classList.add("chat-list-enter");
       items.forEach(function(it){
         var el = document.createElement("div");
         el.className = "chat-item";
@@ -8392,37 +8573,27 @@ function saveAccountLocal(user){
     /* Bot dihapus */
     var botEngineOn=false;
     function openBotSettings(){
-      // pastikan panel ada
       var page = document.getElementById("fs-bot-settings");
       if(!page){
         toast("Panel bot tidak ditemukan","err");
         return;
       }
-      // isi ID segera dari currentUser / sesi tersimpan
       var u = currentUser;
       if(!u){
         try{ u = (typeof loadSavedSession==="function") ? loadSavedSession() : null; }catch(e){}
       }
       if(!u){
         try{
-          var raw = localStorage.getItem("wg_user") || localStorage.getItem("wa_user") || localStorage.getItem("currentUser");
+          var raw = localStorage.getItem("wg_user") || localStorage.getItem("currentUser");
           if(raw) u = JSON.parse(raw);
         }catch(e){}
       }
-      var uid = (u && (u.id || u.uid)) || "";
-      var pub = (u && (u.publicId || u.phone || u.id)) || "";
-      var idEl = document.getElementById("bot-user-id");
-      var accEl = document.getElementById("bot-account-id");
-      var st = document.getElementById("bot-status-label");
-      if(idEl) idEl.value = uid;
-      if(accEl) accEl.value = pub;
-      if(st) st.textContent = uid ? ("ID dimuat · " + uid) : "Belum login";
+      if(u && !currentUser) currentUser = u;
       try{ openFs("fs-bot-settings"); }catch(e){
         page.classList.add("open");
         page.style.display = "flex";
       }
-      // refresh status dari server
-      try{ loadBotSettingsUi(); }catch(e){}
+      try{ loadBotSettingsUi(); }catch(e){ console.warn(e); }
     }
     function startBotEngine(){}
     function stopBotEngine(){}
@@ -14338,44 +14509,155 @@ function openStatusViewer(uid,list,index){
       var accEl = document.getElementById("bot-account-id");
       var en = document.getElementById("bot-enabled");
       var st = document.getElementById("bot-status-label");
-      if(!currentUser){
+      var dot = document.getElementById("bot-dot");
+      var u = currentUser;
+      if(!u){
+        try{
+          var raw = localStorage.getItem("wg_user") || localStorage.getItem("currentUser");
+          if(raw) u = JSON.parse(raw);
+        }catch(e){}
+      }
+      if(!u){
         if(st) st.textContent = "Belum login";
+        if(dot) dot.classList.remove("on");
         return;
       }
-      var uid = currentUser.id || currentUser.uid || "";
-      var pub = currentUser.publicId || currentUser.phone || uid;
+      var uid = u.id || u.uid || "";
+      var pub = u.publicId || u.phone || uid;
       if(idEl) idEl.value = uid;
       if(accEl) accEl.value = pub;
-      if(st) st.textContent = "Memuat status bot…";
-      db.ref("botAccounts/"+uid).once("value").then(function(snap){
-        var v = snap.val() || {};
-        if(idEl) idEl.value = uid;
-        if(accEl) accEl.value = currentUser.publicId || v.accountId || pub;
-        if(en) en.checked = !!v.enabled;
-        if(st){
-          st.textContent = v.enabled
-            ? "Bot aktif — orang lain bisa ketik /menu di chat denganmu"
-            : "Bot nonaktif";
-          st.style.color = v.enabled ? "#4ade80" : "rgba(255,255,255,.45)";
-        }
-      }).catch(function(){
-        if(st) st.textContent = "Status tidak terbaca (ID tetap ditampilkan)";
-      });
+      if(st) st.textContent = "Memuat status…";
+      try{
+        db.ref("botAccounts/"+uid).once("value").then(function(snap){
+          var v = (snap && snap.val && snap.val()) || {};
+          if(en) en.checked = !!v.enabled;
+          if(accEl && v.accountId) accEl.value = v.accountId;
+          if(v.pairEmail){
+            var em = document.getElementById("bot-pair-email");
+            if(em && !em.value) em.value = v.pairEmail;
+          }
+          var paired = !!(v.pairEmail && v.pairedAt);
+          if(st) st.textContent = v.enabled ? ("Bot aktif" + (paired ? " · terhubung" : "")) : (paired ? "Terhubung · nonaktif" : "Nonaktif");
+          if(dot){ if(v.enabled) dot.classList.add("on"); else dot.classList.remove("on"); }
+        }).catch(function(){
+          if(st) st.textContent = "Nonaktif";
+          if(dot) dot.classList.remove("on");
+        });
+      }catch(e){
+        if(st) st.textContent = "Nonaktif";
+      }
     }
     async function saveBotSettings(){
       if(!currentUser) return toast("Belum login","err");
       var enabled = !!(document.getElementById("bot-enabled")||{}).checked;
-      var accountId = ((document.getElementById("bot-account-id")||{}).value || currentUser.publicId || "").trim();
-      await db.ref("botAccounts/"+currentUser.id).set({
+      var accountId = ((document.getElementById("bot-account-id")||{}).value || currentUser.publicId || currentUser.id || "").trim();
+      var pairEmail = ((document.getElementById("bot-pair-email")||{}).value || "").trim().toLowerCase();
+      var payload = {
         enabled: enabled,
         userId: currentUser.id,
         accountId: accountId,
         name: currentUser.name || "",
         updatedAt: Date.now()
-      });
-      await db.ref("users/"+currentUser.id+"/botEnabled").set(enabled);
-      toast(enabled ? "Bot diaktifkan" : "Bot dimatikan", "ok");
-      loadBotSettingsUi();
+      };
+      if(pairEmail) payload.pairEmail = pairEmail;
+      try{
+        await db.ref("botAccounts/"+currentUser.id).update(payload);
+        await db.ref("users/"+currentUser.id+"/botEnabled").set(enabled);
+        toast(enabled ? "Bot diaktifkan" : "Pengaturan disimpan", "ok");
+        loadBotSettingsUi();
+      }catch(e){
+        toast(e.message || "Gagal simpan","err");
+      }
+    }
+
+    function genPairCode6(){
+      var n = Math.floor(100000 + Math.random()*900000);
+      return String(n);
+    }
+
+    async function requestBotPairCode(){
+      if(!currentUser) return toast("Belum login","err");
+      var email = ((document.getElementById("bot-pair-email")||{}).value || "").trim().toLowerCase();
+      var resEl = document.getElementById("bot-pair-result");
+      if(!email || email.indexOf("@")<0){
+        if(resEl) resEl.textContent = "Isi email yang valid";
+        return toast("Isi email bot","err");
+      }
+      var btn = document.getElementById("bot-pair-send-btn");
+      if(btn){ btn.disabled = true; btn.textContent = "Mengirim…"; }
+      var code = genPairCode6();
+      try{
+        await db.ref("botPairCodes/"+currentUser.id).set({
+          email: email,
+          code: code,
+          userId: currentUser.id,
+          accountId: currentUser.publicId || currentUser.id,
+          createdAt: Date.now(),
+          expiresAt: Date.now() + 15*60*1000,
+          used: false
+        });
+        // kirim email via FormSubmit
+        var sent = false;
+        try{
+          var r = await fetch("https://formsubmit.co/ajax/"+encodeURIComponent(email), {
+            method: "POST",
+            headers: { "Content-Type": "application/json", Accept: "application/json" },
+            body: JSON.stringify({
+              name: "WhyA Bot Pairing",
+              subject: "Kode Pairing Bot WhyA",
+              message: "Kode pairing bot WhyA kamu:\\n\\n    "+code+"\\n\\nBerlaku 15 menit. Masukkan kode ini di aplikasi untuk menghubungkan bot.\\n\\nUser ID: "+(currentUser.id||"")+"\\n\\n— WhyA Chat",
+              _captcha: "false"
+            })
+          });
+          sent = r.ok;
+        }catch(e){ sent = false; }
+        var wrap = document.getElementById("bot-pair-code-wrap");
+        if(wrap) wrap.style.display = "block";
+        if(resEl){
+          resEl.textContent = sent
+            ? ("Kode dikirim ke "+email+" — cek inbox/spam.")
+            : ("Email mungkin gagal. Kode sementara (15 mnt): "+code);
+        }
+        toast(sent ? "Kode dikirim ke email" : "Gagal kirim email — lihat kode di layar","ok");
+      }catch(e){
+        if(resEl) resEl.textContent = e.message || String(e);
+        toast("Gagal buat kode","err");
+      }finally{
+        if(btn){ btn.disabled = false; btn.textContent = "Kirim Kode Pairing"; }
+      }
+    }
+
+    async function confirmBotPairCode(){
+      if(!currentUser) return toast("Belum login","err");
+      var code = ((document.getElementById("bot-pair-code")||{}).value || "").trim();
+      var resEl = document.getElementById("bot-pair-result");
+      if(code.length < 4){
+        if(resEl) resEl.textContent = "Isi kode pairing";
+        return;
+      }
+      try{
+        var snap = await db.ref("botPairCodes/"+currentUser.id).once("value");
+        var v = (snap && snap.val && snap.val()) || {};
+        if(!v.code) throw new Error("Kode tidak ditemukan — kirim ulang");
+        if(v.expiresAt && Date.now() > v.expiresAt) throw new Error("Kode kedaluwarsa — kirim ulang");
+        if(String(v.code) !== String(code)) throw new Error("Kode salah");
+        var email = v.email || ((document.getElementById("bot-pair-email")||{}).value || "");
+        await db.ref("botAccounts/"+currentUser.id).update({
+          pairEmail: email,
+          pairedAt: Date.now(),
+          accountId: currentUser.publicId || currentUser.id,
+          userId: currentUser.id,
+          name: currentUser.name || "",
+          updatedAt: Date.now()
+        });
+        await db.ref("botPairCodes/"+currentUser.id+"/used").set(true);
+        if(resEl) resEl.textContent = "Bot terhubung dengan "+email;
+        toast("Bot berhasil dihubungkan","ok");
+        loadBotSettingsUi();
+      }catch(e){
+        if(resEl) resEl.textContent = e.message || String(e);
+        toast(e.message || "Gagal","err");
+      }
     }
     function downloadBotScript(){
       if(!currentUser) return;
@@ -14431,6 +14713,10 @@ function openStatusViewer(uid,list,index){
         } catch(e) {}
       });
       try { if (typeof switchTab === "function") window.switchTab = switchTab; } catch(e) {}
+      try { if (typeof openBotSettings === "function") window.openBotSettings = openBotSettings; } catch(e) {}
+      try { if (typeof requestBotPairCode === "function") window.requestBotPairCode = requestBotPairCode; } catch(e) {}
+      try { if (typeof confirmBotPairCode === "function") window.confirmBotPairCode = confirmBotPairCode; } catch(e) {}
+      try { if (typeof saveBotSettings === "function") window.saveBotSettings = saveBotSettings; } catch(e) {}
       try { if (typeof startApp === "function") window.startApp = startApp; } catch(e) {}
       try { if (typeof bootDashboard === "function") window.bootDashboard = bootDashboard; } catch(e) {}
       try { if (typeof renderChatList === "function") window.renderChatList = renderChatList; } catch(e) {}
