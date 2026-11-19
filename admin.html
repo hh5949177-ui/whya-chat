@@ -945,18 +945,14 @@
 
   <div class="toast" id="toast">OK</div>
 
-  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/js/config.js"></script>
+  <script src="/js/rtdb-supabase-shim.js"></script>
   <script>
     const ADMIN_PASSWORD = "admin123";
-    const firebaseConfig = {
-      apiKey: "AIzaSyC1I2WinNF1_KrS8ijNmQr07dqGN4-EWhE",
-      authDomain: "chat2-b2a96.firebaseapp.com",
-      databaseURL: "https://chat2-b2a96-default-rtdb.asia-southeast1.firebasedatabase.app",
-      projectId: "chat2-b2a96"
-    };
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
+    // Full Supabase via rt_nodes shim (API kompatibel db.ref)
+    const db = window.db;
+    if(!db){ console.error("Supabase RTDB shim belum siap"); }
 
     
     const ROLE_STYLES = [
@@ -1821,7 +1817,7 @@
             '<div class="panel-grid">' +
               '<div class="field"><div class="lab">Channel ID</div><div class="val mono" onclick="copyTxt(\'' + esc(c.publicId) + '\')">' + esc(c.publicId) + ' <i class="fas fa-copy"></i></div></div>' +
               '<div class="field"><div class="lab">Owner</div><div class="val">' + esc(c.ownerName) + '</div></div>' +
-              '<div class="field"><div class="lab">Key Firebase</div><div class="val mono" onclick="copyTxt(\'' + esc(c.id) + '\')">' + esc(c.id) + ' <i class="fas fa-copy"></i></div></div>' +
+              '<div class="field"><div class="lab">User ID</div><div class="val mono" onclick="copyTxt(\'' + esc(c.id) + '\')">' + esc(c.id) + ' <i class="fas fa-copy"></i></div></div>' +
               '<div class="field"><div class="lab">Deskripsi</div><div class="val">' + esc(c.desc || "—") + '</div></div>' +
             '</div>' +
             '<div class="ctrl-row">' +

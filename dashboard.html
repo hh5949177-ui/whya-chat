@@ -4931,13 +4931,13 @@
             <br><br>
             Fiturnya terasa native-like: chat real-time, status, grup, stiker, reaksi, dan panggilan suara & video.
             <br><br>
-            Tech stack: <b style="color:#fff">HTML, CSS, JavaScript + Firebase</b>. Menggunakan system font, emoji bergaya Apple (transparan), dan tampilan bisa diganti lewat beberapa tema.
+            Tech stack: <b style="color:#fff">HTML, CSS, JavaScript + Supabase</b>. Menggunakan system font, emoji bergaya Apple (transparan), dan tampilan bisa diganti lewat beberapa tema.
           </p>
           <div class="dev-tags">
             <span class="dev-tag">Glassmorphism</span>
             <span class="dev-tag">Native-like</span>
             <span class="dev-tag">HTML / CSS / JS</span>
-            <span class="dev-tag">Firebase</span>
+            <span class="dev-tag">Supabase</span>
             <span class="dev-tag">System Font</span>
             <span class="dev-tag">Apple Emoji</span>
           </div>
@@ -4973,7 +4973,7 @@
           </p>
           <div class="dev-tags">
             <span class="dev-tag">HTML / CSS / JS</span>
-            <span class="dev-tag">Firebase</span>
+            <span class="dev-tag">Supabase</span>
             <span class="dev-tag">Glass UI</span>
             <span class="dev-tag">Realtime Chat</span>
             <span class="dev-tag">WebRTC</span>
@@ -5617,25 +5617,32 @@
       });
     }
 
-    // Firebase RTDB max ~10MB per property. Base64 ~1.37x → safe direct embed ~6.5MB
+    // Payload max ~10MB per property. Base64 ~1.37x → safe direct embed ~6.5MB
     var RTDB_SAFE_BYTES = 6.5 * 1024 * 1024;
 
     async function uploadMediaToStorage(file, folder){
-      if(!storage){
-        try { storage = firebase.storage(); } catch(e) {}
-      }
-      if(!storage) throw new Error("Firebase Storage belum siap. Aktifkan Storage di Firebase Console.");
       if(!file) throw new Error("File kosong");
       folder = folder || "media";
       var uid = (currentUser && currentUser.id) ? currentUser.id : "anon";
       var ext = (file.name && file.name.split(".").pop()) || (file.type && file.type.split("/")[1]) || "bin";
       ext = String(ext).replace(/[^a-z0-9]/gi,"").slice(0,8) || "bin";
       var path = folder + "/" + uid + "/" + Date.now() + "_" + Math.random().toString(36).slice(2,8) + "." + ext;
-      var ref = storage.ref(path);
-      var meta = { contentType: file.type || "application/octet-stream" };
-      await ref.put(file, meta);
-      var url = await ref.getDownloadURL();
-      return url;
+      // 1) Supabase Storage
+      try{
+        var client = null;
+        try{ client = (window.WhyaDB && window.WhyaDB.client) || (typeof getSb==="function" && getSb()); }catch(e){}
+        if(client && client.storage){
+          var bucket = "media";
+          var up = await client.storage.from(bucket).upload(path, file, { contentType: file.type || "application/octet-stream", upsert: true });
+          if(!up.error){
+            var pub = client.storage.from(bucket).getPublicUrl(path);
+            var u = pub && pub.data && pub.data.publicUrl;
+            if(u) return u;
+          }
+        }
+      }catch(e){ console.warn("supabase storage", e); }
+      // 2) Catbox fallback
+      return uploadToCatbox(file);
     }
 
     async function uploadToCatbox(file){
@@ -5806,7 +5813,7 @@
     /* ===== END-TO-END ENCRYPTION (E2EE) =====
        ECDH P-256 + AES-GCM 256.
        Private key hanya di perangkat (localStorage).
-       Server Firebase hanya menyimpan ciphertext.
+       Server hanya menyimpan ciphertext.
     */
     var e2eReady=false;
     var e2ePrivateKey=null;
@@ -5887,7 +5894,7 @@
           localStorage.setItem("wa_e2e_priv_"+uid, JSON.stringify(privJwk));
           localStorage.setItem("wa_e2e_pub_"+uid, JSON.stringify(e2ePublicJwk));
         }
-        // publish public key to firebase
+        // publish public key
         await db.ref("users/"+uid+"/e2ePublicKey").set(e2ePublicJwk);
         e2eReady=true;
         return true;
@@ -6019,7 +6026,7 @@
       const btn=document.getElementById("btn-next");
       btn.disabled=true; btn.textContent="Membuat akun...";
       try{
-        if(typeof firebase==="undefined"){ throw new Error("Firebase SDK belum load. Cek koneksi internet."); }
+        if(typeof db==="undefined"||!db){ throw new Error("Database belum siap. Refresh halaman."); }
         if(typeof db==="undefined"||!db){ throw new Error("Database belum siap. Refresh halaman."); }
         // health check: pastikan bisa baca/tulis
         try{
@@ -6028,9 +6035,9 @@
         }catch(pingErr){
           var pm=(pingErr&&pingErr.message)||String(pingErr);
           if(String(pm).toLowerCase().indexOf("permission")>=0){
-            throw new Error("PERMISSION_DENIED — Firebase Rules memblokir tulis. Set rules .read/.write = true lalu Publish.");
+            throw new Error("PERMISSION_DENIED — database rules memblokir tulis. Set rules .read/.write = true lalu Publish.");
           }
-          throw new Error("Tidak bisa hubungi Firebase: "+pm);
+          throw new Error("Tidak bisa hubungi database: "+pm);
         }
         const userId=emailToId(email);
         const exist=await db.ref("users/"+userId).once("value");
@@ -6070,7 +6077,7 @@
         console.error("register error", e);
         var msg=(e && (e.message||e.code)) ? (e.message||e.code) : String(e);
         if(String(msg).toLowerCase().indexOf("permission")>=0){
-          msg="PERMISSION_DENIED — buka Firebase Console > Realtime Database > Rules, set:\n{\n  \"rules\": { \".read\": true, \".write\": true }\n}\nlalu Publish.";
+          msg="PERMISSION_DENIED — buka Supabase RLS / rt_nodes, set:\n{\n  \"rules\": { \".read\": true, \".write\": true }\n}\nlalu Publish.";
         }
         alert("Gagal daftar:\n"+msg);
       }
@@ -6107,7 +6114,7 @@ async function generateUniqueChannelId(){
       var btn = document.querySelector("#auth-login .btn-primary");
       if(btn){ btn.disabled=true; btn.textContent="Masuk..."; }
       try{
-        if(typeof firebase==="undefined"){ throw new Error("Firebase SDK belum load. Cek koneksi internet."); }
+        if(typeof db==="undefined"||!db){ throw new Error("Database belum siap. Refresh halaman."); }
         if(typeof db==="undefined"||!db){ throw new Error("Database belum siap. Refresh halaman."); }
         // health check baca
         try{
@@ -6115,9 +6122,9 @@ async function generateUniqueChannelId(){
         }catch(pingErr){
           var pm=(pingErr&&pingErr.message)||String(pingErr);
           if(String(pm).toLowerCase().indexOf("permission")>=0){
-            throw new Error("PERMISSION_DENIED — Firebase Rules memblokir baca. Set rules .read/.write = true lalu Publish.");
+            throw new Error("PERMISSION_DENIED — database rules memblokir baca. Set rules .read/.write = true lalu Publish.");
           }
-          throw new Error("Tidak bisa hubungi Firebase: "+pm);
+          throw new Error("Tidak bisa hubungi database: "+pm);
         }
         const userId=emailToId(email);
         var snap=await db.ref("users/"+userId).once("value");
@@ -6167,7 +6174,7 @@ async function generateUniqueChannelId(){
         console.error("login error", e);
         var msg=(e && (e.message||e.code)) ? (e.message||e.code) : String(e);
         if(String(msg).toLowerCase().indexOf("permission")>=0){
-          msg="PERMISSION_DENIED — cek Firebase Rules (read/write true).";
+          msg="PERMISSION_DENIED — cek database rules (read/write true).";
         }
         alert("Gagal masuk:\\n"+msg);
       } finally {
@@ -7122,7 +7129,7 @@ function saveAccountLocal(user){
       if(!currentUser.id && currentUser.email && typeof emailToId==="function"){
         try{ currentUser.id=emailToId(currentUser.email); }catch(e){}
       }
-      // tampilkan app dulu, baru sync firebase
+      // tampilkan app dulu, baru sync database
       try{
         var app=document.getElementById("app");
         if(app){ app.style.display="block"; app.style.visibility="visible"; }
@@ -9878,7 +9885,7 @@ function saveAccountLocal(user){
         updateSendButton();
         var msg=(err&&(err.message||err.code))||String(err);
         if(String(msg).toLowerCase().indexOf("permission")>=0){
-          msg="PERMISSION_DENIED — cek Firebase Rules";
+          msg="PERMISSION_DENIED — cek database rules";
         }
         try{ toast("Gagal kirim: "+msg,"err"); }catch(e){ alert("Gagal kirim: "+msg); }
       }
@@ -13423,7 +13430,7 @@ function openStatusViewer(uid,list,index){
         btn.textContent="Memuat…";
         btn.onclick=confirmJoinFromInvite;
       }
-      // tunggu firebase siap
+      // tunggu database siap
       var tries=0;
       while(tries<20 && (!window.db && typeof db==="undefined")){
         await new Promise(function(r){ setTimeout(r,150); });

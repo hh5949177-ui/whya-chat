@@ -5,9 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
   <title>whya · Notifikasi</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
-  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
-  <style>
+    <style>
     :root { --bg:#060608; --card:#121218; --muted:rgba(255,255,255,.5); --line:rgba(255,255,255,.1); }
     * { box-sizing:border-box; margin:0; padding:0; }
     body {
@@ -108,15 +106,12 @@
     </div>
   </div>
 
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/js/config.js"></script>
+  <script src="/js/rtdb-supabase-shim.js"></script>
   <script>
-    const firebaseConfig = {
-      apiKey: "AIzaSyC1I2WinNF1_KrS8ijNmQr07dqGN4-EWhE",
-      authDomain: "chat2-b2a96.firebaseapp.com",
-      databaseURL: "https://chat2-b2a96-default-rtdb.asia-southeast1.firebasedatabase.app",
-      projectId: "chat2-b2a96"
-    };
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
+    const db = window.db;
+    if(!db){ console.error("Supabase shim belum siap"); }
     var ownerUser = null;
 
     function toast(m){
