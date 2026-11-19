@@ -5286,7 +5286,7 @@
     const MAX_VIDEO_BYTES=100*1024*1024, MAX_BASE64_CHARS=140*1024*1024;
 
     /* ===== TABS ===== */
-    function switchTab(name){
+    window.switchTab = function switchTab(name){
       try{
         name = String(name||"chat");
         document.querySelectorAll(".tab-page").forEach(function(p){
@@ -6830,7 +6830,7 @@ function saveAccountLocal(user){
     }
 
     var __whyaBootStarted = false;
-    function bootDashboard(){
+    window.bootDashboard = function bootDashboard(){
       try{
         var l=document.getElementById("app-loader");
         if(l){ l.style.display="none"; l.classList.add("hide","gone"); }
@@ -6928,7 +6928,7 @@ function saveAccountLocal(user){
     // fallback terakhir
     setTimeout(function(){ try{ bootDashboard(); }catch(e){ try{ hideAppLoader(); }catch(e2){} } }, 1500);
 
-    function startApp(){
+    window.startApp = function startApp(){
       try{ hideAppLoader(); }catch(e){}
       try{
         var _app0=document.getElementById("app");
@@ -7165,7 +7165,7 @@ function saveAccountLocal(user){
       if(currentUser.photoURL) nav.innerHTML=mediaTag(currentUser.photoURL,'width:100%;height:100%;object-fit:cover','autoplay muted loop playsinline');
       else nav.textContent=(currentUser.avatar||currentUser.name||"A").charAt(0).toUpperCase();
     }
-    function updateProfileTab(){
+    window.updateProfileTab = function updateProfileTab(){
       document.getElementById("profile-display-name").innerHTML=(currentUser.name||"User")+(typeof verifiedBadgeHTML==="function"?verifiedBadgeHTML(currentUser):"");
       var subParts=[];
       if(currentUser.publicId) subParts.push("ID: "+currentUser.publicId);
@@ -7466,7 +7466,7 @@ function saveAccountLocal(user){
       } catch(e){}
     }
 
-    function renderChatList(userChats){
+    window.renderChatList = function renderChatList(userChats){
       lastUserChats = userChats || {};
       try{ updateArchiveEntry(); }catch(e){}
       var box = document.getElementById("chat-list");
@@ -7699,7 +7699,7 @@ function saveAccountLocal(user){
         try{ toast("Gagal buka chat: "+e.message,"err"); }catch(_e){ alert("Gagal buka chat"); }
       }
     }
-    function closeActiveChat(){
+    window.closeActiveChat = function closeActiveChat(){
       try{ hideBotFeatureBanner(); }catch(e){}
       var chatEl = document.getElementById("active-chat");
       if(chatEl){
@@ -7927,7 +7927,7 @@ function saveAccountLocal(user){
     function profileActionReport(uid){ toast("Terima kasih, laporan dicatat","ok"); closeProfileSheet(); }
 
     /* ===== Welcome / loader ===== */
-    function hideAppLoader(){
+    window.hideAppLoader = function hideAppLoader(){
       try{
         var l=document.getElementById("app-loader");
         if(!l) return;
@@ -8442,7 +8442,7 @@ function saveAccountLocal(user){
 
     
     /* ===== ADD FRIEND / GROUP / ARCHIVE (restored) ===== */
-    function openAddFriend(){
+    window.openAddFriend = function openAddFriend(){
       var m=document.getElementById("add-friend-modal");
       if(!m) return;
       document.getElementById("friend-email").value="";
@@ -8506,7 +8506,7 @@ function saveAccountLocal(user){
       }
     }
 
-    function openCreateGroup(){
+    window.openCreateGroup = function openCreateGroup(){
       var m=document.getElementById("create-group-modal");
       if(!m) return;
       document.getElementById("group-name-input").value="";
@@ -8677,7 +8677,7 @@ function saveAccountLocal(user){
       if(cnt) cnt.textContent=String(n);
       if(entry) entry.style.display=n>0?"":"none";
     }
-    function openArchivedChats(){
+    window.openArchivedChats = function openArchivedChats(){
       openFs("fs-archived");
       var list=document.getElementById("archived-list");
       var empty=document.getElementById("archived-empty");
@@ -9401,7 +9401,7 @@ function saveAccountLocal(user){
       }
     }, 500);
 
-    async function renderCallHistory(){
+    window.renderCallHistory = async function renderCallHistory(){
       var list=document.getElementById("call-history-list");
       var empty=document.getElementById("call-history-empty");
       if(!list||!currentUser) return;
@@ -10319,7 +10319,7 @@ function saveAccountLocal(user){
     }
 
     /* STATUS */
-    function openCreateStatus(){
+    window.openCreateStatus = function openCreateStatus(){
       var priv=document.getElementById("status-privacy");
       if(priv){
         priv.querySelectorAll("label").forEach(function(lab){
@@ -10479,7 +10479,7 @@ function saveAccountLocal(user){
     function escHtmlCh(t){
       return String(t||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
     }
-    async function renderChannels(){
+    window.renderChannels = async function renderChannels(){
       if(!currentUser) return;
       var followedBox=document.getElementById("channel-followed-list");
       var discBox=document.getElementById("channel-discover-list");
@@ -12847,7 +12847,7 @@ function openStatusViewer(uid,list,index){
         return "Sampai "+d.toLocaleString("id-ID",{dateStyle:"medium",timeStyle:"short"});
       }catch(e){ return ""; }
     }
-    async function renderWebList(){
+    window.renderWebList = async function renderWebList(){
       var box=document.getElementById("web-list");
       var empty=document.getElementById("web-empty");
       if(!box||!currentUser) return;
@@ -14408,6 +14408,51 @@ function openStatusViewer(uid,list,index){
       }catch(e){ return false; }
     }
 
+    
+    /* EXPOSE_TO_WINDOW — onclick butuh global */
+    (function(){
+      var names = [
+        "switchTab","startApp","bootDashboard","renderChatList","openAddFriend","openCreateGroup",
+        "openArchivedChats","openCreateStatus","openFs","closeFs","hideAppLoader","showAppLoader",
+        "updateProfileTab","renderStatusPage","renderChannels","renderWebList","renderCallHistory",
+        "openAddFriend","logout","doLogout","sendMessage","openChat","closeActiveChat",
+        "persistSession","loadSavedSession","applySavedTheme","applyLiquidDockSetting",
+        "updateLiquidDockPill","dismissAppNotifBanner","ackAppNotifModal","openBotSettings",
+        "saveBotSettings","downloadBotScript","requestWebHelp","openCreateWeb"
+      ];
+      names.forEach(function(n){
+        try {
+          if (typeof window[n] === "undefined" && typeof eval("typeof "+n) !== "undefined") {
+            // skip eval if not defined
+          }
+        } catch(e) {}
+        try {
+          var fn = this[n];
+        } catch(e) {}
+      });
+      try { if (typeof switchTab === "function") window.switchTab = switchTab; } catch(e) {}
+      try { if (typeof startApp === "function") window.startApp = startApp; } catch(e) {}
+      try { if (typeof bootDashboard === "function") window.bootDashboard = bootDashboard; } catch(e) {}
+      try { if (typeof renderChatList === "function") window.renderChatList = renderChatList; } catch(e) {}
+      try { if (typeof openAddFriend === "function") window.openAddFriend = openAddFriend; } catch(e) {}
+      try { if (typeof openCreateGroup === "function") window.openCreateGroup = openCreateGroup; } catch(e) {}
+      try { if (typeof openArchivedChats === "function") window.openArchivedChats = openArchivedChats; } catch(e) {}
+      try { if (typeof openCreateStatus === "function") window.openCreateStatus = openCreateStatus; } catch(e) {}
+      try { if (typeof openFs === "function") window.openFs = openFs; } catch(e) {}
+      try { if (typeof closeFs === "function") window.closeFs = closeFs; } catch(e) {}
+      try { if (typeof updateProfileTab === "function") window.updateProfileTab = updateProfileTab; } catch(e) {}
+      try { if (typeof renderStatusPage === "function") window.renderStatusPage = renderStatusPage; } catch(e) {}
+      try { if (typeof renderChannels === "function") window.renderChannels = renderChannels; } catch(e) {}
+      try { if (typeof renderWebList === "function") window.renderWebList = renderWebList; } catch(e) {}
+      try { if (typeof renderCallHistory === "function") window.renderCallHistory = renderCallHistory; } catch(e) {}
+      try { if (typeof hideAppLoader === "function") window.hideAppLoader = hideAppLoader; } catch(e) {}
+      try { if (typeof openChat === "function") window.openChat = openChat; } catch(e) {}
+      try { if (typeof closeActiveChat === "function") window.closeActiveChat = closeActiveChat; } catch(e) {}
+      try { if (typeof applySavedTheme === "function") window.applySavedTheme = applySavedTheme; } catch(e) {}
+      try { if (typeof applyLiquidDockSetting === "function") window.applyLiquidDockSetting = applyLiquidDockSetting; } catch(e) {}
+      console.info("[whya] core functions exposed", typeof window.switchTab, typeof window.bootDashboard);
+    })();
+
     /* BOOT_IMMEDIATE */
     (function(){
       var ran=false;
@@ -14431,5 +14476,7 @@ function openStatusViewer(uid,list,index){
       else run();
       setTimeout(run, 600);
     })();
-
- 
+  </script>
+  <script src="/js/ui-bridge.js"></script>
+</body>
+</html>
