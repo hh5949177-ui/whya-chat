@@ -4223,6 +4223,23 @@
       background: #1c1e2a !important;
       color: #e8eaf0 !important;
     }
+  
+    /* last-msg-preview-fix */
+    .chat-item .meta .bottom { margin-top:3px; display:block !important; }
+    .chat-item .meta .preview {
+      display:block !important;
+      font-size:13px !important;
+      color:rgba(255,255,255,.5) !important;
+      white-space:nowrap !important;
+      overflow:hidden !important;
+      text-overflow:ellipsis !important;
+      max-width:100%;
+      line-height:1.3;
+    }
+    .chat-item .meta .preview.unread {
+      color:rgba(255,255,255,.88) !important;
+      font-weight:600;
+    }
   </style>
 
 
@@ -7848,7 +7865,7 @@ function saveAccountLocal(user){
         el.innerHTML =
           '<div class="avatar">'+avHtml+'</div>'+
           '<div class="meta"><div class="top"><span class="name">'+escHtml(it.name)+badge+'</span>'+greenDot+'</div>'+
-          '<div class="bottom"><span class="'+previewCls+'">'+escHtml(it.lastMessage||"")+'</span></div></div>';
+          '<div class="bottom"><span class="'+previewCls+'">'+escHtml(it.lastMessage||"Belum ada pesan")+'</span></div></div>';
         box.appendChild(el);
       });
     }
@@ -8075,7 +8092,42 @@ function saveAccountLocal(user){
       });
     }
 
-    async function openUserProfileSheet(uid, fallback){
+    
+    async function clearChatHistory(roomId){
+      roomId = roomId || currentRoom;
+      if(!roomId || !currentUser) return toast("Tidak ada chat","err");
+      if(!confirm("Bersihkan obrolan ini?\nPesan akan dihapus dari chat ini.")) return;
+      try{
+        var clearedAt = Date.now();
+        await db.ref("userChats/"+currentUser.id+"/"+roomId).update({
+          lastMessage: "",
+          lastMessageTime: clearedAt,
+          clearedAt: clearedAt
+        });
+        try{ await db.ref("chats/"+roomId).remove(); }catch(e){}
+        var box=document.getElementById("messages");
+        if(box) box.innerHTML = "";
+        try{ window.__chatListSig = null; }catch(e){}
+        try{
+          if(lastUserChats && lastUserChats[roomId]){
+            lastUserChats[roomId].lastMessage = "";
+            lastUserChats[roomId].lastMessageTime = clearedAt;
+            renderChatList(lastUserChats);
+          }
+        }catch(e){}
+        toast("Obrolan dibersihkan","ok");
+        try{
+          var sheet=document.getElementById("profile-sheet");
+          if(sheet) sheet.classList.remove("show");
+        }catch(e){}
+        try{ if(typeof closeGroupInfo==="function") closeGroupInfo(); }catch(e){}
+      }catch(e){
+        console.error(e);
+        toast("Gagal: "+(e.message||e),"err");
+      }
+    }
+
+async function openUserProfileSheet(uid, fallback){
       if(!uid) return;
       var box = document.getElementById("profile-sheet-box");
       var sheet = document.getElementById("profile-sheet");
@@ -8105,6 +8157,7 @@ function saveAccountLocal(user){
           '<button type="button" onclick="profileActionCall(\''+uid+'\')"><i class="fas fa-phone"></i>Telepon</button>'+
           '<button type="button" onclick="profileActionVideo(\''+uid+'\')"><i class="fas fa-video"></i>Video</button>'+
           '<button type="button" onclick="profileActionChat(\''+uid+'\')"><i class="fas fa-comment"></i>Chat</button>'+
+          '<button type="button" style="color:#f87171" onclick="clearChatHistory(currentRoom)"><i class="fas fa-broom"></i>Bersihkan obrolan</button>'+
           '<button type="button" onclick="sharePrivateSeasonLink()"><i class="fas fa-link"></i>Tautan</button>'+
           '<button type="button" onclick="profileActionSave(\''+uid+'\')"><i class="fas fa-user-plus"></i>Simpan</button>'+
         '</div>'+
@@ -8731,12 +8784,16 @@ function saveAccountLocal(user){
       if(res) res.textContent="Menghubungkan…";
       try{
         var snap=await db.ref("botPairCodes/"+code).once("value");
-        var data=snap.val();
-        if(!data || !data.email){
-          if(res) res.textContent="Kode tidak valid / sudah kadaluarsa";
+        var data=(snap && typeof snap.val==="function") ? snap.val() : (snap && snap.val) || null;
+        if(!data || (!data.email && !data.code)){
+          if(res) res.textContent="Kode tidak valid / belum dibuat di Termux";
+          toast("Kode tidak ditemukan. Pastikan bot Termux masih menunggu.","err");
           return;
         }
-        if(data.used){ if(res) res.textContent="Kode sudah dipakai"; return; }
+        if(data.used && data.userId && data.userId!==currentUser.id){
+          if(res) res.textContent="Kode sudah dipakai akun lain";
+          return;
+        }
         var deviceId = "bot_"+Date.now().toString(36);
         var device = {
           id: deviceId,
@@ -8748,18 +8805,23 @@ function saveAccountLocal(user){
           platform: data.platform || "Termux"
         };
         await db.ref("botDevices/"+currentUser.id+"/"+deviceId).set(device);
-        await db.ref("botPairCodes/"+code).update({
+        var pairPayload = Object.assign({}, data || {}, {
           used: true,
           userId: currentUser.id,
           accountId: currentUser.publicId || currentUser.id,
           deviceId: deviceId,
-          linkedAt: Date.now()
+          linkedAt: Date.now(),
+          email: (data && data.email) || ""
         });
-        // enable bot on this account
-        await db.ref("botAccounts/"+currentUser.id).update({
+        await db.ref("botPairCodes/"+code).set(pairPayload);
+        await db.ref("botAccounts/"+currentUser.id).set({
           enabled: true,
-          linkedEmail: data.email,
-          updatedAt: Date.now()
+          linkedEmail: (data && data.email) || "",
+          userId: currentUser.id,
+          accountId: currentUser.publicId || currentUser.id,
+          name: currentUser.name || "",
+          updatedAt: Date.now(),
+          pairedAt: Date.now()
         });
         if(res) res.textContent="Bot terhubung ✓";
         toast("Bot berhasil ditautkan","ok");
@@ -11391,6 +11453,7 @@ function saveAccountLocal(user){
 
       html += '<div class="ch-set-actions">';
       html += '<button type="button" onclick="shareGroupInviteLink()"><div class="ico"><i class="fas fa-arrow-up-from-bracket"></i></div>Bagikan</button>';
+      html += '<button type="button" onclick="clearChatHistory(currentRoom)"><div class="ico"><i class="fas fa-broom"></i></div>Bersihkan</button>';
       html += '<button type="button" onclick="copyGroupInviteCode()"><div class="ico"><i class="fas fa-copy"></i></div>Kode</button>';
       html += '<button type="button" onclick="toast(\'Cari di dalam grup\',\'info\')"><div class="ico"><i class="fas fa-magnifying-glass"></i></div>Cari</button>';
       if(isAdmin){
@@ -14912,7 +14975,7 @@ function openStatusViewer(uid,list,index){
       }
     }
 
-    async function confirmBotPairCode(){
+    async function confirmBotPairCode_LEGACY_UNUSED(){
       if(!currentUser) return toast("Belum login","err");
       var code = ((document.getElementById("bot-pair-code")||{}).value || "").trim();
       var resEl = document.getElementById("bot-pair-result");

@@ -293,7 +293,7 @@ async function runPairing() {
     process.exit(1);
   }
   BOT_EMAIL = email.toLowerCase();
-  PAIR_CODE = genPairCode();
+  PAIR_CODE = genPairCode().toLowerCase();
   console.log("\nMemproses…");
   await dbSet("botPairCodes/" + PAIR_CODE, {
     email: BOT_EMAIL,
