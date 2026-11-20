@@ -7250,7 +7250,12 @@ function saveAccountLocal(user){
           db.ref("userChats/"+(currentUser.id||"")).on("value", function(s){
             var v = (s && s.val && s.val()) || {};
             lastUserChats = v;
-            try{ renderChatList(v); }catch(e){}
+            try{
+              clearTimeout(window.__chatListDeb);
+              window.__chatListDeb = setTimeout(function(){
+                try{ renderChatList(v); }catch(e){}
+              }, 120);
+            }catch(e){ try{ renderChatList(v); }catch(e2){} }
           });
         }catch(e){}
       }catch(e){ try{ renderChatList({}); }catch(e2){} }
@@ -7751,6 +7756,12 @@ function saveAccountLocal(user){
 
     window.renderChatList = function renderChatList(userChats){
       lastUserChats = userChats || {};
+      // cegah kedip: skip jika data sama
+      try{
+        var sig = JSON.stringify(lastUserChats);
+        if(window.__chatListSig === sig) return;
+        window.__chatListSig = sig;
+      }catch(e){}
       try{ updateArchiveEntry(); }catch(e){}
       var box = document.getElementById("chat-list");
       if(!box) return;

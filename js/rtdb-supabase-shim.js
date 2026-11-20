@@ -197,14 +197,20 @@
       } catch (e) {}
     });
     if (!Ref._poll) {
+      Ref._pollLast = Ref._pollLast || {};
       Ref._poll = setInterval(function () {
         Object.keys(listeners).forEach(function (path) {
           if (!listeners[path] || !listeners[path].length) return;
           readPath(path).then(function (v) {
+            var sig = "";
+            try { sig = JSON.stringify(v); } catch (e) { sig = String(v); }
+            var prev = Ref._pollLast[path];
+            var changed = prev !== sig;
+            Ref._pollLast[path] = sig;
             listeners[path].forEach(function (L) {
               try {
                 if (L.type === "value") {
-                  L.cb(snapVal(v));
+                  if (changed) L.cb(snapVal(v));
                 } else if (L.type === "child_added" && v && typeof v === "object") {
                   L._seen = L._seen || {};
                   Object.keys(v).forEach(function (k) {
@@ -221,7 +227,7 @@
             });
           });
         });
-      }, 2500);
+      }, 3000);
     }
     return cb;
   };

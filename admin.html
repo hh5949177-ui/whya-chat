@@ -1749,35 +1749,53 @@
       toast("Password disimpan"); renderUsers();
     }
     async function deleteUser(uid, publicId) {
+      if (!uid) return toast("UID kosong");
       if (!confirm("Hapus akun permanen? Gmail bisa didaftarkan ulang setelah ini.")) return;
       try {
+        toast("Menghapus…");
         var snap = await db.ref("users/" + uid).once("value");
-        var u = snap.val() || {};
+        var u = (snap && snap.val && snap.val()) || {};
         var pid = publicId || u.publicId || "";
-        var tasks = [
-          db.ref("users/" + uid).remove(),
-          db.ref("userChats/" + uid).remove(),
-          db.ref("presence/" + uid).remove(),
-          db.ref("channelFollows/" + uid).remove()
-        ];
-        if (pid && pid !== "—") tasks.push(db.ref("publicIds/" + pid).remove());
-        // bersihkan referensi chat di akun lain
+        // hapus node utama dulu
+        await db.ref("users/" + uid).remove();
+        await db.ref("userChats/" + uid).remove();
+        try { await db.ref("presence/" + uid).remove(); } catch (e) {}
+        try { await db.ref("channelFollows/" + uid).remove(); } catch (e) {}
+        if (pid && pid !== "—") {
+          try { await db.ref("publicIds/" + pid).remove(); } catch (e) {}
+        }
+        // email index (jika ada)
         try {
-          var uc = (await db.ref("userChats").once("value")).val() || {};
+          if (u.email) {
+            var ek = String(u.email).toLowerCase().replace(/[^a-z0-9]/g, "_").slice(0, 80);
+            await db.ref("emailIndex/" + ek).remove();
+          }
+        } catch (e) {}
+        // bersihkan referensi chat di akun lain (best-effort)
+        try {
+          var ucSnap = await db.ref("userChats").once("value");
+          var uc = (ucSnap && ucSnap.val && ucSnap.val()) || {};
+          var tasks = [];
           Object.keys(uc).forEach(function (ownerId) {
             var rooms = uc[ownerId] || {};
             Object.keys(rooms).forEach(function (roomId) {
               var c = rooms[roomId] || {};
-              if (c.peerId === uid || roomId.indexOf(uid) !== -1) {
+              if (c.peerId === uid || String(roomId).indexOf(uid) !== -1) {
                 tasks.push(db.ref("userChats/" + ownerId + "/" + roomId).remove());
               }
             });
           });
+          if (tasks.length) await Promise.all(tasks);
+        } catch (e) { console.warn("cleanup chats", e); }
+        // update list lokal segera
+        try {
+          users = (users || []).filter(function (x) { return x.id !== uid; });
+          renderUsers();
         } catch (e) {}
-        await Promise.all(tasks);
-        toast("Akun dihapus — Gmail bisa dipakai lagi");
-        refreshAll();
+        toast("Akun dihapus");
+        try { refreshAll(); } catch (e) {}
       } catch (e) {
+        console.error(e);
         alert("Gagal hapus: " + (e.message || e));
       }
     }
